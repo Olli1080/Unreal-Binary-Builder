@@ -1,0 +1,2 @@
+Documentation/*.png filter=lfs diff=lfs merge=lfs -text
+Documentation/*.png !text !filter !merge !diff
