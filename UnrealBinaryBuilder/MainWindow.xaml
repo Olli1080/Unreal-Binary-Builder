@@ -201,7 +201,7 @@
 												<CheckBox x:Name="bWithServer" Content="Include Server" Margin="10" IsChecked="{Binding bWithServer}" ToolTip="Create dedicated server target." IsEnabled="{Binding SupportServerClientTargets, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
 												<CheckBox x:Name="bWithClient" Content="Include Client" Margin="10" IsChecked="{Binding bWithClient}" ToolTip="Create client target." IsEnabled="{Binding SupportServerClientTargets, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
 												<CheckBox x:Name="bCompileDatasmithPlugins" Content="Include Datasmith" Margin="10" IsChecked="{Binding bCompileDatasmithPlugins}" ToolTip="If Datasmith plugins should be compiled." IsEnabled="{Binding IsEngineSelection425OrAbove, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
-												<CheckBox x:Name="bVS2019" Content="Use 2019 Compiler" Margin="10" IsChecked="{Binding bVS2019}" ToolTip="Use Visual Studio 2019 to build Windows targets. By default, Visual Studio 2017 is used for maximum compatibility." IsEnabled="{Binding SupportVisualStudio2019, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
+												<!--CheckBox x:Name="bVS2019" Content="Use 2019 Compiler" Margin="10" IsChecked="{Binding bVS2019}" ToolTip="Use Visual Studio 2019 to build Windows targets. By default, Visual Studio 2017 is used for maximum compatibility." IsEnabled="{Binding SupportVisualStudio2019, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/-->
 											</WrapPanel>
 											<GroupBox Header="Shutdown Settings" Style="{StaticResource GroupBoxOriginal}" Margin="10">
 												<WrapPanel>
@@ -209,7 +209,14 @@
 													<CheckBox x:Name="bShutdownIfSuccess" Content="Shutdown only if build is successful" Margin="10" IsChecked="{Binding bShutdownIfBuildSuccess}" ToolTip="Shuts down your computer after building only if the build is successful." IsEnabled="{Binding IsChecked, ElementName=bShutdownWindows}" />
 												</WrapPanel>
 											</GroupBox>
-										</StackPanel>
+                                            <GroupBox Header="Visual Studio Settings" Style="{StaticResource GroupBoxOriginal}" Margin="10">
+                                                <WrapPanel>
+                                                    <ComboBox IsEditable="True" IsReadOnly="True" Text="Select Version" ItemsSource="{Binding Path=VisualStudioVersions}" />
+                                                    <ComboBox IsEditable="True" IsReadOnly="True" Text="Select Edition" ItemsSource="{Binding Path=VisualStudioEditions}"/>
+                                                    <ComboBox IsEditable="True" IsReadOnly="True" Text="Select Architecture" ItemsSource="{Binding Path=VisualStudioArchitecture}"/>
+                                                </WrapPanel>
+                                            </GroupBox>
+                                        </StackPanel>
 									</hc:ScrollViewer>
 								</GroupBox>
 
@@ -239,18 +246,18 @@
 						</StackPanel>
 						<GroupBox Style="{StaticResource GroupBoxOriginal}" Margin="0 40 0 0">
 							<Grid>
-								<st:StackPanel MarginBetweenChildren="8" Margin="10">
-									<st:StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
+								<StackPanel Margin="10">
+									<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
 										<TextBlock Text="Plugin path    " VerticalAlignment="Center"/>
-										<hc:TextBox x:Name="PluginPath" hc:InfoElement.Placeholder="Select your .uplugin file" Margin="5" ToolTip="Navigate to your uplugin file." st:StackPanel.Fill="Fill"/>
+										<hc:TextBox x:Name="PluginPath" hc:InfoElement.Placeholder="Select your .uplugin file" Margin="5" ToolTip="Navigate to your uplugin file."/>
 										<Button x:Name="PluginPathBrowse" Content="Browse" VerticalAlignment="Center" Click="PluginPathBrowse_Click" />
-									</st:StackPanel>
+									</StackPanel>
 
-									<st:StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
+									<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
 										<TextBlock Text="Save Location" VerticalAlignment="Center"/>
-										<hc:TextBox x:Name="PluginDestinationPath" hc:InfoElement.Placeholder="Packaged plugin destination" Margin="5" ToolTip="Navigate to your uplugin file." st:StackPanel.Fill="Fill"/>
+										<hc:TextBox x:Name="PluginDestinationPath" hc:InfoElement.Placeholder="Packaged plugin destination" Margin="5" ToolTip="Navigate to your uplugin file."/>
 										<Button x:Name="PluginDestinationPathBrowse" Content="Browse" VerticalAlignment="Center" Click="PluginDestinationPathBrowse_Click" />
-									</st:StackPanel>
+									</StackPanel>
 
 									<Grid>
 										<GroupBox Style="{StaticResource GroupBoxOriginal}" IsEnabled="{Binding IsChecked, ElementName=bPluginOverrideTargetPlatforms}" HorizontalAlignment="Left" MaxWidth="400" Margin="0 25 0 0">
@@ -274,21 +281,21 @@
 										<CheckBox x:Name="bPluginOverrideTargetPlatforms" HorizontalAlignment="Left" Margin="10,15,0,0" VerticalAlignment="Top" Content="Override Target Platforms" />
 									</Grid>
 
-									<st:StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
-										<CheckBox x:Name="bUse2019Compiler" Content="Use 2019 Compiler" HorizontalAlignment="Left" st:StackPanel.Fill="Fill"/>
+									<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
+										<CheckBox x:Name="bUse2019Compiler" Content="Use 2019 Compiler" HorizontalAlignment="Left" />
 										<Button x:Name="PluginQueueBtn" Content="Queue Build" Style="{StaticResource ButtonDashedPrimary}" HorizontalAlignment="Right" Click="PluginQueueBtn_Click"/>
-									</st:StackPanel>
+									</StackPanel>
 
-									<st:StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
-										<st:StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" MarginBetweenChildren="5" Width="400">
+									<StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
+										<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
 											<CheckBox x:Name="PluginZip" Content="Zip Plugin" HorizontalAlignment="Left"/>
-											<hc:TextBox x:Name="PluginZipPath" hc:InfoElement.Placeholder="Plugin zip location" Margin="5" st:StackPanel.Fill="Fill" IsEnabled="{Binding IsChecked, ElementName=PluginZip}"/>
+											<hc:TextBox x:Name="PluginZipPath" hc:InfoElement.Placeholder="Plugin zip location" Margin="5"  IsEnabled="{Binding IsChecked, ElementName=PluginZip}"/>
 											<Button x:Name="PluginZipDestinationPathBrowse" Content="Browse" VerticalAlignment="Center" Click="PluginZipDestinationPathBrowse_Click" IsEnabled="{Binding IsChecked, ElementName=PluginZip}"/>
-										</st:StackPanel>
+										</StackPanel>
 										<CheckBox x:Name="PluginZipForMarketplace" Content="Zip for Marketplace" HorizontalAlignment="Left" IsChecked="True" IsEnabled="{Binding IsChecked, ElementName=PluginZip}" ToolTip="Zipping for Unreal Marketplace will ignore 'Binaries' and 'Intermediate' folders." />
-									</st:StackPanel>
+									</StackPanel>
 
-								</st:StackPanel>
+								</StackPanel>
 								<ScrollViewer HorizontalAlignment="Right" Width="850" Margin="0,-40,0,50" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" CanContentScroll="True">
 									<WrapPanel x:Name="PluginQueues" Orientation="Horizontal" Width="850"/>
 								</ScrollViewer>
@@ -306,14 +313,14 @@
 			</hc:TabControl>
 
 			<DockPanel LastChildFill="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Height="Auto" DockPanel.Dock="Bottom" Background="#FF2D2D30">
-				<st:StackPanel Orientation="Horizontal"  DockPanel.Dock="Bottom" HorizontalAlignment="Stretch">
+				<StackPanel Orientation="Horizontal"  DockPanel.Dock="Bottom" HorizontalAlignment="Stretch">
 					<hc:SimpleText x:Name="StepLabel" Text="Step: " Margin="5" Foreground="#FFE6E0E0"/>
 					<hc:SimpleText x:Name="StatusLabel" Text="Status: " Margin="5" Foreground="#FFE6E0E0"/>
-					<hc:SimpleText x:Name="ProcessedFilesLabel" Text="Compiled: 0" Margin="5" Foreground="#FFE6E0E0" st:StackPanel.Fill="Fill"/>
+					<hc:SimpleText x:Name="ProcessedFilesLabel" Text="Compiled: 0" Margin="5" Foreground="#FFE6E0E0"/>
 					<Button x:Name="CheckUpdateBtn" Content="Check for Updates" Height="20" Padding="10,0,10,0" FontSize="10" Width="120" Click="CheckUpdateBtn_Click" />
 					<Button x:Name="OpenSettingsBtn" Content="Open Settings" Height="20" Padding="10,0,10,0" FontSize="10" IsEnabled="False" Width="120" Click="OpenSettingsBtn_Click"/>
 					<Button x:Name="OpenLogFolderBtn" Content="Open Log Folder" Margin="0 0 10 0" Height="20" Padding="10,0,10,0" FontSize="10" IsEnabled="False" Width="120" Click="OpenLogFolderBtn_Click"/>
-				</st:StackPanel>
+				</StackPanel>
 				<local:LogViewer x:Name="LogControl" DockPanel.Dock="Top" Height="Auto" ScrollViewer.VerticalScrollBarVisibility="Disabled"/>
 			</DockPanel>
 		</DockPanel>

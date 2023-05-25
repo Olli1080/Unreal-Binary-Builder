@@ -9,8 +9,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -28,9 +30,11 @@ namespace UnrealBinaryBuilder
 		public static readonly string AUTOMATION_TOOL_NAME = "AutomationTool";
 		public static readonly string AUTOMATION_TOOL_LAUNCHER_NAME = $"{AUTOMATION_TOOL_NAME}Launcher";
 		public static readonly string DEFAULT_BUILD_XML_FILE = "Engine/Build/InstalledEngineBuild.xml";
-		public static bool IsUnrealEngine5 { get; private set; } = false;
+        public static bool IsUnrealEngine5 { get; private set; } = false;
+        public static VisualStudioConfigurations VisualStudioConfigurations = null;
 
-		private static string EngineVersionMajor, EngineVersionMinor, EngineVersionPatch = null;
+
+        private static string EngineVersionMajor, EngineVersionMinor, EngineVersionPatch = null;
 		public static string GetProductVersionString()
 		{
 			Version ProductVersion = Assembly.GetEntryAssembly().GetName().Version;
@@ -49,11 +53,18 @@ namespace UnrealBinaryBuilder
 			return ReturnValue;
 		}
 
+        public static VisualStudioConfigurations GetConfigurations()
+        {
+            return VisualStudioConfigurations = VisualStudioConfigurations ?? new ();
+        }
+
+        /*
 		public static string GetMsBuildPath()
 		{
 			string ProgramFilesx86Path = Environment.GetEnvironmentVariable("ProgramFiles(x86)");
 			return Path.Combine(ProgramFilesx86Path, "Microsoft Visual Studio", "2019", "Community", "MSBuild", "Current", "Bin", "MSBuild.exe");
 		}
+		*/
 
 		public static string GetEngineVersion(string BaseEnginePath)
 		{
@@ -176,15 +187,15 @@ namespace UnrealBinaryBuilder
 		public string CurrentTheme = null;
 		public PostBuildSettings postBuildSettings = null;
 
-		private readonly Stopwatch StopwatchTimer = new Stopwatch();
-		private readonly DispatcherTimer DispatchTimer = new DispatcherTimer();
+		private readonly Stopwatch StopwatchTimer = new();
+		private readonly DispatcherTimer DispatchTimer = new();
 
 		public BuilderSettingsJson SettingsJSON = null;
 
 		private string AutomationExePath = null;
 
 		private PluginCard CurrentPluginBeingBuilt = null;
-		private List<string> PluginBuildEnginePath = new List<string>();
+		private List<string> PluginBuildEnginePath = new();
 		private Dialog aboutDialog = null;
 		private Dialog downloadDialog = null;
 		private DownloadDialog downloadDialogWindow = null;
@@ -259,20 +270,20 @@ namespace UnrealBinaryBuilder
 			DispatchTimer.Interval = new TimeSpan(0, 0, 1);
 
 			CurrentTheme = SettingsJSON.Theme;
-			if (CurrentTheme.ToLower() == "violet")
-			{
-				ShowToastMessage("Violet theme is not fully supported yet.", LogViewer.EMessageType.Warning, true, false, "Important", 4);
-				UpdateSkin(SkinType.Violet);				
-			}
-			else if (CurrentTheme.ToLower() == "dark")
-			{
-				UpdateSkin(SkinType.Dark);
-			}
-			else
-			{
-				ShowToastMessage("Default theme is not fully supported yet.", LogViewer.EMessageType.Warning, true, false, "Important", 4);
-				UpdateSkin(SkinType.Default);
-			}
+			switch (CurrentTheme.ToLower())
+            {
+                case "violet":
+                    ShowToastMessage("Violet theme is not fully supported yet.", LogViewer.EMessageType.Warning, true, false, "Important", 4);
+                    UpdateSkin(SkinType.Violet);
+                    break;
+                case "dark":
+                    UpdateSkin(SkinType.Dark);
+                    break;
+                default:
+                    ShowToastMessage("Default theme is not fully supported yet.", LogViewer.EMessageType.Warning, true, false, "Important", 4);
+                    UpdateSkin(SkinType.Default);
+                    break;
+            }
 			ZipStatusLabel.Visibility = Visibility.Visible;
 			ZipStausStackPanel.Visibility = Visibility.Collapsed;
 
@@ -280,7 +291,7 @@ namespace UnrealBinaryBuilder
 			{
 				CheckForUpdates();
 			}
-		}
+        }
 
 		public static void OpenBrowser(string InURL)
 		{
@@ -310,14 +321,12 @@ namespace UnrealBinaryBuilder
 		}
 
 		public void CloseUpdateDialogWindow()
-		{
-			if (downloadDialog != null)
-			{
-				downloadDialog.Close();
-				downloadDialog = null;
-				downloadDialogWindow = null;
-			}
-		}
+        {
+            if (downloadDialog == null) return;
+            downloadDialog.Close();
+            downloadDialog = null;
+            downloadDialogWindow = null;
+        }
 
 		private void CheckForUpdates()
 		{
@@ -325,10 +334,7 @@ namespace UnrealBinaryBuilder
 			{
 				CheckUpdateBtn.IsEnabled = false;
 				CheckUpdateBtn.Content = "Checking...";
-				if (unrealBinaryBuilderUpdater == null)
-				{
-					unrealBinaryBuilderUpdater = new UBBUpdater();
-				}
+				unrealBinaryBuilderUpdater ??= new UBBUpdater();
 
 				GameAnalyticsCSharp.AddDesignEvent("Update:Check");
 				unrealBinaryBuilderUpdater.SilentUpdateFinishedEventHandler += OnUpdateCheck;
@@ -399,26 +405,24 @@ namespace UnrealBinaryBuilder
 				Directory.CreateDirectory(TargetDownloadDirectory);
 			}
 
-			using (Ionic.Zip.ZipFile zip = new Ionic.Zip.ZipFile(e.UpdateFilePath))
-			{
-				zip.ExtractProgress += (o, args) =>
-				{
-					if (args.EventType == Ionic.Zip.ZipProgressEventType.Extracting_AfterExtractAll)
-					{
-						GameAnalyticsCSharp.AddDesignEvent($"Update:Install:{downloadDialogWindow.VersionText}");
-						unrealBinaryBuilderUpdater.UpdateDownloadStartedEventHandler -= DownloadUpdateProgressStart;
-						unrealBinaryBuilderUpdater.UpdateDownloadFinishedEventHandler -= DownloadUpdateProgressFinish;
-						unrealBinaryBuilderUpdater.UpdateProgressEventHandler -= DownloadUpdateProgress;
-						unrealBinaryBuilderUpdater.CloseApplicationEventHandler += CloseApplication;
-						unrealBinaryBuilderUpdater.InstallUpdate();
-						Process.Start("explorer.exe", TargetDownloadDirectory);
-					}
-				};
-				zip.ExtractAll(TargetDownloadDirectory, Ionic.Zip.ExtractExistingFileAction.OverwriteSilently);
-			}
-		}
+#pragma warning disable 4014
+            Task.Run(() =>
+            {
+                ZipFile.ExtractToDirectory(e.UpdateFilePath, TargetDownloadDirectory, true);
+				
+                GameAnalyticsCSharp.AddDesignEvent($"Update:Install:{downloadDialogWindow.VersionText}");
+                unrealBinaryBuilderUpdater.UpdateDownloadStartedEventHandler -= DownloadUpdateProgressStart;
+                unrealBinaryBuilderUpdater.UpdateDownloadFinishedEventHandler -=
+                    DownloadUpdateProgressFinish;
+                unrealBinaryBuilderUpdater.UpdateProgressEventHandler -= DownloadUpdateProgress;
+                unrealBinaryBuilderUpdater.CloseApplicationEventHandler += CloseApplication;
+                unrealBinaryBuilderUpdater.InstallUpdate();
+                Process.Start("explorer.exe", TargetDownloadDirectory);
+            }).ConfigureAwait(false);
+#pragma warning restore 4014
+        }
 
-		private void CloseApplication(object sender, EventArgs e)
+        private void CloseApplication(object sender, EventArgs e)
 		{
 			downloadDialog.Close();
 			Close();
@@ -427,17 +431,17 @@ namespace UnrealBinaryBuilder
 		public void ShowToastMessage(string Message, LogViewer.EMessageType ToastType = LogViewer.EMessageType.Info, bool bShowCloseButton = true, bool bStaysOpen = false, string Token = "", int WaitTime = 3)
 		{
 			Growl.Clear(Token);
-			GrowlInfo growlInfo = new GrowlInfo()
+			GrowlInfo growlInfo = new()
 			{
 				ShowDateTime = false,
 				ShowCloseButton = bShowCloseButton,
 				StaysOpen = bStaysOpen,
 				Token = Token,
-				WaitTime = WaitTime
-			};
+				WaitTime = WaitTime,
+                Message = Message
+            };
 
-			growlInfo.Message = Message;
-			switch (ToastType)
+            switch (ToastType)
 			{
 				case LogViewer.EMessageType.Info:
 					Growl.Info(growlInfo);
@@ -468,77 +472,79 @@ namespace UnrealBinaryBuilder
 
 		private void DispatchTimer_Tick(object sender, EventArgs e)
 		{
-			ChangeStatusLabel(string.Format("Building... Time Elapsed: {0:hh\\:mm\\:ss}", StopwatchTimer.Elapsed));
+			ChangeStatusLabel($"Building... Time Elapsed: {StopwatchTimer.Elapsed:hh\\:mm\\:ss}");
 		}
 
 		public void AddZipLog(string InMessage, ZipLogInclusionType InType)
 		{
-			LogEntry logEntry = new LogEntry();
-			logEntry.Message = InMessage;
-			LogControl.AddZipLog(logEntry, InType);
+			LogEntry logEntry = new LogEntry
+            {
+                Message = InMessage
+            };
+            LogControl.AddZipLog(logEntry, InType);
 		}
 
 		public void AddLogEntry(string InMessage, bool bIsError = false)
-		{
-			if (InMessage != null)
-			{
-				LogEntry logEntry = new LogEntry();
-				logEntry.Message = InMessage;
+        {
+            if (InMessage == null) return;
+            LogEntry logEntry = new()
+            {
+                Message = InMessage
+            };
 
-				LogViewer.EMessageType InMessageType = bIsError ? LogViewer.EMessageType.Error : LogViewer.EMessageType.Info;
+            LogViewer.EMessageType InMessageType = bIsError ? LogViewer.EMessageType.Error : LogViewer.EMessageType.Info;
 
-				if (bIsError == false)
-				{
-					const string StepPattern = @"\*{6} \[(\d+)\/(\d+)\]";
-					const string WarningPattern = @"warning|\*\*\* Unable to determine ";
-					const string DebugPattern = @".+\*\s\D\d\D\d\D\s\w+|.+\*\sFor\sUE4";
-					const string ErrorPattern = @"Error_Unknown|ERROR|exited with code 1";
-					const string ProcessedFilesPattern = @"\w.+\.(cpp|cc|c|h|ispc)";
+            if (bIsError == false)
+            {
+                const string StepPattern = @"\*{6} \[(\d+)\/(\d+)\]";
+                const string WarningPattern = @"warning|\*\*\* Unable to determine ";
+                const string DebugPattern = @".+\*\s\D\d\D\d\D\s\w+|.+\*\sFor\sUE4";
+                const string ErrorPattern = @"Error_Unknown|ERROR|exited with code 1";
+                const string ProcessedFilesPattern = @"\w.+\.(cpp|cc|c|h|ispc)";
 
-					Regex StepRgx = new Regex(StepPattern, RegexOptions.IgnoreCase);
-					Regex WarningRgx = new Regex(WarningPattern, RegexOptions.IgnoreCase);
-					Regex DebugRgx = new Regex(DebugPattern, RegexOptions.IgnoreCase);
-					Regex ErrorRgx = new Regex(ErrorPattern, RegexOptions.IgnoreCase);
-					Regex ProcessedFilesRgx = new Regex(ProcessedFilesPattern, RegexOptions.IgnoreCase);
+                Regex StepRgx = new(StepPattern, RegexOptions.IgnoreCase);
+                Regex WarningRgx = new(WarningPattern, RegexOptions.IgnoreCase);
+                Regex DebugRgx = new(DebugPattern, RegexOptions.IgnoreCase);
+                Regex ErrorRgx = new(ErrorPattern, RegexOptions.IgnoreCase);
+                Regex ProcessedFilesRgx = new(ProcessedFilesPattern, RegexOptions.IgnoreCase);
 
-					if (StepRgx.IsMatch(InMessage))
-					{
-						GroupCollection captures = StepRgx.Match(InMessage).Groups;
-						ChangeStepLabel(captures[1].Value, captures[2].Value);
-						CompiledFiles = 0;
-					}
+                if (StepRgx.IsMatch(InMessage))
+                {
+                    GroupCollection captures = StepRgx.Match(InMessage).Groups;
+                    ChangeStepLabel(captures[1].Value, captures[2].Value);
+                    CompiledFiles = 0;
+                }
 
-					if (ProcessedFilesRgx.IsMatch(InMessage))
-					{
-						CompiledFiles++;
-						CompiledFilesTotal++;
-						Dispatcher.Invoke(() => 
-						{ 
-							ProcessedFilesLabel.Text = $"[Compiled: {CompiledFiles}. Total: {CompiledFilesTotal}]"; 
-						});
-					}
+                if (ProcessedFilesRgx.IsMatch(InMessage))
+                {
+                    CompiledFiles++;
+                    CompiledFilesTotal++;
+                    Dispatcher.Invoke(() => 
+                    { 
+                        ProcessedFilesLabel.Text = $"[Compiled: {CompiledFiles}. Total: {CompiledFilesTotal}]"; 
+                    });
+                }
 
-					if (WarningRgx.IsMatch(InMessage))
-					{
-						NumWarnings++;
-						InMessageType = LogViewer.EMessageType.Warning;
-					}
-					else if (ErrorRgx.IsMatch(InMessage) && InMessage.Contains("ShadowError") == false && InMessage.Contains("error_details.") == false && InMessage.Contains("error_code.") == false)
-					{
-						NumErrors++;
-						InMessageType = LogViewer.EMessageType.Error;
-						LogMessageErrors += InMessage + "\r\n";
-					}
-					else if (DebugRgx.IsMatch(InMessage))
-					{
-						InMessageType = LogViewer.EMessageType.Debug;
-					}
-				}
+                if (WarningRgx.IsMatch(InMessage))
+                {
+                    NumWarnings++;
+                    InMessageType = LogViewer.EMessageType.Warning;
+                }
+                else if (ErrorRgx.IsMatch(InMessage) && InMessage.Contains("ShadowError") == false && InMessage.Contains("error_details.") == false && InMessage.Contains("error_code.") == false)
+                {
+                    NumErrors++;
+                    InMessageType = LogViewer.EMessageType.Error;
+                    LogMessageErrors += InMessage + "\r\n";
+                }
+                else if (DebugRgx.IsMatch(InMessage))
+                {
+                    InMessageType = LogViewer.EMessageType.Debug;
+                }
+            }
 
-				LogControl.AddLogEntry(logEntry, InMessageType);
-				LogMessage += InMessage + "\r\n";
-			}
-		}
+            LogControl.AddLogEntry(logEntry, InMessageType);
+            LogMessage += InMessage + "\r\n";
+        }
 
 		private void Internal_ShutdownWindows()
 		{
@@ -594,7 +600,8 @@ namespace UnrealBinaryBuilder
 			Dispatcher.Invoke(() =>
 			{
 				BuildRocketUE.Content = "Build Unreal Engine";
-				ChangeStatusLabel(string.Format("Build finished with code {0}. {1} errors, {2} warnings. Time elapsed: {3:hh\\:mm\\:ss}", CurrentProcess.ExitCode, NumErrors, NumWarnings, StopwatchTimer.Elapsed));
+				ChangeStatusLabel(
+                    $"Build finished with code {CurrentProcess.ExitCode}. {NumErrors} errors, {NumWarnings} warnings. Time elapsed: {StopwatchTimer.Elapsed:hh\\:mm\\:ss}");
 			});
 
 			CloseCurrentProcess();
@@ -602,9 +609,9 @@ namespace UnrealBinaryBuilder
 			NumErrors = 0;
 			NumWarnings = 0;
 			AddLogEntry("========================== BUILD FINISHED ==========================");
-			AddLogEntry(string.Format("Compiled approximately {0} files.", CompiledFilesTotal));
-			AddLogEntry(string.Format("Took {0:hh\\:mm\\:ss}", StopwatchTimer.Elapsed));
-			AddLogEntry(string.Format("Build ended at {0}", DateTime.Now.ToString("dddd, dd MMMM yyyy HH:mm:ss")));
+			AddLogEntry($"Compiled approximately {CompiledFilesTotal} files.");
+			AddLogEntry($"Took {StopwatchTimer.Elapsed:hh\\:mm\\:ss}");
+			AddLogEntry($"Build ended at {DateTime.Now.ToString("dddd, dd MMMM yyyy HH:mm:ss")}");
 			StopwatchTimer.Reset();
 			Dispatcher.Invoke(() =>
 			{
@@ -696,31 +703,26 @@ namespace UnrealBinaryBuilder
 		}
 
 		public void TryShutdown()
-		{
-			if (currentProcessType == CurrentProcessType.BuildUnrealEngine)
-			{
-				if (bShutdownWindows.IsChecked == true)
-				{
-					if (bShutdownIfSuccess.IsChecked == true)
-					{
-						if (bLastBuildSuccess)
-						{
-							GameAnalyticsCSharp.AddDesignEvent("Shutdown:BuildState:Success");
-							Internal_ShutdownWindows();
-						}
-						else
-						{
-							GameAnalyticsCSharp.AddDesignEvent("Shutdown:BuildState:Failed");
-						}
-					}
-					else
-					{
-						GameAnalyticsCSharp.AddDesignEvent("Shutdown:Started");
-						Internal_ShutdownWindows();
-					}
-				}
-			}
-		}
+        {
+            if (currentProcessType != CurrentProcessType.BuildUnrealEngine || bShutdownWindows.IsChecked != true) return;
+            if (bShutdownIfSuccess.IsChecked == true)
+            {
+                if (bLastBuildSuccess)
+                {
+                    GameAnalyticsCSharp.AddDesignEvent("Shutdown:BuildState:Success");
+                    Internal_ShutdownWindows();
+                }
+                else
+                {
+                    GameAnalyticsCSharp.AddDesignEvent("Shutdown:BuildState:Failed");
+                }
+            }
+            else
+            {
+                GameAnalyticsCSharp.AddDesignEvent("Shutdown:Started");
+                Internal_ShutdownWindows();
+            }
+        }
 
 		private void BrowseEngineFolder_Click(object sender, RoutedEventArgs e)
 		{
@@ -801,42 +803,41 @@ namespace UnrealBinaryBuilder
 				return;
 			}
 
-			if (bIsBuilding == false)
-			{
-				if (bBuildSetupBatFile.IsChecked == true)
-				{
-					bIsBuilding = true;
-					string Commandline = SetupBatCommandLineArgs();
-					ProcessStartInfo processStartInfo = new ProcessStartInfo
-					{
-						FileName = Path.Combine(SetupBatFilePath.Text, UnrealBinaryBuilderHelpers.SetupBatFileName),
-						Arguments = Commandline,
-						UseShellExecute = false,
-						CreateNoWindow = true,
-						RedirectStandardError = true,
-						RedirectStandardOutput = true
-					};
+            if (bIsBuilding) return;
 
-					currentProcessType = CurrentProcessType.SetupBat;
-					CreateProcess(processStartInfo);
-					AddLogEntry($"Commandline: {Commandline}");
-					ChangeStatusLabel("Building...");
-					GameAnalyticsCSharp.AddProgressStart("Build", "Setup");
-				}
-				else if (bGenerateProjectFiles.IsChecked == true)
-				{
-					GenerateProjectFiles();
-				}
-				else if (bBuildAutomationTool.IsChecked == true)
-				{
-					BuildAutomationTool();
-				}
-				else
-				{
-					BuildEngine();
-				}
-			}
-		}
+            if (bBuildSetupBatFile.IsChecked == true)
+            {
+                bIsBuilding = true;
+                string Commandline = SetupBatCommandLineArgs();
+                ProcessStartInfo processStartInfo = new ProcessStartInfo
+                {
+                    FileName = Path.Combine(SetupBatFilePath.Text, UnrealBinaryBuilderHelpers.SetupBatFileName),
+                    Arguments = Commandline,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
+
+                currentProcessType = CurrentProcessType.SetupBat;
+                CreateProcess(processStartInfo);
+                AddLogEntry($"Commandline: {Commandline}");
+                ChangeStatusLabel("Building...");
+                GameAnalyticsCSharp.AddProgressStart("Build", "Setup");
+            }
+            else if (bGenerateProjectFiles.IsChecked == true)
+            {
+                GenerateProjectFiles();
+            }
+            else if (bBuildAutomationTool.IsChecked == true)
+            {
+                BuildAutomationTool();
+            }
+            else
+            {
+                BuildEngine();
+            }
+        }
 
 		private void CreateProcess(ProcessStartInfo processStartInfo, bool bClearLogs = true)
 		{
@@ -875,31 +876,24 @@ namespace UnrealBinaryBuilder
 		}
 
 		private void CloseCurrentProcess(bool bKillProcess = false)
-		{
-			if (CurrentProcess != null)
-			{
-				if (bKillProcess)
-				{
-					CurrentProcess.Kill(true);
-				}
-				else
-				{
-					CurrentProcess.Close();
-					CurrentProcess.Dispose();
-					CurrentProcess = null;
-				}
-			}
-		}
+        {
+            if (CurrentProcess == null) return;
+            if (bKillProcess)
+            {
+                CurrentProcess.Kill(true);
+            }
+            else
+            {
+                CurrentProcess.Close();
+                CurrentProcess.Dispose();
+                CurrentProcess = null;
+            }
+        }
 
 		private string GetCurrentProcessName()
-		{
-			if (CurrentProcess != null)
-			{
-				return CurrentProcess.ProcessName;
-			}
-
-			return null;
-		}
+        {
+            return CurrentProcess?.ProcessName;
+        }
 
 		private void WriteToLogFile()
 		{
@@ -953,7 +947,7 @@ namespace UnrealBinaryBuilder
 
 			if (BuildXMLFile != UnrealBinaryBuilderHelpers.DEFAULT_BUILD_XML_FILE)
 			{
-				BuildXMLFile = string.Format("\"{0}\"", CustomBuildXMLFile.Text);
+				BuildXMLFile = $"\"{CustomBuildXMLFile.Text}\"";
 			}
 
 			if (GameConfigurations.Text == "")
@@ -962,15 +956,8 @@ namespace UnrealBinaryBuilder
 				GameAnalyticsCSharp.AddDesignEvent("CommandLine:GameConfiguration:Reset");
 			}
 
-			string CommandLineArgs = string.Format("BuildGraph -target=\"Make Installed Build Win64\" -script={0} -set:WithDDC={1} -set:SignExecutables={2} -set:EmbedSrcSrvInfo={3} -set:GameConfigurations={4} -set:WithFullDebugInfo={5} -set:HostPlatformEditorOnly={6} -set:AnalyticsTypeOverride={7}",
-					BuildXMLFile,
-					GetConditionalString(bWithDDC.IsChecked),
-					GetConditionalString(bSignExecutables.IsChecked),
-					GetConditionalString(bEnableSymStore.IsChecked),
-					GameConfigurations.Text,
-					GetConditionalString(bWithFullDebugInfo.IsChecked),
-					GetConditionalString(bHostPlatformEditorOnly.IsChecked),
-					AnalyticsOverride.Text);
+			string CommandLineArgs =
+                $"BuildGraph -target=\"Make Installed Build Win64\" -script={BuildXMLFile} -set:WithDDC={GetConditionalString(bWithDDC.IsChecked)} -set:SignExecutables={GetConditionalString(bSignExecutables.IsChecked)} -set:EmbedSrcSrvInfo={GetConditionalString(bEnableSymStore.IsChecked)} -set:GameConfigurations={GameConfigurations.Text} -set:WithFullDebugInfo={GetConditionalString(bWithFullDebugInfo.IsChecked)} -set:HostPlatformEditorOnly={GetConditionalString(bHostPlatformEditorOnly.IsChecked)} -set:AnalyticsTypeOverride={AnalyticsOverride.Text}";
 
 			if (bWithDDC.IsChecked == true && bHostPlatformDDCOnly.IsChecked == true)
 			{
@@ -986,63 +973,55 @@ namespace UnrealBinaryBuilder
 			{
 				if (SupportWin32)
 				{
-					CommandLineArgs += string.Format(" -set:WithWin32={0}", GetConditionalString(bWithWin32.IsChecked));
+					CommandLineArgs += $" -set:WithWin32={GetConditionalString(bWithWin32.IsChecked)}";
 				}
 
-				CommandLineArgs += string.Format(" -set:WithWin64={0} -set:WithMac={1} -set:WithAndroid={2} -set:WithIOS={3} -set:WithTVOS={4} -set:WithLinux={5} -set:WithLumin={6}",
-						GetConditionalString(bWithWin64.IsChecked),
-						GetConditionalString(bWithMac.IsChecked),
-						GetConditionalString(bWithAndroid.IsChecked),
-						GetConditionalString(bWithIOS.IsChecked),
-						GetConditionalString(bWithTVOS.IsChecked),
-						GetConditionalString(bWithLinux.IsChecked),
-						GetConditionalString(bWithLumin.IsChecked));
+				CommandLineArgs +=
+                    $" -set:WithWin64={GetConditionalString(bWithWin64.IsChecked)} -set:WithMac={GetConditionalString(bWithMac.IsChecked)} -set:WithAndroid={GetConditionalString(bWithAndroid.IsChecked)} -set:WithIOS={GetConditionalString(bWithIOS.IsChecked)} -set:WithTVOS={GetConditionalString(bWithTVOS.IsChecked)} -set:WithLinux={GetConditionalString(bWithLinux.IsChecked)} -set:WithLumin={GetConditionalString(bWithLumin.IsChecked)}";
 
 				if (SupportHTML5)
 				{
-					CommandLineArgs += string.Format(" -set:WithHTML5={0}",
-					GetConditionalString(bWithHTML5.IsChecked));
+					CommandLineArgs += $" -set:WithHTML5={GetConditionalString(bWithHTML5.IsChecked)}";
 				}
 
 				if (SupportConsoles)
 				{
-					CommandLineArgs += string.Format(" -set:WithSwitch={0} -set:WithPS4={1} -set:WithXboxOne={2}",
-					GetConditionalString(bWithSwitch.IsChecked),
-					GetConditionalString(bWithPS4.IsChecked),
-					GetConditionalString(bWithXboxOne.IsChecked));
+					CommandLineArgs +=
+                        $" -set:WithSwitch={GetConditionalString(bWithSwitch.IsChecked)} -set:WithPS4={GetConditionalString(bWithPS4.IsChecked)} -set:WithXboxOne={GetConditionalString(bWithXboxOne.IsChecked)}";
 				}
 
 				if (SupportLinuxArm64)
 				{
-					CommandLineArgs += string.Format(" -set:WithLinuxArm64={0}", GetConditionalString(bWithLinuxAArch64.IsChecked));
+					CommandLineArgs += $" -set:WithLinuxArm64={GetConditionalString(bWithLinuxAArch64.IsChecked)}";
 				}
 				else if (SupportLinuxAArch64)
 				{
-					CommandLineArgs += string.Format(" -set:WithLinuxAArch64={0}", GetConditionalString(bWithLinuxAArch64.IsChecked));
+					CommandLineArgs += $" -set:WithLinuxAArch64={GetConditionalString(bWithLinuxAArch64.IsChecked)}";
 				}
 			}
 
 			if (IsEngineSelection425OrAbove)
 			{
-				CommandLineArgs += string.Format(" -set:CompileDatasmithPlugins={0}", GetConditionalString(bCompileDatasmithPlugins.IsChecked));
+				CommandLineArgs +=
+                    $" -set:CompileDatasmithPlugins={GetConditionalString(bCompileDatasmithPlugins.IsChecked)}";
 			}
 
+
+			/*
 			if (SupportVisualStudio2019)
 			{
-				CommandLineArgs += string.Format(" -set:VS2019={0}", GetConditionalString(bVS2019.IsChecked));
+				CommandLineArgs += $" -set:VS2019={GetConditionalString(bVS2019.IsChecked)}";
 			}
-
+			*/
 			if (SupportServerClientTargets)
 			{
-				CommandLineArgs += string.Format(" -set:WithServer={0} -set:WithClient={1} -set:WithHoloLens={2}",
-					GetConditionalString(bWithServer.IsChecked),
-					GetConditionalString(bWithClient.IsChecked),
-					GetConditionalString(bWithHololens.IsChecked));
+				CommandLineArgs +=
+                    $" -set:WithServer={GetConditionalString(bWithServer.IsChecked)} -set:WithClient={GetConditionalString(bWithClient.IsChecked)} -set:WithHoloLens={GetConditionalString(bWithHololens.IsChecked)}";
 			}
 
 			if (BuildXMLFile != UnrealBinaryBuilderHelpers.DEFAULT_BUILD_XML_FILE && CustomOptions.Text != string.Empty)
 			{
-				CommandLineArgs += string.Format(" {0}", CustomOptions.Text);
+				CommandLineArgs += $" {CustomOptions.Text}";
 				AddLogEntry("Using custom options...");
 				GameAnalyticsCSharp.AddDesignEvent("CommandLine:UsingCustomOptions");
 			}
@@ -1136,7 +1115,8 @@ namespace UnrealBinaryBuilder
 			if (postBuildSettings.ShouldSaveToZip() && postBuildSettings.DirectoryIsWritable(Path.GetDirectoryName(ZipPath.Text)) == false)
 			{
 				GameAnalyticsCSharp.AddDesignEvent("Build:ZipEnabled:InvalidSetting");
-				HandyControl.Controls.MessageBox.Error(string.Format("You chose to save Engine build as a zip file but below directory is either not available or not writable.\n\n{0}", ZipPath.Text), "Error");
+				HandyControl.Controls.MessageBox.Error(
+                    $"You chose to save Engine build as a zip file but below directory is either not available or not writable.\n\n{ZipPath.Text}", "Error");
 				return;
 			}
 
@@ -1150,7 +1130,7 @@ namespace UnrealBinaryBuilder
 				{
 					GameAnalyticsCSharp.LogEvent("BuildXML does not exist.", GameAnalyticsSDK.Net.EGAErrorSeverity.Error);
 					ChangeStatusLabel("Error. Build xml does not exist.");
-					HandyControl.Controls.MessageBox.Error(string.Format("Build XML {0} does not exist!", CustomBuildXMLFile.Text), "Error");
+					HandyControl.Controls.MessageBox.Error($"Build XML {CustomBuildXMLFile.Text} does not exist!", "Error");
 					return;
 				}
 			}
@@ -1260,20 +1240,15 @@ namespace UnrealBinaryBuilder
 		private double GetEngineValue()
 		{
 			string MyEngineName = GetEngineName();
-			if (MyEngineName != null)
-			{
-				int pos = MyEngineName.LastIndexOf(".");
-				if (pos > 0)
-				{
-					string sub = MyEngineName.Substring(pos).Replace(".", "");
-					string RemovedName = MyEngineName.Remove(pos);
-					double EngineValue = Convert.ToDouble(RemovedName.Insert(pos, sub));
-					return EngineValue;
-				}
-			}
+            if (MyEngineName == null) return 0;
 
-			return 0;
-		}
+            int pos = MyEngineName.LastIndexOf(".");
+            if (pos <= 0) return 0;
+
+            string sub = MyEngineName.Substring(pos).Replace(".", "");
+            string RemovedName = MyEngineName.Remove(pos);
+            return Convert.ToDouble(RemovedName.Insert(pos, sub)); //EngineValue
+        }
 
 		private void CopyCommandLine_Click(object sender, RoutedEventArgs e)
 		{
@@ -1299,193 +1274,179 @@ namespace UnrealBinaryBuilder
 		}
 
 		private void GenerateProjectFiles()
-		{
-			if (bIsBuilding == false)
-			{
-				bIsBuilding = true;
-				BuildRocketUE.IsEnabled = false;
-				ProcessStartInfo processStartInfo = new ProcessStartInfo
-				{
-					FileName = Path.Combine(SetupBatFilePath.Text, UnrealBinaryBuilderHelpers.GenerateProjectBatFileName),
-					UseShellExecute = false,
-					CreateNoWindow = true,
-					RedirectStandardError = true,
-					RedirectStandardOutput = true
-				};
+        {
+            if (bIsBuilding) return;
 
-				currentProcessType = CurrentProcessType.GenerateProjectFiles;
-				CreateProcess(processStartInfo, false);
-				ChangeStatusLabel("Building...");
-				GameAnalyticsCSharp.AddProgressStart("Build", "ProjectFiles");
-			}
-		}
+            bIsBuilding = true;
+            BuildRocketUE.IsEnabled = false;
+            ProcessStartInfo processStartInfo = new ProcessStartInfo
+            {
+                FileName = Path.Combine(SetupBatFilePath.Text, UnrealBinaryBuilderHelpers.GenerateProjectBatFileName),
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+            };
+
+            currentProcessType = CurrentProcessType.GenerateProjectFiles;
+            CreateProcess(processStartInfo, false);
+            ChangeStatusLabel("Building...");
+            GameAnalyticsCSharp.AddProgressStart("Build", "ProjectFiles");
+        }
 
 		private bool? BuildAutomationTool()
 		{
-			if (UnrealBinaryBuilderHelpers.IsUnrealEngine5)
-			{
-				if (bIsBuilding == false)
-				{
-					if (string.IsNullOrEmpty(AutomationExePath))
-					{
-						if (TryUpdateAutomationExePath() == false)
-						{
-							AddLogEntry($"Failed to build {UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_NAME}. AutomationExePath was null.", true);
-							return null;
-						}
-					}
+            if (!UnrealBinaryBuilderHelpers.IsUnrealEngine5) return BuildAutomationToolLauncher();
 
-					bIsBuilding = true;
-					BuildRocketUE.IsEnabled = false;
-					currentProcessType = CurrentProcessType.BuildAutomationTool;
-					if (UnrealBinaryBuilderHelpers.AutomationToolExists(SetupBatFilePath.Text) == true)
-					{
-						AddLogEntry($"Skip building ${UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_NAME}. Already exists.");
-						OnBuildFinished(true);
-						return false;
-					}
+            if (bIsBuilding) return false;
 
-					string MsBuildFile = UnrealBinaryBuilderHelpers.GetMsBuildPath();
-					if (File.Exists(MsBuildFile))
-					{
-						ProcessStartInfo processStartInfo = new ProcessStartInfo
-						{
-							FileName = MsBuildFile,
-							Arguments = $"/restore /verbosity:minimal {UnrealBinaryBuilderHelpers.GetAutomationToolProjectFile(SetupBatFilePath.Text)}",
-							UseShellExecute = false,
-							CreateNoWindow = true,
-							RedirectStandardError = true,
-							RedirectStandardOutput = true
-						};
+            if (string.IsNullOrEmpty(AutomationExePath) && !TryUpdateAutomationExePath())
+            {
+                AddLogEntry($"Failed to build {UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_NAME}. AutomationExePath was null.", true);
+                return null;
+            }
 
-						CreateProcess(processStartInfo, false);
-						ChangeStatusLabel("Building...");
-						GameAnalyticsCSharp.AddProgressStart("Build", UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_NAME);
-						return true;
-					}
-					else
-					{
-						AddLogEntry($"Unable to build {UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_NAME}. MsBuild not found in {MsBuildFile}", true);
-					}
-				}
+            bIsBuilding = true;
+            BuildRocketUE.IsEnabled = false;
+            currentProcessType = CurrentProcessType.BuildAutomationTool;
+            if (UnrealBinaryBuilderHelpers.AutomationToolExists(SetupBatFilePath.Text) == true)
+            {
+                AddLogEntry($"Skip building ${UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_NAME}. Already exists.");
+                OnBuildFinished(true);
+                return false;
+            }
+			/*TODO
+            string MsBuildFile = UnrealBinaryBuilderHelpers.GetMsBuildPath();
+            if (File.Exists(MsBuildFile))
+            {
+                ProcessStartInfo processStartInfo = new ProcessStartInfo
+                {
+                    FileName = MsBuildFile,
+                    Arguments = $"/restore /verbosity:minimal {UnrealBinaryBuilderHelpers.GetAutomationToolProjectFile(SetupBatFilePath.Text)}",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
 
-				return false;
-			}
+                CreateProcess(processStartInfo, false);
+                ChangeStatusLabel("Building...");
+                GameAnalyticsCSharp.AddProgressStart("Build", UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_NAME);
+                return true;
+            }
+            else
+            {
+                AddLogEntry($"Unable to build {UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_NAME}. MsBuild not found in {MsBuildFile}", true);
+            }
+			*/
+            return false;
 
-			return BuildAutomationToolLauncher();
-		}
+        }
 		private bool? BuildAutomationToolLauncher()
 		{
-			if (bIsBuilding == false)
-			{
-				if (string.IsNullOrEmpty(AutomationExePath))
-				{
-					if (TryUpdateAutomationExePath() == false)
-					{
-						AddLogEntry($"Failed to build {UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME}. AutomationExePath was null.", true);
-						return null;
-					}
-				}
+            if (bIsBuilding) return null;
 
-				bIsBuilding = true;
-				BuildRocketUE.IsEnabled = false;
-				currentProcessType = CurrentProcessType.BuildAutomationToolLauncher;
-				if (File.Exists(AutomationExePath))
-				{
-					AddLogEntry($"Skip building ${UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME}. Already exists.");
-					OnBuildFinished(true);
-					return false;
-				}
+            if (string.IsNullOrEmpty(AutomationExePath) && !TryUpdateAutomationExePath())
+            {
+                AddLogEntry($"Failed to build {UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME}. AutomationExePath was null.", true);
+                return null;
+            }
 
-				if (UnrealBinaryBuilderHelpers.IsUnrealEngine5)
-				{
-					string MsBuildFile = UnrealBinaryBuilderHelpers.GetMsBuildPath();
-					if (File.Exists(MsBuildFile))
-					{
-						ProcessStartInfo processStartInfo = new ProcessStartInfo
-						{
-							FileName = MsBuildFile,
-							Arguments = UnrealBinaryBuilderHelpers.GetAutomationToolLauncherProjectFile(SetupBatFilePath.Text),
-							UseShellExecute = false,
-							CreateNoWindow = true,
-							RedirectStandardError = true,
-							RedirectStandardOutput = true
-						};
+            bIsBuilding = true;
+            BuildRocketUE.IsEnabled = false;
+            currentProcessType = CurrentProcessType.BuildAutomationToolLauncher;
+            if (File.Exists(AutomationExePath))
+            {
+                AddLogEntry($"Skip building ${UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME}. Already exists.");
+                OnBuildFinished(true);
+                return false;
+            }
 
-						CreateProcess(processStartInfo, false);
-						ChangeStatusLabel("Building...");
-						GameAnalyticsCSharp.AddProgressStart("Build", UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME);
-						return true;
-					}
-					else
-					{
-						AddLogEntry($"Unable to build ${UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME}. MsBuild not found in {MsBuildFile}", true);
-					}
-				}
-				else
-				{
-					string RunUATFile = Path.Combine(SetupBatFilePath.Text, "Engine", "Build", "BatchFiles", "RunUAT.bat");
-					if (File.Exists(RunUATFile))
-					{
-						ProcessStartInfo processStartInfo = new ProcessStartInfo
-						{
-							FileName = RunUATFile,
-							Arguments = "-compileonly",
-							UseShellExecute = false,
-							CreateNoWindow = true,
-							RedirectStandardError = true,
-							RedirectStandardOutput = true
-						};
+            if (UnrealBinaryBuilderHelpers.IsUnrealEngine5)
+            {
+                return false; //TODO
+                /*
+                string MsBuildFile = UnrealBinaryBuilderHelpers.GetMsBuildPath();
+                if (File.Exists(MsBuildFile))
+                {
+                    ProcessStartInfo processStartInfo = new ProcessStartInfo
+                    {
+                        FileName = MsBuildFile,
+                        Arguments = UnrealBinaryBuilderHelpers.GetAutomationToolLauncherProjectFile(SetupBatFilePath.Text),
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardError = true,
+                        RedirectStandardOutput = true
+                    };
 
-						CreateProcess(processStartInfo, false);
-						ChangeStatusLabel("Building...");
-						GameAnalyticsCSharp.AddProgressStart("Build", UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME);
-						return true;
-					}
-				}
-			}
+                    CreateProcess(processStartInfo, false);
+                    ChangeStatusLabel("Building...");
+                    GameAnalyticsCSharp.AddProgressStart("Build", UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME);
+                    return true;
+                }
+                else
+                {
+                    AddLogEntry($"Unable to build ${UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME}. MsBuild not found in {MsBuildFile}", true);
+                }*/
+            }
+            else
+            {
+                string RunUATFile = Path.Combine(SetupBatFilePath.Text, "Engine", "Build", "BatchFiles", "RunUAT.bat");
+                if (File.Exists(RunUATFile))
+                {
+                    ProcessStartInfo processStartInfo = new ProcessStartInfo
+                    {
+                        FileName = RunUATFile,
+                        Arguments = "-compileonly",
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardError = true,
+                        RedirectStandardOutput = true
+                    };
 
-			return null;
+                    CreateProcess(processStartInfo, false);
+                    ChangeStatusLabel("Building...");
+                    GameAnalyticsCSharp.AddProgressStart("Build", UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME);
+                    return true;
+                }
+            }
+
+            return null;
 		}
 
 		private string BuildPlugin(PluginCard pluginCard)
 		{
-			if (bIsBuilding == false)
-			{
-				if (pluginCard.IsValid())
-				{
-					CurrentPluginBeingBuilt = pluginCard;
-					bIsBuilding = true;
-					BuildRocketUE.IsEnabled = false;
-					StartPluginBuildsBtn.IsEnabled = false;
-					currentProcessType = CurrentProcessType.BuildPlugin;
-					AddLogEntry($"========================== BUILDING PLUGIN {Path.GetFileNameWithoutExtension(pluginCard.PluginPath).ToUpper()} ==========================");
-					AddLogEntry($"Plugin: {pluginCard.PluginPath}");
-					AddLogEntry($"Package Location: {pluginCard.DestinationPath}");
-					AddLogEntry($"Target Engine: {pluginCard.EngineVersionText.Text}");
-					ProcessStartInfo processStartInfo = new ProcessStartInfo
-					{
-						FileName = pluginCard.RunUATFile,
-						Arguments = $"BuildPlugin -Plugin=\"{pluginCard.PluginPath}\" -Package=\"{pluginCard.DestinationPath}\" -Rocket {pluginCard.GetCompiler()} {pluginCard.GetTargetPlatforms()}",
-						UseShellExecute = false,
-						CreateNoWindow = true,
-						RedirectStandardError = true,
-						RedirectStandardOutput = true
-					};
+            if (bIsBuilding) return "Cannot build plugin while task is running";
 
-					pluginCard.BuildStarted();
-					CreateProcess(processStartInfo, false);
-					ChangeStatusLabel($"Building Plugin - {Path.GetFileNameWithoutExtension(pluginCard.PluginPath)}");
-					ShowToastMessage($"Building Plugin - {Path.GetFileNameWithoutExtension(pluginCard.PluginPath)}", LogViewer.EMessageType.Info, false, true, "PluginBuild");
-					GameAnalyticsCSharp.AddProgressStart("Build", "Plugin");					
-					return null;
-				}
+            if (!pluginCard.IsValid())
+                return $"{pluginCard.PluginName.Text} ({pluginCard.EngineVersionText.Text}) is already compiled.";
 
-				return $"{pluginCard.PluginName.Text} ({pluginCard.EngineVersionText.Text}) is already compiled.";
-			}
+            CurrentPluginBeingBuilt = pluginCard;
+            bIsBuilding = true;
+            BuildRocketUE.IsEnabled = false;
+            StartPluginBuildsBtn.IsEnabled = false;
+            currentProcessType = CurrentProcessType.BuildPlugin;
+            AddLogEntry($"========================== BUILDING PLUGIN {Path.GetFileNameWithoutExtension(pluginCard.PluginPath).ToUpper()} ==========================");
+            AddLogEntry($"Plugin: {pluginCard.PluginPath}");
+            AddLogEntry($"Package Location: {pluginCard.DestinationPath}");
+            AddLogEntry($"Target Engine: {pluginCard.EngineVersionText.Text}");
+            ProcessStartInfo processStartInfo = new ProcessStartInfo
+            {
+                FileName = pluginCard.RunUATFile,
+                Arguments = $"BuildPlugin -Plugin=\"{pluginCard.PluginPath}\" -Package=\"{pluginCard.DestinationPath}\" -Rocket {pluginCard.GetCompiler()} {pluginCard.GetTargetPlatforms()}",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true
+            };
 
-			return "Cannot build plugin while task is running";
-		}
+            pluginCard.BuildStarted();
+            CreateProcess(processStartInfo, false);
+            ChangeStatusLabel($"Building Plugin - {Path.GetFileNameWithoutExtension(pluginCard.PluginPath)}");
+            ShowToastMessage($"Building Plugin - {Path.GetFileNameWithoutExtension(pluginCard.PluginPath)}", LogViewer.EMessageType.Info, false, true, "PluginBuild");
+            GameAnalyticsCSharp.AddProgressStart("Build", "Plugin");					
+            return null;
+        }
 
 		private void CancelZipping_Click(object sender, RoutedEventArgs e)
 		{
@@ -1585,8 +1546,7 @@ namespace UnrealBinaryBuilder
 						}
 					}
 				}
-
-			}
+            }
 
 			if (File.Exists(PluginPath.Text) && Directory.Exists(PluginDestinationPath.Text))
 			{
@@ -1623,22 +1583,20 @@ namespace UnrealBinaryBuilder
 				foreach (var C in PluginQueues.Children)
 				{
 					PluginCard pluginCard = (PluginCard)C;
-					if (pluginCard.IsPending())
-					{
-						AddLogEntry($"Building {PluginQueues.Children.Count} Plugin(s).");
-						AddLogEntry("");
-						ShowToastMessage($"Building {PluginQueues.Children.Count} Plugin(s).");
-						PluginBuildMessage = BuildPlugin(pluginCard);
-						break;
-					}
-				}
+                    if (!pluginCard.IsPending()) continue;
 
-				if (PluginBuildMessage != null)
-				{
-					Growl.Clear();
-					HandyControl.Controls.MessageBox.Fatal(PluginBuildMessage);
-				}
-			}
+                    AddLogEntry($"Building {PluginQueues.Children.Count} Plugin(s).");
+                    AddLogEntry("");
+                    ShowToastMessage($"Building {PluginQueues.Children.Count} Plugin(s).");
+                    PluginBuildMessage = BuildPlugin(pluginCard);
+                    break;
+                }
+
+                if (PluginBuildMessage == null) return;
+
+                Growl.Clear();
+                HandyControl.Controls.MessageBox.Fatal(PluginBuildMessage);
+            }
 		}
 
 		private void PluginEngineVersionSelection_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1743,9 +1701,11 @@ namespace UnrealBinaryBuilder
 				return;
 			}
 
-			CodeEditor CE = new CodeEditor();
-			CE.Owner = this;
-			CE.Show();
+			CodeEditor CE = new()
+            {
+                Owner = this
+            };
+            CE.Show();
 			bool bLoaded = CE.LoadFile(FilePath);
 			if (bLoaded == false)
 			{
@@ -1775,35 +1735,34 @@ namespace UnrealBinaryBuilder
 		}
 
 		private void SetupBatFilePath_TextChanged(object sender, TextChangedEventArgs e)
-		{
-			if (string.IsNullOrWhiteSpace(SetupBatFilePath.Text) == false)
-			{
-				string EngineVersion = UnrealBinaryBuilderHelpers.DetectEngineVersion(SetupBatFilePath.Text, true);
-				if (EngineVersion != null)
-				{
-					FoundEngineLabel.Content = $"Selected Unreal Engine {EngineVersion}";
-					if (Git.CommitHashShort != null)
-					{
-						FoundEngineLabel.Content = $"Selected Unreal Engine {EngineVersion}. Commit - {Git.CommitHashShort}";
-					}
-				}
-				else
-				{
-					FoundEngineLabel.Content = "Unable to detect Engine version.";
-				}
+        {
+            if (string.IsNullOrWhiteSpace(SetupBatFilePath.Text)) return;
 
-				AutomationExePath = null;
-				TryUpdateAutomationExePath();
+            string EngineVersion = UnrealBinaryBuilderHelpers.DetectEngineVersion(SetupBatFilePath.Text, true);
+            if (EngineVersion != null)
+            {
+                FoundEngineLabel.Content = $"Selected Unreal Engine {EngineVersion}";
+                if (Git.CommitHashShort != null)
+                {
+                    FoundEngineLabel.Content = $"Selected Unreal Engine {EngineVersion}. Commit - {Git.CommitHashShort}";
+                }
+            }
+            else
+            {
+                FoundEngineLabel.Content = "Unable to detect Engine version.";
+            }
 
-				System.Collections.ObjectModel.Collection<BindingExpressionBase> bindExps = CompileMainGrid.BindingGroup.BindingExpressions;
-				foreach (BindingExpression bExp in bindExps)
-				{
-					if (bExp.BindingGroup.Name == "EngineChanged")
-					{
-						bExp.UpdateTarget();
-					}
-				}
-			}
-		}
+            AutomationExePath = null;
+            TryUpdateAutomationExePath();
+
+            System.Collections.ObjectModel.Collection<BindingExpressionBase> bindExps = CompileMainGrid.BindingGroup.BindingExpressions;
+            foreach (BindingExpression bExp in bindExps)
+            {
+                if (bExp.BindingGroup.Name == "EngineChanged")
+                {
+                    bExp.UpdateTarget();
+                }
+            }
+        }
 	}
 }

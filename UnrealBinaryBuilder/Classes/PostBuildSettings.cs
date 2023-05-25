@@ -1,13 +1,13 @@
-﻿using Ionic.Zip;
-using Ionic.Zlib;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using UnrealBinaryBuilder.UserControls;
 
 namespace UnrealBinaryBuilder.Classes
@@ -81,69 +81,84 @@ namespace UnrealBinaryBuilder.Classes
 				GameAnalyticsCSharp.AddProgressStart("PluginZip", "Progress");
 			});
 
-			CompressionLevel CL = CompressionLevel.BestSpeed;
-			ZippingTask = Task.Run(() =>
+			CompressionLevel CL = (bool)mainWindow.bFastCompression.IsChecked ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
+            await Task.Run(() =>
 			{
-				using (var zipFile = new ZipFile { CompressionLevel = CL })
-				{
-					IEnumerable<string> files = Directory.EnumerateFiles(pluginCard.DestinationPath, "*.*", SearchOption.AllDirectories);
-					List<string> filesToAdd = new List<string>();
+                using FileStream output = new FileStream(ZipLocationToSave, FileMode.CreateNew);
+                using var zipFile = new ZipArchive(output, ZipArchiveMode.Create);
+                {
+                    IEnumerable<string> files = Directory.EnumerateFiles(pluginCard.DestinationPath, "*.*",
+                        SearchOption.AllDirectories);
+                    List<string> filesToAdd = new List<string>();
 
-					foreach (string file in files)
-					{
-						bool bSkipFile = false;
-						Application.Current.Dispatcher.Invoke(() =>
-						{
-							string CurrentFilePath = Path.GetFullPath(file).ToLower();
-							if (bZipForMarketplace && (CurrentFilePath.Contains(@"\binaries\") || CurrentFilePath.Contains(@"\intermediate\")))
-							{
-								bSkipFile = true;
-							}
+                    foreach (string file in files)
+                    {
+                        bool bSkipFile = false;
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            string CurrentFilePath = Path.GetFullPath(file).ToLower();
+                            if (bZipForMarketplace && (CurrentFilePath.Contains(@"\binaries\") ||
+                                                       CurrentFilePath.Contains(@"\intermediate\")))
+                            {
+                                bSkipFile = true;
+                            }
 
-							if (bSkipFile == false)
-							{
-								filesToAdd.Add(file);
-							}
-						});
-					}
-					Application.Current.Dispatcher.Invoke(() =>
-					{
-						pluginCard.ZipProgressbar.IsIndeterminate = false;
-						pluginCard.ZipProgressbar.Value = 0;
-						pluginCard.ZipProgressbar.Maximum = filesToAdd.Count;
-					});
+                            if (bSkipFile == false)
+                            {
+                                filesToAdd.Add(file);
+                            }
+                        });
+                    }
 
-					foreach (string file in filesToAdd)
-					{
-						zipFile.AddFile(file, Path.GetDirectoryName(file).Replace(pluginCard.DestinationPath, string.Empty));
-					}
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        pluginCard.ZipProgressbar.IsIndeterminate = false;
+                        pluginCard.ZipProgressbar.Value = 0;
+                        pluginCard.ZipProgressbar.Maximum = filesToAdd.Count;
+                    });
 
-					zipFile.SaveProgress += (o, args) =>
-					{
-						if (args.EventType == ZipProgressEventType.Saving_BeforeWriteEntry)
-						{
-							Application.Current.Dispatcher.Invoke(() =>
-							{
-								pluginCard.ZipProgressbar.Value = Convert.ToInt32(args.EntriesSaved + 1);
-							});
-						}
-						else if (args.EventType == ZipProgressEventType.Saving_Completed)
-						{
-							Application.Current.Dispatcher.Invoke(() =>
-							{
-								GameAnalyticsCSharp.AddProgressEnd("PluginZip", "Progress");
-							});
-						}
-					};
+                    int entriesSaved = 0;
+                    foreach (string file in filesToAdd)
+                    {
+                        zipFile.CreateEntryFromFile(file,
+                            Path.GetDirectoryName(file)!.Replace(pluginCard.DestinationPath, string.Empty), CL);
+                        ++entriesSaved;
 
-					zipFile.UseZip64WhenSaving = Zip64Option.Always;
-					zipFile.Save(ZipLocationToSave);
-					Application.Current.Dispatcher.Invoke(() => { mainWindow.AddLogEntry($"Plugin zipped and saved to: {ZipLocationToSave}"); });
-				}
-			});
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            pluginCard.ZipProgressbar.Value = Convert.ToInt32(entriesSaved);
+                        });
+                    }
+                }
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    GameAnalyticsCSharp.AddProgressEnd("PluginZip", "Progress");
+                });
 
-			await ZippingTask;
-		}
+                /*zipFile.SaveProgress += (o, args) =>
+                {
+                    if (args.EventType == ZipProgressEventType.Saving_BeforeWriteEntry)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            pluginCard.ZipProgressbar.Value = Convert.ToInt32(args.EntriesSaved + 1);
+                        });
+                    }
+                    else if (args.EventType == ZipProgressEventType.Saving_Completed)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            GameAnalyticsCSharp.AddProgressEnd("PluginZip", "Progress");
+                        });
+                    }
+                };*/
+
+                //zipFile.UseZip64WhenSaving = Zip64Option.Always;
+                //zipFile.Save(ZipLocationToSave);
+				
+                Application.Current.Dispatcher.Invoke(() => { mainWindow.AddLogEntry($"Plugin zipped and saved to: {ZipLocationToSave}"); });
+            });
+        }
 
 		public async void SaveToZip(string InBuildDirectory, string ZipLocationToSave)
 		{
@@ -157,12 +172,13 @@ namespace UnrealBinaryBuilder.Classes
 				mainWindow.ZipStausStackPanel.Visibility = Visibility.Visible;
 			});
 
-			CompressionLevel CL = (bool)mainWindow.bFastCompression.IsChecked ? CompressionLevel.BestSpeed : CompressionLevel.BestCompression;
+			CompressionLevel CL = (bool)mainWindow.bFastCompression.IsChecked ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
 
 			ZippingTask = Task.Run(() =>
 			{
-				using (var zipFile = new ZipFile { CompressionLevel = CL })
-				{
+                using FileStream output = new FileStream(ZipLocationToSave, FileMode.CreateNew);
+                using var zipFile = new ZipArchive(output, ZipArchiveMode.Create);
+                {
 					Application.Current.Dispatcher.Invoke(() => { mainWindow.FileSaveState.Content = $"State: Be Patient! This might take a long time. Ninjas are finding files in {InBuildDirectory}"; });
 					IEnumerable<string> files = Directory.EnumerateFiles(InBuildDirectory, "*.*", SearchOption.AllDirectories);
 
@@ -267,25 +283,21 @@ namespace UnrealBinaryBuilder.Classes
 							//Application.Current.Dispatcher.Invoke(() => { mainWindow.AddZipLog($"File Included: {file}", MainWindow.ZipLogInclusionType.FileIncluded); });
 						}
 
-						Application.Current.Dispatcher.Invoke(() => { mainWindow.CurrentFileSaving.Content = string.Format("Total: {0}. Added: {1}. Skipped: {2}", TotalFiles, AddedFiles, SkippedFiles); });
+						Application.Current.Dispatcher.Invoke(() => { mainWindow.CurrentFileSaving.Content =
+                            $"Total: {TotalFiles}. Added: {AddedFiles}. Skipped: {SkippedFiles}"; });
 						ZipCancelToken.ThrowIfCancellationRequested();
 					}
 
 					Application.Current.Dispatcher.Invoke(() =>
 					{
-						mainWindow.TotalResult.Content = string.Format("Total Size: {0}. To Zip: {1}. Skipped: {2}", TotalSizeInString, TotalSizeToZipInString, SkippedSizeToZipInString);
+						mainWindow.TotalResult.Content =
+                            $"Total Size: {TotalSizeInString}. To Zip: {TotalSizeToZipInString}. Skipped: {SkippedSizeToZipInString}";
 						mainWindow.FileSaveState.Content = "State: Verifying...";
 						mainWindow.OverallProgressbar.Maximum = filesToAdd.Count;
 					});
 
-					foreach (string file in filesToAdd)
-					{
-						ZipCancelToken.ThrowIfCancellationRequested();
-						zipFile.AddFile(file, Path.GetDirectoryName(file).Replace(InBuildDirectory, string.Empty));
-					}
-
-					long ProcessedSize = 0;
-					string ProcessSizeInString = "0B";
+                    long ProcessedSize = 0;
+					string ProcessSizeInString = "0B"; //shouldn't this be used?
 
 					Application.Current.Dispatcher.Invoke(() =>
 					{
@@ -293,6 +305,46 @@ namespace UnrealBinaryBuilder.Classes
 						mainWindow.FileProgressbar.IsIndeterminate = false;
 					});
 
+                    int entriesSaved = 0;
+                    foreach (string file in filesToAdd)
+                    {
+                        ZipCancelToken.ThrowIfCancellationRequested();
+
+                        if (entriesSaved == 0)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                mainWindow.CurrentFileSaving.Content = "";
+                                mainWindow.FileSaveState.Content =
+                                    $"State: Saving zip file ({TotalFiles} files) to {mainWindow.ZipPath.Text}";
+                            });
+                        }
+
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            mainWindow.FileSaveState.Content = "State: Begin Writing...";
+                            mainWindow.CurrentFileSaving.Content =
+                                $"Saving File: {Path.GetFileName(file)} ({(entriesSaved)}/{(TotalFiles)})";
+                            mainWindow.OverallProgressbar.Value = Convert.ToInt32(entriesSaved);
+                        });
+
+                        zipFile.CreateEntryFromFile(file, Path.GetDirectoryName(file).Replace(InBuildDirectory, string.Empty), CL);
+                        ++entriesSaved;
+
+                        ProcessedSize += new FileInfo(Path.Combine(InBuildDirectory, Path.GetFileName(file))).Length;
+                        ProcessSizeInString = BytesToString(ProcessedSize);
+                        Application.Current.Dispatcher.Invoke(() => {
+                            mainWindow.TotalResult.Content =
+                                $"Total Size: {TotalSizeInString}. To Zip: {TotalSizeToZipInString}. Skipped: {SkippedSizeToZipInString}. Processed: {ProcessSizeInString}";
+                        });
+                    }
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        GameAnalyticsCSharp.AddProgressEnd("Zip", "Progress");
+                        mainWindow.TryShutdown();
+                    });
+
+                    /*
 					zipFile.SaveProgress += (o, args) =>
 					{
 						ZipCancelToken.ThrowIfCancellationRequested();
@@ -301,7 +353,8 @@ namespace UnrealBinaryBuilder.Classes
 							Application.Current.Dispatcher.Invoke(() =>
 							{
 								mainWindow.FileSaveState.Content = "State: Begin Writing...";
-								mainWindow.CurrentFileSaving.Content = string.Format("Saving File: {0} ({1}/{2})", Path.GetFileName(args.CurrentEntry.FileName), (args.EntriesSaved + 1), (args.EntriesTotal));
+								mainWindow.CurrentFileSaving.Content =
+                                    $"Saving File: {Path.GetFileName(args.CurrentEntry.FileName)} ({(args.EntriesSaved + 1)}/{(args.EntriesTotal)})";
 								mainWindow.OverallProgressbar.Value = Convert.ToInt32(args.EntriesSaved + 1);
 							});
 						}
@@ -317,14 +370,16 @@ namespace UnrealBinaryBuilder.Classes
 						{
 							ProcessedSize += new FileInfo(Path.Combine(InBuildDirectory, args.CurrentEntry.FileName)).Length;
 							ProcessSizeInString = BytesToString(ProcessedSize);
-							Application.Current.Dispatcher.Invoke(() => { mainWindow.TotalResult.Content = string.Format("Total Size: {0}. To Zip: {1}. Skipped: {2}. Processed: {3}", TotalSizeInString, TotalSizeToZipInString, SkippedSizeToZipInString, ProcessSizeInString); });
+							Application.Current.Dispatcher.Invoke(() => { mainWindow.TotalResult.Content =
+                                $"Total Size: {TotalSizeInString}. To Zip: {TotalSizeToZipInString}. Skipped: {SkippedSizeToZipInString}. Processed: {ProcessSizeInString}"; });
 						}
 						else if (args.EventType == ZipProgressEventType.Saving_Started)
 						{
 							Application.Current.Dispatcher.Invoke(() =>
 							{
 								mainWindow.CurrentFileSaving.Content = "";
-								mainWindow.FileSaveState.Content = string.Format("State: Saving zip file ({0} files) to {1}", TotalFiles, mainWindow.ZipPath.Text);
+								mainWindow.FileSaveState.Content =
+                                    $"State: Saving zip file ({TotalFiles} files) to {mainWindow.ZipPath.Text}";
 							});
 						}
 						else if (args.EventType == ZipProgressEventType.Saving_Completed)
@@ -336,17 +391,17 @@ namespace UnrealBinaryBuilder.Classes
 							});
 						}
 					};
-
-
-					zipFile.UseZip64WhenSaving = Zip64Option.Always;
-					zipFile.Save(ZipLocationToSave);
-					Application.Current.Dispatcher.Invoke(() => 
+					*/
+                }
+                //zipFile.UseZip64WhenSaving = Zip64Option.Always;
+                //zipFile.Save(ZipLocationToSave);
+                Application.Current.Dispatcher.Invoke(() => 
 					{
 						mainWindow.CurrentFileSaving.Visibility = mainWindow.OverallProgressbar.Visibility = mainWindow.CancelZipping.Visibility = Visibility.Collapsed;
 						mainWindow.FileSaveState.Content = $"State: Saved to {ZipLocationToSave}";
 						mainWindow.AddLogEntry($"Done zipping. {ZipLocationToSave}");
 					});
-				}
+				
 			}, ZipCancelToken);
 
 			try

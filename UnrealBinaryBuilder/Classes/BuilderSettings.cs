@@ -62,7 +62,7 @@ namespace UnrealBinaryBuilder.Classes
 		public bool bWithServer { get; set; }
 		public bool bWithClient { get; set; }
 		public bool bCompileDatasmithPlugins { get; set; }
-		public bool bVS2019 { get; set; }
+		//public bool bVS2019 { get; set; }
 		public bool bShutdownPC { get; set; }
 		public bool bShutdownIfBuildSuccess { get; set; }
 		public bool bContinueToEngineBuild { get; set; }
@@ -81,7 +81,23 @@ namespace UnrealBinaryBuilder.Classes
 		public bool bZipEngineTemplates { get; set; }
 		public bool bZipEngineFastCompression { get; set; }
 		public string ZipEnginePath { get; set; }
-	}
+
+		public VisualStudio VisualStudio { get; set; }
+    }
+
+    public class VisualStudio
+    { 
+        public VisualStudio(int version, string edition, string architecture)
+        {
+            Version = version;
+            Edition = edition;
+            Architecture = architecture;
+        }
+
+        public int Version { get; set; }
+        public string Edition { get; set; }
+        public string Architecture { get; set; }
+    }
 
 	public class GitPlatform
 	{
@@ -115,86 +131,83 @@ namespace UnrealBinaryBuilder.Classes
 
 		private static BuilderSettingsJson GenerateDefaultSettingsJSON()
 		{
-			BuilderSettingsJson BSJ = new BuilderSettingsJson();
-			BSJ.Theme = "Dark";
-			BSJ.bCheckForUpdatesAtStartup = true;
-			BSJ.bEnableDDCMessages = true;
-			BSJ.bEnableEngineBuildConfirmationMessage = true;
-			BSJ.bShowHTML5DeprecatedMessage = true;
-			BSJ.bShowConsoleDeprecatedMessage = true;
+			BuilderSettingsJson BSJ = new()
+            {
+                Theme = "Dark",
+                bCheckForUpdatesAtStartup = true,
+                bEnableDDCMessages = true,
+                bEnableEngineBuildConfirmationMessage = true,
+                bShowHTML5DeprecatedMessage = true,
+                bShowConsoleDeprecatedMessage = true,
+                SetupBatFile = null,
+                CustomBuildFile = null,
+                GameConfigurations = "Development;Shipping",
+                CustomOptions = null,
+                AnalyticsOverride = null,
+                GitDependencyAll = true,
+                GitDependencyPlatforms = new List<GitPlatform> { 
+                    new("Win64", true), 
+                    new("Win32", true),
+                    new("Linux", false),
+                    new("Android", false),
+                    new("Mac", false), 
+                    new("IOS", false), 
+                    new("TVOS", false),
+                    new("HoloLens", false), 
+                    new("Lumin", false) },
+                GitDependencyThreads = 4,
+                GitDependencyMaxRetries = 4,
+                GitDependencyProxy = "",
+                GitDependencyCache = DEFAULT_GIT_CUSTOM_CACHE_PATH,
+                GitDependencyCacheMultiplier = 2.0,
+                GitDependencyCacheDays = 7,
+                GitDependencyEnableCache = true,
+                bHostPlatformOnly = false,
+                bHostPlatformEditorOnly = false,
+                bWithWin64 = true,
+                bWithWin32 = true,
+                bWithMac = false,
+                bWithLinux = false,
+                bWithLinuxAArch64 = false,
+                bWithAndroid = false,
+                bWithIOS = false,
+                bWithHTML5 = false,
+                bWithTVOS = false,
+                bWithSwitch = false,
+                bWithPS4 = false,
+                bWithXboxOne = false,
+                bWithLumin = false,
+                bWithHoloLens = false,
+                bWithDDC = true,
+                bHostPlatformDDCOnly = true,
+                bSignExecutables = false,
+                bEnableSymStore = false,
+                bWithFullDebugInfo = false,
+                bCleanBuild = false,
+                bWithServer = false,
+                bWithClient = false,
+                bCompileDatasmithPlugins = false,
+                //bVS2019 = false,
+                bShutdownPC = false,
+                bShutdownIfBuildSuccess = false,
+                bContinueToEngineBuild = true,
+                bBuildSetupBatFile = true,
+                bGenerateProjectFiles = true,
+                bBuildAutomationTool = true,
+                bZipEngineBuild = false,
+                bZipEngineDebug = false,
+                bZipEngineDocumentation = true,
+                bZipEngineExtras = true,
+                bZipEngineFastCompression = true,
+                bZipEngineFeaturePacks = true,
+                bZipEnginePDB = true,
+                bZipEngineSamples = true,
+                bZipEngineSource = true,
+                bZipEngineTemplates = true,
+                ZipEnginePath = ""
+            };
 
-			BSJ.SetupBatFile = null;
-			BSJ.CustomBuildFile = null;
-			BSJ.GameConfigurations = "Development;Shipping";
-			BSJ.CustomOptions = null;
-			BSJ.AnalyticsOverride = null;
-
-			BSJ.GitDependencyAll = true;
-			BSJ.GitDependencyPlatforms = new List<GitPlatform> { 
-				new GitPlatform("Win64", true), 
-				new GitPlatform("Win32", true),
-				new GitPlatform("Linux", false),
-				new GitPlatform("Android", false),
-				new GitPlatform("Mac", false), 
-				new GitPlatform("IOS", false), 
-				new GitPlatform("TVOS", false),
-				new GitPlatform("HoloLens", false), 
-				new GitPlatform("Lumin", false) };
-			BSJ.GitDependencyThreads = 4;
-			BSJ.GitDependencyMaxRetries = 4;
-			BSJ.GitDependencyProxy = "";
-			BSJ.GitDependencyCache = DEFAULT_GIT_CUSTOM_CACHE_PATH;
-			BSJ.GitDependencyCacheMultiplier = 2.0;
-			BSJ.GitDependencyCacheDays = 7;
-			BSJ.GitDependencyEnableCache = true;
-
-			BSJ.bHostPlatformOnly = false;
-			BSJ.bHostPlatformEditorOnly = false;
-			BSJ.bWithWin64 = true;
-			BSJ.bWithWin32 = true;
-			BSJ.bWithMac = false;
-			BSJ.bWithLinux = false;
-			BSJ.bWithLinuxAArch64 = false;
-			BSJ.bWithAndroid = false;
-			BSJ.bWithIOS = false;
-			BSJ.bWithHTML5 = false;
-			BSJ.bWithTVOS = false;
-			BSJ.bWithSwitch = false;
-			BSJ.bWithPS4 = false;
-			BSJ.bWithXboxOne = false;
-			BSJ.bWithLumin = false;
-			BSJ.bWithHoloLens = false;
-
-			BSJ.bWithDDC = true;
-			BSJ.bHostPlatformDDCOnly = true;
-			BSJ.bSignExecutables = false;
-			BSJ.bEnableSymStore = false;
-			BSJ.bWithFullDebugInfo = false;
-			BSJ.bCleanBuild = false;
-			BSJ.bWithServer = false;
-			BSJ.bWithClient = false;
-			BSJ.bCompileDatasmithPlugins = false;
-			BSJ.bVS2019 = false;
-			BSJ.bShutdownPC = false;
-			BSJ.bShutdownIfBuildSuccess = false;
-			BSJ.bContinueToEngineBuild = true;
-			BSJ.bBuildSetupBatFile = true;
-			BSJ.bGenerateProjectFiles = true;
-			BSJ.bBuildAutomationTool = true;
-
-			BSJ.bZipEngineBuild = false;
-			BSJ.bZipEngineDebug = false;
-			BSJ.bZipEngineDocumentation = true;
-			BSJ.bZipEngineExtras = true;
-			BSJ.bZipEngineFastCompression = true;
-			BSJ.bZipEngineFeaturePacks = true;
-			BSJ.bZipEnginePDB = true;
-			BSJ.bZipEngineSamples = true;
-			BSJ.bZipEngineSource = true;
-			BSJ.bZipEngineTemplates = true;
-			BSJ.ZipEnginePath = "";
-
-			string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented);
+            string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented);
 			File.WriteAllText(PROGRAM_SETTINGS_PATH, JsonOutput);
 			LogEntry logEntry = new LogEntry();
 			logEntry.Message = $"New Settings file written to {PROGRAM_SETTINGS_PATH}.";
@@ -260,71 +273,70 @@ namespace UnrealBinaryBuilder.Classes
 		public static void SaveSettings()
 		{
 			MainWindow mainWindow = ((MainWindow)Application.Current.MainWindow);
-			BuilderSettingsJson BSJ = new BuilderSettingsJson();
-			BSJ.Theme = mainWindow.CurrentTheme;
-			BSJ.bCheckForUpdatesAtStartup = mainWindow.SettingsJSON.bCheckForUpdatesAtStartup;
-			BSJ.SetupBatFile = mainWindow.SetupBatFilePath.Text;
-			BSJ.CustomBuildFile = mainWindow.CustomBuildXMLFile.Text;
-			BSJ.GameConfigurations = mainWindow.GameConfigurations.Text;
-			BSJ.CustomOptions = mainWindow.CustomOptions.Text;
-			BSJ.AnalyticsOverride = mainWindow.AnalyticsOverride.Text;
+			BuilderSettingsJson BSJ = new()
+            {
+                Theme = mainWindow.CurrentTheme,
+                bCheckForUpdatesAtStartup = mainWindow.SettingsJSON.bCheckForUpdatesAtStartup,
+                SetupBatFile = mainWindow.SetupBatFilePath.Text,
+                CustomBuildFile = mainWindow.CustomBuildXMLFile.Text,
+                GameConfigurations = mainWindow.GameConfigurations.Text,
+                CustomOptions = mainWindow.CustomOptions.Text,
+                AnalyticsOverride = mainWindow.AnalyticsOverride.Text,
+                GitDependencyAll = (bool)mainWindow.bGitSyncAll.IsChecked,
+                GitDependencyThreads = Convert.ToInt32(mainWindow.GitNumberOfThreads.Text),
+                GitDependencyMaxRetries = Convert.ToInt32(mainWindow.GitNumberOfRetries.Text),
+                GitDependencyProxy = "",
+                GitDependencyCache = mainWindow.GitCachePath.Text,
+                GitDependencyCacheMultiplier = Convert.ToDouble(mainWindow.GitCacheMultiplier.Text),
+                GitDependencyCacheDays = Convert.ToInt32(mainWindow.GitCacheDays.Text),
+                GitDependencyEnableCache = (bool)mainWindow.bGitEnableCache.IsChecked,
+                bHostPlatformOnly = (bool)mainWindow.bHostPlatformOnly.IsChecked,
+                bHostPlatformEditorOnly = (bool)mainWindow.bHostPlatformEditorOnly.IsChecked,
+                bWithWin64 = (bool)mainWindow.bWithWin64.IsChecked,
+                bWithWin32 = (bool)mainWindow.bWithWin32.IsChecked,
+                bWithMac = (bool)mainWindow.bWithMac.IsChecked,
+                bWithLinux = (bool)mainWindow.bWithLinux.IsChecked,
+                bWithLinuxAArch64 = (bool)mainWindow.bWithLinuxAArch64.IsChecked,
+                bWithAndroid = (bool)mainWindow.bWithAndroid.IsChecked,
+                bWithIOS = (bool)mainWindow.bWithIOS.IsChecked,
+                bWithHTML5 = (bool)mainWindow.bWithHTML5.IsChecked,
+                bWithTVOS = (bool)mainWindow.bWithTVOS.IsChecked,
+                bWithSwitch = (bool)mainWindow.bWithSwitch.IsChecked,
+                bWithPS4 = (bool)mainWindow.bWithPS4.IsChecked,
+                bWithXboxOne = (bool)mainWindow.bWithXboxOne.IsChecked,
+                bWithLumin = (bool)mainWindow.bWithLumin.IsChecked,
+                bWithHoloLens = (bool)mainWindow.bWithHololens.IsChecked,
+                bWithDDC = (bool)mainWindow.bWithDDC.IsChecked,
+                bHostPlatformDDCOnly = (bool)mainWindow.bHostPlatformDDCOnly.IsChecked,
+                bSignExecutables = (bool)mainWindow.bSignExecutables.IsChecked,
+                bEnableSymStore = (bool)mainWindow.bEnableSymStore.IsChecked,
+                bWithFullDebugInfo = (bool)mainWindow.bWithFullDebugInfo.IsChecked,
+                bCleanBuild = (bool)mainWindow.bCleanBuild.IsChecked,
+                bWithServer = (bool)mainWindow.bWithServer.IsChecked,
+                bWithClient = (bool)mainWindow.bWithClient.IsChecked,
+                bCompileDatasmithPlugins = (bool)mainWindow.bCompileDatasmithPlugins.IsChecked,
+                //bVS2019 = (bool)mainWindow.bVS2019.IsChecked,
+				//VisualStudio = (VisualStudio)mainWindow.,
+                bShutdownPC = (bool)mainWindow.bShutdownWindows.IsChecked,
+                bShutdownIfBuildSuccess = (bool)mainWindow.bShutdownIfSuccess.IsChecked,
+                bContinueToEngineBuild = (bool)mainWindow.bContinueToEngineBuild.IsChecked,
+                bBuildSetupBatFile = (bool)mainWindow.bBuildSetupBatFile.IsChecked,
+                bGenerateProjectFiles = (bool)mainWindow.bGenerateProjectFiles.IsChecked,
+                bBuildAutomationTool = (bool)mainWindow.bBuildAutomationTool.IsChecked,
+                bZipEngineBuild = (bool)mainWindow.bZipBuild.IsChecked,
+                bZipEngineDebug = (bool)mainWindow.bIncludeDEBUG.IsChecked,
+                bZipEngineDocumentation = (bool)mainWindow.bIncludeDocumentation.IsChecked,
+                bZipEngineExtras = (bool)mainWindow.bIncludeExtras.IsChecked,
+                bZipEngineFastCompression = (bool)mainWindow.bFastCompression.IsChecked,
+                bZipEngineFeaturePacks = (bool)mainWindow.bIncludeFeaturePacks.IsChecked,
+                bZipEnginePDB = (bool)mainWindow.bIncludePDB.IsChecked,
+                bZipEngineSamples = (bool)mainWindow.bIncludeSamples.IsChecked,
+                bZipEngineSource = (bool)mainWindow.bIncludeSource.IsChecked,
+                bZipEngineTemplates = (bool)mainWindow.bIncludeTemplates.IsChecked,
+                ZipEnginePath = mainWindow.ZipPath.Text
+            };
 
-			BSJ.GitDependencyAll = (bool)mainWindow.bGitSyncAll.IsChecked;
-			BSJ.GitDependencyThreads = Convert.ToInt32(mainWindow.GitNumberOfThreads.Text);
-			BSJ.GitDependencyMaxRetries = Convert.ToInt32(mainWindow.GitNumberOfRetries.Text);
-			BSJ.GitDependencyProxy = "";
-			BSJ.GitDependencyCache = mainWindow.GitCachePath.Text;
-			BSJ.GitDependencyCacheMultiplier = Convert.ToDouble(mainWindow.GitCacheMultiplier.Text);
-			BSJ.GitDependencyCacheDays = Convert.ToInt32(mainWindow.GitCacheDays.Text);
-			BSJ.GitDependencyEnableCache = (bool)mainWindow.bGitEnableCache.IsChecked;
-
-			BSJ.bHostPlatformOnly = (bool)mainWindow.bHostPlatformOnly.IsChecked;
-			BSJ.bHostPlatformEditorOnly = (bool)mainWindow.bHostPlatformEditorOnly.IsChecked;
-			BSJ.bWithWin64 = (bool)mainWindow.bWithWin64.IsChecked;
-			BSJ.bWithWin32 = (bool)mainWindow.bWithWin32.IsChecked;
-			BSJ.bWithMac = (bool)mainWindow.bWithMac.IsChecked;
-			BSJ.bWithLinux = (bool)mainWindow.bWithLinux.IsChecked;
-			BSJ.bWithLinuxAArch64 = (bool)mainWindow.bWithLinuxAArch64.IsChecked;
-			BSJ.bWithAndroid = (bool)mainWindow.bWithAndroid.IsChecked;
-			BSJ.bWithIOS = (bool)mainWindow.bWithIOS.IsChecked;
-			BSJ.bWithHTML5 = (bool)mainWindow.bWithHTML5.IsChecked;
-			BSJ.bWithTVOS = (bool)mainWindow.bWithTVOS.IsChecked;
-			BSJ.bWithSwitch = (bool)mainWindow.bWithSwitch.IsChecked;
-			BSJ.bWithPS4 = (bool)mainWindow.bWithPS4.IsChecked;
-			BSJ.bWithXboxOne = (bool)mainWindow.bWithXboxOne.IsChecked;
-			BSJ.bWithLumin = (bool)mainWindow.bWithLumin.IsChecked;
-			BSJ.bWithHoloLens = (bool)mainWindow.bWithHololens.IsChecked;
-
-			BSJ.bWithDDC = (bool)mainWindow.bWithDDC.IsChecked;
-			BSJ.bHostPlatformDDCOnly = (bool)mainWindow.bHostPlatformDDCOnly.IsChecked;
-			BSJ.bSignExecutables = (bool)mainWindow.bSignExecutables.IsChecked;
-			BSJ.bEnableSymStore = (bool)mainWindow.bEnableSymStore.IsChecked;
-			BSJ.bWithFullDebugInfo = (bool)mainWindow.bWithFullDebugInfo.IsChecked;
-			BSJ.bCleanBuild = (bool)mainWindow.bCleanBuild.IsChecked;
-			BSJ.bWithServer = (bool)mainWindow.bWithServer.IsChecked;
-			BSJ.bWithClient = (bool)mainWindow.bWithClient.IsChecked;
-			BSJ.bCompileDatasmithPlugins = (bool)mainWindow.bCompileDatasmithPlugins.IsChecked;
-			BSJ.bVS2019 = (bool)mainWindow.bVS2019.IsChecked;
-			BSJ.bShutdownPC = (bool)mainWindow.bShutdownWindows.IsChecked;
-			BSJ.bShutdownIfBuildSuccess = (bool)mainWindow.bShutdownIfSuccess.IsChecked;
-			BSJ.bContinueToEngineBuild = (bool)mainWindow.bContinueToEngineBuild.IsChecked;
-			BSJ.bBuildSetupBatFile = (bool)mainWindow.bBuildSetupBatFile.IsChecked;
-			BSJ.bGenerateProjectFiles = (bool)mainWindow.bGenerateProjectFiles.IsChecked;
-			BSJ.bBuildAutomationTool = (bool)mainWindow.bBuildAutomationTool.IsChecked; ;
-
-			BSJ.bZipEngineBuild = (bool)mainWindow.bZipBuild.IsChecked;
-			BSJ.bZipEngineDebug = (bool)mainWindow.bIncludeDEBUG.IsChecked;
-			BSJ.bZipEngineDocumentation = (bool)mainWindow.bIncludeDocumentation.IsChecked;
-			BSJ.bZipEngineExtras = (bool)mainWindow.bIncludeExtras.IsChecked;
-			BSJ.bZipEngineFastCompression = (bool)mainWindow.bFastCompression.IsChecked;
-			BSJ.bZipEngineFeaturePacks = (bool)mainWindow.bIncludeFeaturePacks.IsChecked;
-			BSJ.bZipEnginePDB = (bool)mainWindow.bIncludePDB.IsChecked;
-			BSJ.bZipEngineSamples = (bool)mainWindow.bIncludeSamples.IsChecked;
-			BSJ.bZipEngineSource = (bool)mainWindow.bIncludeSource.IsChecked;
-			BSJ.bZipEngineTemplates = (bool)mainWindow.bIncludeTemplates.IsChecked;
-			BSJ.ZipEnginePath = mainWindow.ZipPath.Text;
-
-			List<GitPlatform> GitPlatformList = mainWindow.SettingsJSON.GitDependencyPlatforms;
+            List<GitPlatform> GitPlatformList = mainWindow.SettingsJSON.GitDependencyPlatforms;
 			IEnumerable<CheckBox> ComboBoxCollection = GetChildrenOfType<CheckBox>(mainWindow.PlatformStackPanelMain);
 			foreach (GitPlatform gp in GitPlatformList)
 			{
@@ -342,9 +354,11 @@ namespace UnrealBinaryBuilder.Classes
 
 			string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented);
 			File.WriteAllText(PROGRAM_SETTINGS_PATH, JsonOutput);
-			LogEntry logEntry = new LogEntry();
-			logEntry.Message = $"New Settings file written to {PROGRAM_SETTINGS_PATH}.";
-			mainWindow.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
+			LogEntry logEntry = new()
+            {
+                Message = $"New Settings file written to {PROGRAM_SETTINGS_PATH}."
+            };
+            mainWindow.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
 		}
 
 		public static void WriteToLogFile(string InContent)
@@ -366,15 +380,14 @@ namespace UnrealBinaryBuilder.Classes
 			}
 			catch (Exception) {}
 
-			if (string.IsNullOrWhiteSpace(InContent) == false)
-			{
-				if (Directory.Exists(PROGRAM_LOG_PATH_BASE) == false)
-				{
-					Directory.CreateDirectory(PROGRAM_LOG_PATH_BASE);
-				}
-				File.WriteAllText(PROGRAM_ERRORLOG_PATH, InContent);
-			}
-		}
+            if (string.IsNullOrWhiteSpace(InContent)) return;
+
+            if (Directory.Exists(PROGRAM_LOG_PATH_BASE) == false)
+            {
+                Directory.CreateDirectory(PROGRAM_LOG_PATH_BASE);
+            }
+            File.WriteAllText(PROGRAM_ERRORLOG_PATH, InContent);
+        }
 
 		public static void UpdatePlatformInclusion(string InPlatform, bool bIncluded)
 		{
