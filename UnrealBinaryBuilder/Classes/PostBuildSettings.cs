@@ -169,7 +169,7 @@ namespace UnrealBinaryBuilder.Classes
 				mainWindow.CurrentFileSaving.Content = "Waiting...";
 				mainWindow.FileSaveState.Content = "State: Preparing...";
 				mainWindow.ZipStatusLabel.Visibility = Visibility.Collapsed;
-				mainWindow.ZipStausStackPanel.Visibility = Visibility.Visible;
+				mainWindow.ZipStatusStackPanel.Visibility = Visibility.Visible;
 			});
 
 			CompressionLevel CL = (bool)mainWindow.bFastCompression.IsChecked ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;

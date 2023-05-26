@@ -4,7 +4,6 @@
 				xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 				xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 				xmlns:hc="https://handyorg.github.io/handycontrol" 
-				xmlns:st="http://schemas.spicytaco.io/"
 				xmlns:local="clr-namespace:UnrealBinaryBuilder.UserControls"
 				xmlns:Classes="clr-namespace:UnrealBinaryBuilder.Classes" 
 				xmlns:local1="clr-namespace:UnrealBinaryBuilder"	x:Name="UnrealBinaryBuilderWindow"
@@ -17,7 +16,10 @@
 				InactiveGlowColor="{DynamicResource SecondaryBorderColor}"
 				Height="720" 
 				Width="1280" Closing="UnrealBinaryBuilderWindow_Closing">
-	<hc:GlowWindow.NonClientAreaContent>
+	<hc:GlowWindow.DataContext>
+		<local1:Context></local1:Context>
+    </hc:GlowWindow.DataContext>
+    <hc:GlowWindow.NonClientAreaContent>
 		<StackPanel VerticalAlignment="Stretch" Orientation="Horizontal">
 			<Separator Width="10" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="10,0,0,0"/>
 			<Button x:Name="GetSourceCode" Content="Source Code" Style="{StaticResource ButtonBaseStyle}" Click="GetSourceCode_Click"/>
@@ -49,7 +51,7 @@
 										<RowDefinition Height="40"/>
 										<RowDefinition Height="*"/>
 									</Grid.RowDefinitions>
-									<TextBox x:Name="SetupBatFilePath" Grid.Row="0" Grid.Column="0" Text="{Binding SetupBatFile}" hc:InfoElement.Placeholder="Choose Engine Root Folder" hc:InfoElement.Necessary="True" Style="{StaticResource TextBoxExtend}" TextChanged="SetupBatFilePath_TextChanged" />
+                                    <TextBox x:Name="SetupBatFilePath" Grid.Row="0" Grid.Column="0" Text="{Binding  Path=SettingsJSON.SetupBatFile}" hc:InfoElement.Placeholder="Choose Engine Root Folder" hc:InfoElement.Necessary="True" Style="{StaticResource TextBoxExtend}" TextChanged="SetupBatFilePath_TextChanged" />
 									<Button x:Name="BrowseEngineFolder" Grid.Row="0" Grid.Column="1" Content="Browse" Click="BrowseEngineFolder_Click"/>
 									<Grid Grid.Row="1" Grid.Column="0">
 										<Grid.RowDefinitions>
@@ -61,15 +63,15 @@
 											<ColumnDefinition Width="*"/>
 											<ColumnDefinition Width="*"/>
 										</Grid.ColumnDefinitions>
-										<CheckBox x:Name="bBuildSetupBatFile" Grid.Row="0" Grid.Column="0" Content="Build Setup" IsChecked="{Binding bBuildSetupBatFile}"/>
-										<CheckBox x:Name="bGenerateProjectFiles" Grid.Row="0" Grid.Column="1" Content="Generate Project Files" IsChecked="{Binding bGenerateProjectFiles}"/>
-										<CheckBox x:Name="bBuildAutomationTool" Grid.Row="0" Grid.Column="2" Content="Build Automation Tool" IsChecked="{Binding bBuildAutomationTool}"/>
+                                        <CheckBox x:Name="bBuildSetupBatFile" Grid.Row="0" Grid.Column="0" Content="Build Setup" IsChecked="{Binding SettingsJSON.bBuildSetupBatFile}"/>
+                                        <CheckBox x:Name="bGenerateProjectFiles" Grid.Row="0" Grid.Column="1" Content="Generate Project Files" IsChecked="{Binding SettingsJSON.bGenerateProjectFiles}"/>
+                                        <CheckBox x:Name="bBuildAutomationTool" Grid.Row="0" Grid.Column="2" Content="Build Automation Tool" IsChecked="{Binding SettingsJSON.bBuildAutomationTool}"/>
 
 										<Button x:Name="StartSetupBatFile" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" Content="Start" Style="{StaticResource ButtonPrimary}" IsEnabled="{Binding Text.Length, ElementName=SetupBatFilePath, Mode=OneWay}" Click="StartSetupBatFile_Click" />
 									</Grid>
 								</Grid>
 
-								<CheckBox x:Name="bContinueToEngineBuild" Content="Continue to Engine Build" IsChecked="{Binding bContinueToEngineBuild}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,153,16"/>
+                                <CheckBox x:Name="bContinueToEngineBuild" Content="Continue to Engine Build" IsChecked="{Binding SettingsJSON.bContinueToEngineBuild}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,153,16"/>
 								<Grid>
 									<GroupBox Header="Platforms" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Style="{StaticResource GroupBoxOriginal}">
 										<StackPanel x:Name="PlatformStackPanelMain" Width="200">
@@ -78,7 +80,7 @@
 											<CheckBox x:Name="GitLinuxPlatform" Content="Linux" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
 											<CheckBox x:Name="GitAndroidPlatform" Content="Android" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
 											<CheckBox x:Name="GitLuminPlatform" Content="Lumin" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
-											<CheckBox x:Name="GitHololensPlatform" Content="Holo Lens" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
+											<CheckBox x:Name="GitHololensPlatform" Content="HoloLens" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
 											<CheckBox x:Name="GitMacPlatform" Content="Mac" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
 											<CheckBox x:Name="GitIOSPlatform" Content="IOS" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
 											<CheckBox x:Name="GitTVOSPlatform" Content="TV OS" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
@@ -86,27 +88,27 @@
 									</GroupBox>
 									<GroupBox Header="Git Dependencies Options" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="1068,10,0,0" Height="201" Width="200" Style="{StaticResource GroupBoxOriginal}">
 										<StackPanel>
-											<CheckBox x:Name="bGitSyncAll" HorizontalAlignment="Left" Content="Sync All" IsChecked="{Binding GitDependencyAll}" Margin="5" ToolTip ="Sync all folders"/>
+                                            <CheckBox x:Name="bGitSyncAll" HorizontalAlignment="Left" Content="Sync All" IsChecked="{Binding SettingsJSON.GitDependencyAll}" Margin="5" ToolTip ="Sync all folders"/>
 											<CheckBox HorizontalAlignment="Left" Content="Force" Margin="5" IsChecked="True" IsEnabled="False" ToolTip="--force parameter must be added to git."/>
 											<StackPanel Orientation="Horizontal" >
 												<TextBlock Text="Threads " VerticalAlignment="Center"/>
-												<hc:TextBox x:Name="GitNumberOfThreads" VerticalAlignment="Center" TextType="Number" hc:InfoElement.Placeholder="Number of threads" Text="{Binding GitDependencyThreads}" Margin="5" Width="140" ToolTip="Use N cpu threads when downloading new files"/>
+                                                <hc:TextBox x:Name="GitNumberOfThreads" VerticalAlignment="Center" TextType="Number" hc:InfoElement.Placeholder="Number of threads" Text="{Binding SettingsJSON.GitDependencyThreads}" Margin="5" Width="140" ToolTip="Use N cpu threads when downloading new files"/>
 											</StackPanel>
 											<StackPanel Orientation="Horizontal" >
 												<TextBlock Text="Retries  " VerticalAlignment="Center"/>
-												<hc:TextBox x:Name="GitNumberOfRetries" VerticalAlignment="Center" TextType="Number" hc:InfoElement.Placeholder="Number of retries" Text="{Binding GitDependencyMaxRetries}" Margin="5" Width="140" ToolTip="Override maximum number of retries per file"/>
+                                                <hc:TextBox x:Name="GitNumberOfRetries" VerticalAlignment="Center" TextType="Number" hc:InfoElement.Placeholder="Number of retries" Text="{Binding SettingsJSON.GitDependencyMaxRetries}" Margin="5" Width="140" ToolTip="Override maximum number of retries per file"/>
 											</StackPanel>
 										</StackPanel>
 									</GroupBox>
 									<GroupBox Header="Git Cache" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="1068,216,0,0" Width="200" Style="{StaticResource GroupBoxOriginal}">
 										<StackPanel>
-											<CheckBox x:Name="bGitEnableCache" Content="Enable Cache" IsChecked="{Binding GitDependencyEnableCache}" ToolTip="Enable/Disable caching of downloaded files" Margin="10"/>
+                                            <CheckBox x:Name="bGitEnableCache" Content="Enable Cache" IsChecked="{Binding SettingsJSON.GitDependencyEnableCache}" ToolTip="Enable/Disable caching of downloaded files" Margin="10"/>
 											<StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
-												<hc:TextBox x:Name="GitCachePath" hc:InfoElement.Placeholder="Cache path" IsEnabled="{Binding IsChecked, ElementName=bGitEnableCache}" Text="{Binding GitDependencyCache}" ToolTip="Custom path for the download cache" Width="132"/>
+                                                <hc:TextBox x:Name="GitCachePath" hc:InfoElement.Placeholder="Cache path" IsEnabled="{Binding IsChecked, ElementName=bGitEnableCache}" Text="{Binding SettingsJSON.GitDependencyCache}" ToolTip="Custom path for the download cache" Width="132"/>
 												<Button x:Name="GitCachePathBrowse" Content="Browse" HorizontalAlignment="Right" IsEnabled="{Binding IsChecked, ElementName=bGitEnableCache}" Click="GitCachePathBrowse_Click"/>
 											</StackPanel>
-											<hc:TextBox x:Name="GitCacheDays" VerticalAlignment="Center" TextType="Number" hc:InfoElement.Placeholder="Cache days" IsEnabled="{Binding IsChecked, ElementName=bGitEnableCache}" Text="{Binding GitDependencyCacheDays}" ToolTip="Number of days to keep entries in cache"/>
-											<hc:TextBox x:Name="GitCacheMultiplier" VerticalAlignment="Center" TextType="Digits" hc:InfoElement.Placeholder="Cache Multiplier" IsEnabled="{Binding IsChecked, ElementName=bGitEnableCache}" Text="{Binding GitDependencyCacheMultiplier}" ToolTip="Cache size as multiplier of current download"/>
+                                            <hc:TextBox x:Name="GitCacheDays" VerticalAlignment="Center" TextType="Number" hc:InfoElement.Placeholder="Cache days" IsEnabled="{Binding IsChecked, ElementName=bGitEnableCache}" Text="{Binding SettingsJSON.GitDependencyCacheDays}" ToolTip="Number of days to keep entries in cache"/>
+                                            <hc:TextBox x:Name="GitCacheMultiplier" VerticalAlignment="Center" TextType="Digits" hc:InfoElement.Placeholder="Cache Multiplier" IsEnabled="{Binding IsChecked, ElementName=bGitEnableCache}" Text="{Binding SettingsJSON.GitDependencyCacheMultiplier}" ToolTip="Cache size as multiplier of current download"/>
 										</StackPanel>
 									</GroupBox>
 								</Grid>
@@ -138,7 +140,7 @@
 									<GroupBox Header="Zip Status" Margin="10">
 										<Grid>
 											<Label x:Name="ZipStatusLabel" Content="Idle"/>
-											<StackPanel x:Name="ZipStausStackPanel" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+											<StackPanel x:Name="ZipStatusStackPanel" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Top">
 												<Label x:Name="CurrentFileSaving" Content="FileName" Margin="10" HorizontalAlignment="Left"/>
 												<Label x:Name="FileSaveState" Content="State" Margin="10" HorizontalAlignment="Left" />
 												<Label x:Name="TotalResult" Content="File Size" Margin="10" HorizontalAlignment="Left" />
@@ -160,7 +162,7 @@
 									<BindingGroup Name="EngineChanged"/>
 								</Grid.BindingGroup>
 								<hc:SimplePanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,10,0,0" Height="123" Width="480">
-									<TextBox x:Name="CustomBuildXMLFile" Text="{Binding CustomBuildFile}" hc:InfoElement.Placeholder="(Optional) Choose custom build XML file." hc:InfoElement.Necessary="True" Style="{StaticResource TextBoxExtend}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="270" Margin="0,40,0,0"/>
+                                    <TextBox x:Name="CustomBuildXMLFile" Text="{Binding SettingsJSON.CustomBuildFile}" hc:InfoElement.Placeholder="(Optional) Choose custom build XML file." hc:InfoElement.Necessary="True" Style="{StaticResource TextBoxExtend}" HorizontalAlignment="Left" VerticalAlignment="Top" Width="270" Margin="0,40,0,0"/>
 									<Button x:Name="CustomBuildXMLBrowse" Content="Browse" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,40,118,0" Width="80" Click="CustomBuildXMLBrowse_Click" />
 									<Button x:Name="ResetDefaultBuildXML" Content="Reset To Default" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,40,0,0" Width="113" Click="ResetDefaultBuildXML_Click" />
 								</hc:SimplePanel>
@@ -168,22 +170,22 @@
 								<GroupBox Header="Platforms" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,138,0,0" Height="190" Width="480">
 									<hc:ScrollViewer>
 										<WrapPanel Orientation="Horizontal">
-											<CheckBox x:Name="bHostPlatformOnly" Content="Host Only" Margin="10" IsChecked="{Binding bHostPlatformOnly}" />
-											<CheckBox x:Name="bHostPlatformEditorOnly" Content="Host Editor Only" Margin="10" IsChecked="{Binding bHostPlatformEditorOnly}" />
-											<CheckBox x:Name="bWithWin64" Content="Windows 64" Margin="10" IsChecked="{Binding bWithWin64}" />
-											<CheckBox x:Name="bWithWin32" Content="Windows 32" Margin="10" IsChecked="{Binding bWithWin32}" IsEnabled="{Binding SupportWin32, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
-											<CheckBox x:Name="bWithMac" Content="Mac" Margin="10" IsChecked="{Binding bWithMac}" />
-											<CheckBox x:Name="bWithLinux" Content="Linux" Margin="10" IsChecked="{Binding bWithLinux}" />
-											<CheckBox x:Name="bWithLinuxAArch64" Content="Linux 64" Margin="10" IsChecked="{Binding bWithLinuxAArch64}" IsEnabled="{Binding SupportLinuxAArch64, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
-											<CheckBox x:Name="bWithAndroid" Content="Android" Margin="10" IsChecked="{Binding bWithAndroid}" />
-											<CheckBox x:Name="bWithIOS" Content="IOS" Margin="10" IsChecked="{Binding bWithIOS}" />
-											<CheckBox x:Name="bWithHTML5" Content="HTML 5" Margin="10" IsChecked="{Binding bWithHTML5}" IsEnabled="{Binding SupportHTML5, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}" />
-											<CheckBox x:Name="bWithTVOS" Content="TVOS" Margin="10" IsChecked="{Binding bWithTVOS}" />
-											<CheckBox x:Name="bWithSwitch" Content="Switch" Margin="10" IsChecked="{Binding bWithSwitch}" IsEnabled="{Binding SupportConsoles, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
-											<CheckBox x:Name="bWithPS4" Content="PS4" Margin="10" IsChecked="{Binding bWithPS4}" IsEnabled="{Binding SupportConsoles, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
-											<CheckBox x:Name="bWithXboxOne" Content="XBox One" Margin="10" IsChecked="{Binding bWithXboxOne}" IsEnabled="{Binding SupportConsoles, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
-											<CheckBox x:Name="bWithLumin" Content="Lumin" Margin="10" IsChecked="{Binding bWithLumin}" />
-											<CheckBox x:Name="bWithHololens" Content="Holo Lens" Margin="10" IsChecked="{Binding bWithHoloLens}" IsEnabled="{Binding SupportServerClientTargets, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
+                                            <CheckBox x:Name="bHostPlatformOnly" Content="Host Only" Margin="10" IsChecked="{Binding SettingsJSON.bHostPlatformOnly}" />
+                                            <CheckBox x:Name="bHostPlatformEditorOnly" Content="Host Editor Only" Margin="10" IsChecked="{Binding SettingsJSON.bHostPlatformEditorOnly}" />
+                                            <CheckBox x:Name="bWithWin64" Content="Windows 64" Margin="10" IsChecked="{Binding SettingsJSON.bWithWin64}" />
+                                            <CheckBox x:Name="bWithWin32" Content="Windows 32" Margin="10" IsChecked="{Binding SettingsJSON.bWithWin32}" IsEnabled="{Binding SupportWin32, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
+                                            <CheckBox x:Name="bWithMac" Content="Mac" Margin="10" IsChecked="{Binding SettingsJSON.bWithMac}" />
+                                            <CheckBox x:Name="bWithLinux" Content="Linux" Margin="10" IsChecked="{Binding SettingsJSON.bWithLinux}" />
+                                            <CheckBox x:Name="bWithLinuxAArch64" Content="Linux 64" Margin="10" IsChecked="{Binding SettingsJSON.bWithLinuxAArch64}" IsEnabled="{Binding SupportLinuxAArch64, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
+                                            <CheckBox x:Name="bWithAndroid" Content="Android" Margin="10" IsChecked="{Binding SettingsJSON.bWithAndroid}" />
+                                            <CheckBox x:Name="bWithIOS" Content="IOS" Margin="10" IsChecked="{Binding SettingsJSON.bWithIOS}" />
+											<CheckBox x:Name="bWithHTML5" Content="HTML 5" Margin="10" IsChecked="{Binding SettingsJSON.bWithHTML5}" IsEnabled="{Binding SupportHTML5, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}" />
+                                            <CheckBox x:Name="bWithTVOS" Content="TVOS" Margin="10" IsChecked="{Binding SettingsJSON.bWithTVOS}" />
+                                            <CheckBox x:Name="bWithSwitch" Content="Switch" Margin="10" IsChecked="{Binding SettingsJSON.bWithSwitch}" IsEnabled="{Binding SupportConsoles, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
+                                            <CheckBox x:Name="bWithPS4" Content="PS4" Margin="10" IsChecked="{Binding SettingsJSON.bWithPS4}" IsEnabled="{Binding SupportConsoles, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
+                                            <CheckBox x:Name="bWithXboxOne" Content="XBox One" Margin="10" IsChecked="{Binding SettingsJSON.bWithXboxOne}" IsEnabled="{Binding SupportConsoles, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
+                                            <CheckBox x:Name="bWithLumin" Content="Lumin" Margin="10" IsChecked="{Binding SettingsJSON.bWithLumin}" />
+                                            <CheckBox x:Name="bWithHololens" Content="HoloLens" Margin="10" IsChecked="{Binding SettingsJSON.bWithHoloLens}" IsEnabled="{Binding SupportServerClientTargets, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
 										</WrapPanel>
 									</hc:ScrollViewer>
 								</GroupBox>
@@ -192,28 +194,29 @@
 									<hc:ScrollViewer>
 										<StackPanel>
 											<WrapPanel x:Name="EngineBuildOptionsWrapPanel">
-												<CheckBox x:Name="bWithDDC" Content="Include DDC" Margin="10" IsChecked="{Binding bWithDDC}" ToolTip="Build a standalone derived-data cache for the engine content and templates.                         &#xA;Building a stand-alone Derived Data Cache (DDC) for the Engine and Template content can be one of the slowest aspects of the build.                         &#xA;If you don't need a stand-alone DDC, you can skip this step."/>
-												<CheckBox x:Name="bHostPlatformDDCOnly" Content="Host DDC Only" Margin="10" IsChecked="{Binding bHostPlatformDDCOnly}" IsEnabled="{Binding IsChecked, ElementName=bWithDDC}" ToolTip="Whether to include DDC for the host platform only. Requires DDC to be turned on." />
-												<CheckBox x:Name="bSignExecutables" Content="Sign Executables" Margin="10" IsChecked="{Binding bSignExecutables}" ToolTip="Sign the executables produced where signing is available." />
-												<CheckBox x:Name="bEnableSymStore" Content="Symbol Store" Margin="10" IsChecked="{Binding bEnableSymStore}" ToolTip="Whether to add Source indexing to Windows game apps so they can be added to a symbol server." />
-												<CheckBox x:Name="bWithFullDebugInfo" Content="Include Full Debug Info" Margin="10" IsChecked="{Binding bWithFullDebugInfo}" ToolTip="Generate full debug info for binary editor and packaged application builds." />
-												<CheckBox x:Name="bCleanBuild" Content="Remove Previous" Margin="10" IsChecked="{Binding bCleanBuild}" ToolTip="Cleans any previous builds. Appends -clean to command line." />
-												<CheckBox x:Name="bWithServer" Content="Include Server" Margin="10" IsChecked="{Binding bWithServer}" ToolTip="Create dedicated server target." IsEnabled="{Binding SupportServerClientTargets, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
-												<CheckBox x:Name="bWithClient" Content="Include Client" Margin="10" IsChecked="{Binding bWithClient}" ToolTip="Create client target." IsEnabled="{Binding SupportServerClientTargets, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
-												<CheckBox x:Name="bCompileDatasmithPlugins" Content="Include Datasmith" Margin="10" IsChecked="{Binding bCompileDatasmithPlugins}" ToolTip="If Datasmith plugins should be compiled." IsEnabled="{Binding IsEngineSelection425OrAbove, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
+                                                <CheckBox x:Name="bWithDDC" Content="Include DDC" Margin="10" IsChecked="{Binding SettingsJSON.bWithDDC}" ToolTip="Build a standalone derived-data cache for the engine content and templates.                         &#xA;Building a stand-alone Derived Data Cache (DDC) for the Engine and Template content can be one of the slowest aspects of the build.                         &#xA;If you don't need a stand-alone DDC, you can skip this step."/>
+                                                <CheckBox x:Name="bHostPlatformDDCOnly" Content="Host DDC Only" Margin="10" IsChecked="{Binding SettingsJSON.bHostPlatformDDCOnly}" IsEnabled="{Binding IsChecked, ElementName=bWithDDC}" ToolTip="Whether to include DDC for the host platform only. Requires DDC to be turned on." />
+                                                <CheckBox x:Name="bSignExecutables" Content="Sign Executables" Margin="10" IsChecked="{Binding SettingsJSON.bSignExecutables}" ToolTip="Sign the executables produced where signing is available." />
+                                                <CheckBox x:Name="bEnableSymStore" Content="Symbol Store" Margin="10" IsChecked="{Binding SettingsJSON.bEnableSymStore}" ToolTip="Whether to add Source indexing to Windows game apps so they can be added to a symbol server." />
+                                                <CheckBox x:Name="bWithFullDebugInfo" Content="Include Full Debug Info" Margin="10" IsChecked="{Binding SettingsJSON.bWithFullDebugInfo}" ToolTip="Generate full debug info for binary editor and packaged application builds." />
+                                                <CheckBox x:Name="bCleanBuild" Content="Remove Previous" Margin="10" IsChecked="{Binding SettingsJSON.bCleanBuild}" ToolTip="Cleans any previous builds. Appends -clean to command line." />
+                                                <CheckBox x:Name="bWithServer" Content="Include Server" Margin="10" IsChecked="{Binding SettingsJSON.bWithServer}" ToolTip="Create dedicated server target." IsEnabled="{Binding SupportServerClientTargets, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
+                                                <CheckBox x:Name="bWithClient" Content="Include Client" Margin="10" IsChecked="{Binding SettingsJSON.bWithClient}" ToolTip="Create client target." IsEnabled="{Binding SupportServerClientTargets, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
+                                                <CheckBox x:Name="bCompileDatasmithPlugins" Content="Include Datasmith" Margin="10" IsChecked="{Binding SettingsJSON.bCompileDatasmithPlugins}" ToolTip="If Datasmith plugins should be compiled." IsEnabled="{Binding IsEngineSelection425OrAbove, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
 												<!--CheckBox x:Name="bVS2019" Content="Use 2019 Compiler" Margin="10" IsChecked="{Binding bVS2019}" ToolTip="Use Visual Studio 2019 to build Windows targets. By default, Visual Studio 2017 is used for maximum compatibility." IsEnabled="{Binding SupportVisualStudio2019, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/-->
 											</WrapPanel>
 											<GroupBox Header="Shutdown Settings" Style="{StaticResource GroupBoxOriginal}" Margin="10">
 												<WrapPanel>
-													<CheckBox x:Name="bShutdownWindows" Content="Shutdown Computer after build" Margin="10" IsChecked="{Binding bShutdownPC}" ToolTip="Shuts down your computer after building." />
-													<CheckBox x:Name="bShutdownIfSuccess" Content="Shutdown only if build is successful" Margin="10" IsChecked="{Binding bShutdownIfBuildSuccess}" ToolTip="Shuts down your computer after building only if the build is successful." IsEnabled="{Binding IsChecked, ElementName=bShutdownWindows}" />
+                                                    <CheckBox x:Name="bShutdownWindows" Content="Shutdown Computer after build" Margin="10" IsChecked="{Binding SettingsJSON.bShutdownPC}" ToolTip="Shuts down your computer after building." />
+                                                    <CheckBox x:Name="bShutdownIfSuccess" Content="Shutdown only if build is successful" Margin="10" IsChecked="{Binding SettingsJSON.bShutdownIfBuildSuccess}" ToolTip="Shuts down your computer after building only if the build is successful." IsEnabled="{Binding IsChecked, ElementName=bShutdownWindows}" />
 												</WrapPanel>
 											</GroupBox>
                                             <GroupBox Header="Visual Studio Settings" Style="{StaticResource GroupBoxOriginal}" Margin="10">
                                                 <WrapPanel>
-                                                    <ComboBox IsEditable="True" IsReadOnly="True" Text="Select Version" ItemsSource="{Binding Path=VisualStudioVersions}" />
-                                                    <ComboBox IsEditable="True" IsReadOnly="True" Text="Select Edition" ItemsSource="{Binding Path=VisualStudioEditions}"/>
-                                                    <ComboBox IsEditable="True" IsReadOnly="True" Text="Select Architecture" ItemsSource="{Binding Path=VisualStudioArchitecture}"/>
+                                                    <ComboBox IsEditable="True" IsReadOnly="True" Text="Select Version" ItemsSource="{Binding Path=VisualStudioConfigurations.Versions}" DisplayMemberPath="Version" SelectedItem="{Binding Path=SelectedVersion, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged}"/>
+                                                    <ComboBox IsEditable="True" IsReadOnly="True" Text="Select Edition" ItemsSource="{Binding Path=Editions, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" DisplayMemberPath="Edition" SelectedItem="{Binding Path=SelectedMsBuild, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged}"/>
+                                                    <ComboBox IsEditable="True" IsReadOnly="True" Text="Select Architecture" ItemsSource="{Binding Path=Architectures, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding Path=SelectedArchitecture, Mode=OneWayToSource, UpdateSourceTrigger=PropertyChanged}"/>
+													<!--TextBlock Text="{Binding Path=SelectedArchitecture, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"></TextBlock-->
                                                 </WrapPanel>
                                             </GroupBox>
                                         </StackPanel>
@@ -222,9 +225,9 @@
 
 								<StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
 									<WrapPanel>
-										<TextBox x:Name="GameConfigurations" Margin="12 5 12 5" Width="400" Text="{Binding GameConfigurations}" hc:InfoElement.Placeholder="Game Configurations. E.g: Debug;Development;Shipping" Style="{StaticResource TextBoxExtend}" ToolTip="Which game configurations to include for packaged applications. Defaults to Development;Shipping"/>
-										<TextBox x:Name="CustomOptions" Margin="12 5 12 5" Width="400" Text="{Binding CustomOptions}" hc:InfoElement.Placeholder="Custom Options (if any)" Style="{StaticResource TextBoxExtend}" ToolTip="Pass custom command line options. Typically used when using custom Build XML."/>
-										<TextBox x:Name="AnalyticsOverride" Margin="12 5 12 5" Width="400" Text="{Binding AnalyticsOverride}" hc:InfoElement.Placeholder="Analytics Type" Style="{StaticResource TextBoxExtend}" ToolTip="Identifier for analytic events to send."/>
+                                        <TextBox x:Name="GameConfigurations" Margin="12 5 12 5" Width="400" Text="{Binding SettingsJSON.GameConfigurations}" hc:InfoElement.Placeholder="Game Configurations. E.g: Debug;Development;Shipping" Style="{StaticResource TextBoxExtend}" ToolTip="Which game configurations to include for packaged applications. Defaults to Development;Shipping"/>
+                                        <TextBox x:Name="CustomOptions" Margin="12 5 12 5" Width="400" Text="{Binding SettingsJSON.CustomOptions}" hc:InfoElement.Placeholder="Custom Options (if any)" Style="{StaticResource TextBoxExtend}" ToolTip="Pass custom command line options. Typically used when using custom Build XML."/>
+                                        <TextBox x:Name="AnalyticsOverride" Margin="12 5 12 5" Width="400" Text="{Binding SettingsJSON.AnalyticsOverride}" hc:InfoElement.Placeholder="Analytics Type" Style="{StaticResource TextBoxExtend}" ToolTip="Identifier for analytic events to send."/>
 									</WrapPanel>
 									<Label x:Name="FoundEngineLabel" Content="No Engine selected." HorizontalAlignment="Left" Margin="12 0 0 0"/>
 								</StackPanel>
@@ -275,7 +278,7 @@
 												<CheckBox x:Name="bPluginPS4" Content="PS4" Margin="10"/>
 												<CheckBox x:Name="bPluginXboxOne" Content="XBox One" Margin="10"/>
 												<CheckBox x:Name="bPluginLumin" Content="Lumin" Margin="10"/>
-												<CheckBox x:Name="bPluginHololens" Content="Holo Lens" Margin="10"/>
+												<CheckBox x:Name="bPluginHololens" Content="HoloLens" Margin="10"/>
 											</WrapPanel>
 										</GroupBox>
 										<CheckBox x:Name="bPluginOverrideTargetPlatforms" HorizontalAlignment="Left" Margin="10,15,0,0" VerticalAlignment="Top" Content="Override Target Platforms" />

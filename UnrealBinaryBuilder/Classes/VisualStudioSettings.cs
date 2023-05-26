@@ -13,7 +13,7 @@ namespace UnrealBinaryBuilder.Classes
         {
             VisualStudioMsBuild msBuild = new VisualStudioMsBuild
             {
-                _type = Path.GetFileName(path)
+                _edition = Path.GetFileName(path)
             };
 
             string msBuildPath = Path.Combine(path, "MSBuild");
@@ -32,19 +32,19 @@ namespace UnrealBinaryBuilder.Classes
                     msBuild._x32 = exePath;
             }
 
-            if (msBuild._x64 != "" || msBuild._x32 != "")
+            if (msBuild._x64 != string.Empty || msBuild._x32 != string.Empty)
                 return msBuild;
 
             return null;
         }
 
-        public string Type => _type;
+        public string Edition => _edition;
         public string X64Path => _x64;
         public string X32Path => _x32;
 
-        private string _type;
-        private string _x64 = "";
-        private string _x32 = "";
+        private string _edition;
+        private string _x64 = string.Empty;
+        private string _x32 = string.Empty;
     }
     public class VisualStudioVersion
     {
@@ -116,6 +116,7 @@ namespace UnrealBinaryBuilder.Classes
         }
 
         public List<VisualStudioVersion> Versions => _versions;
+
         private List<VisualStudioVersion> _versions = new List<VisualStudioVersion>();
     }
 }

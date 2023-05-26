@@ -129,7 +129,9 @@ namespace UnrealBinaryBuilder.Classes
 
 		private static readonly string DEFAULT_GIT_CUSTOM_CACHE_PATH = Path.Combine(PROGRAM_SAVED_PATH, "GitCache");
 
-		private static BuilderSettingsJson GenerateDefaultSettingsJSON()
+		private static MainWindow Window => (MainWindow)Application.Current.MainWindow;
+
+        private static BuilderSettingsJson GenerateDefaultSettingsJSON()
 		{
 			BuilderSettingsJson BSJ = new()
             {
@@ -209,10 +211,12 @@ namespace UnrealBinaryBuilder.Classes
 
             string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented);
 			File.WriteAllText(PROGRAM_SETTINGS_PATH, JsonOutput);
-			LogEntry logEntry = new LogEntry();
-			logEntry.Message = $"New Settings file written to {PROGRAM_SETTINGS_PATH}.";
-			((MainWindow)Application.Current.MainWindow).LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
-			((MainWindow)Application.Current.MainWindow).OpenSettingsBtn.IsEnabled = true;
+			LogEntry logEntry = new()
+            {
+                Message = $"New Settings file written to {PROGRAM_SETTINGS_PATH}."
+            };
+            Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
+			Window.OpenSettingsBtn.IsEnabled = true;
 			return JsonConvert.DeserializeObject<BuilderSettingsJson>(JsonOutput);
 		}
 
@@ -220,7 +224,7 @@ namespace UnrealBinaryBuilder.Classes
 		{
 			if (Directory.Exists(PROGRAM_LOG_PATH_BASE))
 			{
-				((MainWindow)Application.Current.MainWindow).OpenLogFolderBtn.IsEnabled = true;
+				Window.OpenLogFolderBtn.IsEnabled = true;
 			}
 
 			BuilderSettingsJson ReturnValue = null;
@@ -232,8 +236,8 @@ namespace UnrealBinaryBuilder.Classes
 				{
 					LogEntry logEntry = new LogEntry();
 					logEntry.Message = $"Settings loaded from {PROGRAM_SETTINGS_PATH}.";
-					((MainWindow)Application.Current.MainWindow).LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
-					((MainWindow)Application.Current.MainWindow).OpenSettingsBtn.IsEnabled = true;
+					Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
+					Window.OpenSettingsBtn.IsEnabled = true;
 				}
 			}
 			else
@@ -245,7 +249,7 @@ namespace UnrealBinaryBuilder.Classes
 					{
 						LogEntry logEntry = new LogEntry();
 						logEntry.Message = $"Directory created: {PROGRAM_SAVED_PATH}.";
-						((MainWindow)Application.Current.MainWindow).LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
+						Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
 					}
 				}
 
@@ -256,7 +260,7 @@ namespace UnrealBinaryBuilder.Classes
 					{
 						LogEntry logEntry = new LogEntry();
 						logEntry.Message = $"Directory created: {PROGRAM_SETTINGS_PATH_BASE}.";
-						((MainWindow)Application.Current.MainWindow).LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
+						Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
 					}
 				}
 
@@ -272,11 +276,11 @@ namespace UnrealBinaryBuilder.Classes
 
 		public static void SaveSettings()
 		{
-			MainWindow mainWindow = ((MainWindow)Application.Current.MainWindow);
+			MainWindow mainWindow = Window;
 			BuilderSettingsJson BSJ = new()
             {
                 Theme = mainWindow.CurrentTheme,
-                bCheckForUpdatesAtStartup = mainWindow.SettingsJSON.bCheckForUpdatesAtStartup,
+                bCheckForUpdatesAtStartup = mainWindow.context.SettingsJSON.bCheckForUpdatesAtStartup,
                 SetupBatFile = mainWindow.SetupBatFilePath.Text,
                 CustomBuildFile = mainWindow.CustomBuildXMLFile.Text,
                 GameConfigurations = mainWindow.GameConfigurations.Text,
@@ -336,7 +340,7 @@ namespace UnrealBinaryBuilder.Classes
                 ZipEnginePath = mainWindow.ZipPath.Text
             };
 
-            List<GitPlatform> GitPlatformList = mainWindow.SettingsJSON.GitDependencyPlatforms;
+            List<GitPlatform> GitPlatformList = mainWindow.context.SettingsJSON.GitDependencyPlatforms;
 			IEnumerable<CheckBox> ComboBoxCollection = GetChildrenOfType<CheckBox>(mainWindow.PlatformStackPanelMain);
 			foreach (GitPlatform gp in GitPlatformList)
 			{
@@ -366,7 +370,7 @@ namespace UnrealBinaryBuilder.Classes
 			if (Directory.Exists(PROGRAM_LOG_PATH_BASE) == false)
 			{
 				Directory.CreateDirectory(PROGRAM_LOG_PATH_BASE);
-				MainWindow mainWindow = ((MainWindow)Application.Current.MainWindow);
+				MainWindow mainWindow = Window;
 				mainWindow.OpenLogFolderBtn.IsEnabled = true;
 			}
 			File.WriteAllText(PROGRAM_LOG_PATH, InContent);
@@ -410,7 +414,7 @@ namespace UnrealBinaryBuilder.Classes
 			{
 				string ErrorMessage = $"Failed to update platform setting. ERROR: {ex.Message}";
 				GameAnalyticsCSharp.LogEvent(ErrorMessage, GameAnalyticsSDK.Net.EGAErrorSeverity.Error);
-				MainWindow mainWindow = ((MainWindow)Application.Current.MainWindow);
+				MainWindow mainWindow = Window;
 				mainWindow.AddLogEntry(ErrorMessage, true);
 				HandyControl.Controls.MessageBox.Fatal(ErrorMessage);
 			}
@@ -418,8 +422,8 @@ namespace UnrealBinaryBuilder.Classes
 
 		public static void LoadInitialValues()
 		{
-			MainWindow mainWindow = ((MainWindow)Application.Current.MainWindow);
-			List<GitPlatform> GitPlatformList = mainWindow.SettingsJSON.GitDependencyPlatforms;
+			MainWindow mainWindow = Window;
+			List<GitPlatform> GitPlatformList = mainWindow.context.SettingsJSON.GitDependencyPlatforms;
 			IEnumerable<CheckBox> ComboBoxCollection = GetChildrenOfType<CheckBox>(mainWindow.PlatformStackPanelMain);
 
 			foreach (GitPlatform gp in GitPlatformList)

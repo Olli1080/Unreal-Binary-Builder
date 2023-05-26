@@ -7,9 +7,12 @@ using Microsoft.Win32;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -20,6 +23,7 @@ using UnrealBinaryBuilder.Classes;
 using UnrealBinaryBuilder.UserControls;
 using UnrealBinaryBuilderUpdater;
 using System.Windows.Data;
+using System.Runtime.CompilerServices;
 
 namespace UnrealBinaryBuilder
 {
@@ -167,7 +171,80 @@ namespace UnrealBinaryBuilder
 			return Path.Combine(BaseEnginePath, "Engine", "Source", "Programs", AUTOMATION_TOOL_LAUNCHER_NAME, $"{AUTOMATION_TOOL_LAUNCHER_NAME}.csproj");
 		}
 	}
-	public partial class MainWindow
+
+    public class Context : INotifyPropertyChanged
+    {
+		public BuilderSettingsJson SettingsJSON { get; set; }
+		public VisualStudioConfigurations VisualStudioConfigurations { get; set; }
+
+        public VisualStudioVersion SelectedVersion
+        {
+            get => _version;
+            set
+            {
+                if (value == _version) return;
+
+                _version = value;
+
+                Editions.Clear();
+                _version.MsBuilds.ForEach((build) => Editions.Add(build));
+                //RaisePropertyChanged();
+            }
+        }
+
+        public VisualStudioMsBuild SelectedMsBuild
+        {
+            get => _selectedMsBuild;
+            set
+            {
+                if (value == _selectedMsBuild) return;
+
+				_selectedMsBuild = value;
+				
+				Architectures.Clear();
+                if(_selectedMsBuild.X32Path != string.Empty)
+					Architectures.Add("x86");
+				if (_selectedMsBuild.X64Path != string.Empty)
+					Architectures.Add("x64");
+            }
+        }
+
+        public string SelectedArchitecture
+        {
+            get => _selectedArchitecture;
+            set
+            {
+                if (value == _selectedArchitecture) return;
+
+                if (value == "x64")
+                {
+                    _selectedArchitecture = _selectedMsBuild.X64Path;
+                }
+                else if (value == "x86")
+                {
+                    _selectedArchitecture = _selectedMsBuild.X32Path;
+                }
+                else return;
+
+                RaisePropertyChanged();
+            }
+        }
+
+        //private BuilderSettingsJson _SettingsJSON;
+        private VisualStudioVersion _version;
+        private VisualStudioMsBuild _selectedMsBuild;
+        private string _selectedArchitecture = string.Empty;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        public void RaisePropertyChanged([CallerMemberName] string propertyName = "")
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public ObservableCollection<VisualStudioMsBuild> Editions { get; } = new();
+        public ObservableCollection<string> Architectures { get; } = new();
+    }
+    public partial class MainWindow
 	{
 		private Process CurrentProcess = null;
 
@@ -190,7 +267,7 @@ namespace UnrealBinaryBuilder
 		private readonly Stopwatch StopwatchTimer = new();
 		private readonly DispatcherTimer DispatchTimer = new();
 
-		public BuilderSettingsJson SettingsJSON = null;
+		//public BuilderSettingsJson SettingsJSON = null;
 
 		private string AutomationExePath = null;
 
@@ -224,16 +301,20 @@ namespace UnrealBinaryBuilder
 
 		private CurrentProcessType currentProcessType = CurrentProcessType.None;
 
-		public MainWindow()
+        public Context context = new();
+
+        public MainWindow()
 		{
 			InitializeComponent();
 			GameAnalyticsCSharp.InitializeGameAnalytics(UnrealBinaryBuilderHelpers.GetProductVersionString(), this);
 			AddLogEntry($"Welcome to Unreal Binary Builder v{UnrealBinaryBuilderHelpers.GetProductVersionString()}");
 			PluginQueueBtn.IsEnabled = false;
 			postBuildSettings = new PostBuildSettings(this);
-			SettingsJSON = BuilderSettings.GetSettingsFile(true);
-			BuilderSettings.LoadInitialValues();
-			DataContext = SettingsJSON;
+			context.SettingsJSON = BuilderSettings.GetSettingsFile(true);
+            context.VisualStudioConfigurations = UnrealBinaryBuilderHelpers.GetConfigurations();
+
+            BuilderSettings.LoadInitialValues();
+			DataContext = context;
 			bUse2019Compiler.IsEnabled = false;
 
 			if (Plugins.GetInstalledEngines() == null)
@@ -269,7 +350,7 @@ namespace UnrealBinaryBuilder
 			DispatchTimer.Tick += new EventHandler(DispatchTimer_Tick);
 			DispatchTimer.Interval = new TimeSpan(0, 0, 1);
 
-			CurrentTheme = SettingsJSON.Theme;
+			CurrentTheme = context.SettingsJSON.Theme;
 			switch (CurrentTheme.ToLower())
             {
                 case "violet":
@@ -285,9 +366,9 @@ namespace UnrealBinaryBuilder
                     break;
             }
 			ZipStatusLabel.Visibility = Visibility.Visible;
-			ZipStausStackPanel.Visibility = Visibility.Collapsed;
+			ZipStatusStackPanel.Visibility = Visibility.Collapsed;
 
-			if (SettingsJSON.bCheckForUpdatesAtStartup)
+			if (context.SettingsJSON.bCheckForUpdatesAtStartup)
 			{
 				CheckForUpdates();
 			}
@@ -758,12 +839,12 @@ namespace UnrealBinaryBuilder
 		{
 			string CommandLines = "--force";
 
-			if (SettingsJSON.GitDependencyAll == true)
+			if (context.SettingsJSON.GitDependencyAll == true)
 			{
 				CommandLines += " --all";
 			}
 
-			foreach (GitPlatform gp in SettingsJSON.GitDependencyPlatforms)
+			foreach (GitPlatform gp in context.SettingsJSON.GitDependencyPlatforms)
 			{
 				if (gp.bIsIncluded == false)
 				{
@@ -771,23 +852,23 @@ namespace UnrealBinaryBuilder
 				}
 			}
 
-			CommandLines += $" --threads={SettingsJSON.GitDependencyThreads}";
-			CommandLines += $" --max-retries={SettingsJSON.GitDependencyMaxRetries}";
+			CommandLines += $" --threads={context.SettingsJSON.GitDependencyThreads}";
+			CommandLines += $" --max-retries={context.SettingsJSON.GitDependencyMaxRetries}";
 			
-			if (SettingsJSON.GitDependencyEnableCache == false)
+			if (context.SettingsJSON.GitDependencyEnableCache == false)
 			{
 				CommandLines += " --no-cache";
 			}
-			else if (string.IsNullOrEmpty(SettingsJSON.GitDependencyCache) == false)
+			else if (string.IsNullOrEmpty(context.SettingsJSON.GitDependencyCache) == false)
 			{
-				CommandLines += $" --cache={SettingsJSON.GitDependencyCache.Replace("\\", "/")}";
-				CommandLines += $" --cache-size-multiplier={SettingsJSON.GitDependencyCacheMultiplier}";
-				CommandLines += $" --cache-days={SettingsJSON.GitDependencyCacheDays}";
+				CommandLines += $" --cache={context.SettingsJSON.GitDependencyCache.Replace("\\", "/")}";
+				CommandLines += $" --cache-size-multiplier={context.SettingsJSON.GitDependencyCacheMultiplier}";
+				CommandLines += $" --cache-days={context.SettingsJSON.GitDependencyCacheDays}";
 			}
 
-			if (string.IsNullOrEmpty(SettingsJSON.GitDependencyProxy) == false)
+			if (string.IsNullOrEmpty(context.SettingsJSON.GitDependencyProxy) == false)
 			{
-				CommandLines += $" --proxy={SettingsJSON.GitDependencyProxy}";
+				CommandLines += $" --proxy={context.SettingsJSON.GitDependencyProxy}";
 			}
 
 
@@ -1013,7 +1094,10 @@ namespace UnrealBinaryBuilder
 				CommandLineArgs += $" -set:VS2019={GetConditionalString(bVS2019.IsChecked)}";
 			}
 			*/
-			if (SupportServerClientTargets)
+
+			CommandLineArgs += $" -set:VS{context.SelectedVersion.Version}=true";
+
+            if (SupportServerClientTargets)
 			{
 				CommandLineArgs +=
                     $" -set:WithServer={GetConditionalString(bWithServer.IsChecked)} -set:WithClient={GetConditionalString(bWithClient.IsChecked)} -set:WithHoloLens={GetConditionalString(bWithHololens.IsChecked)}";
@@ -1139,7 +1223,7 @@ namespace UnrealBinaryBuilder
 			{
 				GameAnalyticsCSharp.AddDesignEvent($"Build:HTML5:IncorrectEngine:{GetEngineName()}");
 				bWithHTML5.IsChecked = false;
-				if (SettingsJSON.bShowHTML5DeprecatedMessage)
+				if (context.SettingsJSON.bShowHTML5DeprecatedMessage)
 				{
 					HandyControl.Controls.MessageBox.Show("HTML5 support was removed from Unreal Engine 4.24 and higher. You had it enabled but since it is of no use, it is disabled.");
 				}
@@ -1149,21 +1233,21 @@ namespace UnrealBinaryBuilder
 			{
 				GameAnalyticsCSharp.AddDesignEvent($"Build:Console:IncorrectEngine:{GetEngineName()}");
 				bWithSwitch.IsChecked = bWithPS4.IsChecked = bWithXboxOne.IsChecked = false;
-				if (SettingsJSON.bShowConsoleDeprecatedMessage)
+				if (context.SettingsJSON.bShowConsoleDeprecatedMessage)
 				{
 					HandyControl.Controls.MessageBox.Show("Console support was removed from Unreal Engine 4.25 and higher. You had it enabled but since it is of no use, it is disabled.");
 				}
 			}
 
 			bool bContinueToBuild = true;
-			if (SettingsJSON.bEnableEngineBuildConfirmationMessage)
+			if (context.SettingsJSON.bEnableEngineBuildConfirmationMessage)
 			{
 				bContinueToBuild = HandyControl.Controls.MessageBox.Show("You are going to build a binary version of Unreal Engine 4. This is a long process and might take time to finish. Are you sure you want to continue? ", "Build Binary Version", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 			}
 
 			if (bContinueToBuild)
 			{
-				if (bWithDDC.IsChecked == true && SettingsJSON.bEnableDDCMessages)
+				if (bWithDDC.IsChecked == true && context.SettingsJSON.bEnableDDCMessages)
 				{
 					MessageBoxResult MessageResult = HandyControl.Controls.MessageBox.Show("Building Derived Data Cache (DDC) is one of the slowest aspect of the build. You can skip this step if you want to. Do you want to continue with DDC enabled?\n\nPress Yes to continue with build\nPress No to continue without DDC\nPress Cancel to stop build", "Warning", MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
 
@@ -1315,8 +1399,8 @@ namespace UnrealBinaryBuilder
                 OnBuildFinished(true);
                 return false;
             }
-			/*TODO
-            string MsBuildFile = UnrealBinaryBuilderHelpers.GetMsBuildPath();
+
+            string MsBuildFile = context.SelectedArchitecture;// UnrealBinaryBuilderHelpers.GetMsBuildPath();
             if (File.Exists(MsBuildFile))
             {
                 ProcessStartInfo processStartInfo = new ProcessStartInfo
@@ -1338,9 +1422,7 @@ namespace UnrealBinaryBuilder
             {
                 AddLogEntry($"Unable to build {UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_NAME}. MsBuild not found in {MsBuildFile}", true);
             }
-			*/
             return false;
-
         }
 		private bool? BuildAutomationToolLauncher()
 		{
@@ -1364,9 +1446,7 @@ namespace UnrealBinaryBuilder
 
             if (UnrealBinaryBuilderHelpers.IsUnrealEngine5)
             {
-                return false; //TODO
-                /*
-                string MsBuildFile = UnrealBinaryBuilderHelpers.GetMsBuildPath();
+                string MsBuildFile = context.SelectedArchitecture;// UnrealBinaryBuilderHelpers.GetMsBuildPath();
                 if (File.Exists(MsBuildFile))
                 {
                     ProcessStartInfo processStartInfo = new ProcessStartInfo
@@ -1387,7 +1467,7 @@ namespace UnrealBinaryBuilder
                 else
                 {
                     AddLogEntry($"Unable to build ${UnrealBinaryBuilderHelpers.AUTOMATION_TOOL_LAUNCHER_NAME}. MsBuild not found in {MsBuildFile}", true);
-                }*/
+                }
             }
             else
             {
