@@ -35,7 +35,7 @@
 		<hc:TextBox x:Name="Username" Grid.Row="2" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="100 0 10 0"/>
 		
 		<TextBlock Text="Email:" Grid.Row="3" VerticalAlignment="Center" Margin="10"/>
-		<hc:TextBox x:Name="Email" TextType="Mail" Grid.Row="3" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="100 0 10 0"/>
+		<hc:TextBox x:Name="Email" Grid.Row="3" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="100 0 10 0"/>
 		
 		<TextBlock Text="Comments" Grid.Row="4" Margin="10"/>
 		<hc:TextBox x:Name="Comment" Grid.Row="4" Grid.ColumnSpan="2" Height="100" Margin="100 10 10 0" hc:InfoElement.Placeholder="Describe what you were doing when this error occurred." VerticalContentAlignment="Top" FontSize="10" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" AcceptsReturn="True"/>

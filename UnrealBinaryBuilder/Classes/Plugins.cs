@@ -20,13 +20,15 @@ namespace UnrealBinaryBuilder.Classes
 				RegistryKey InstalledDirectoryKey = EngineInstallations.OpenSubKey(s);
 				object o = InstalledDirectoryKey.GetValue("InstalledDirectory");
 
-				EngineBuild engineBuild = new EngineBuild();
-				engineBuild.bIsCustomEngine = false;
-				engineBuild.EngineAssociation = s;
-				engineBuild.EngineName = s;
-				engineBuild.EnginePath = o as string;
+				EngineBuild engineBuild = new EngineBuild
+                {
+                    bIsCustomEngine = false,
+                    EngineAssociation = s,
+                    EngineName = s,
+                    EnginePath = o as string
+                };
 
-				ReturnValue.Add(engineBuild);
+                ReturnValue.Add(engineBuild);
 			}
 
 			RegistryKey CustomEngineInstallations = Registry.CurrentUser.OpenSubKey("Software\\Epic Games\\Unreal Engine\\Builds");
@@ -36,13 +38,15 @@ namespace UnrealBinaryBuilder.Classes
 				object o = CustomEngineInstallations.GetValue(s);
 				string EngineBuildName = UnrealBinaryBuilderHelpers.GetEngineVersion(o as string);
 
-				EngineBuild engineBuild = new EngineBuild();
-				engineBuild.bIsCustomEngine = true;
-				engineBuild.EngineAssociation = s;
-				engineBuild.EngineName = $"{EngineBuildName} (Custom)";
-				engineBuild.EnginePath = o as string;
+				EngineBuild engineBuild = new EngineBuild
+                {
+                    bIsCustomEngine = true,
+                    EngineAssociation = s,
+                    EngineName = $"{EngineBuildName} (Custom)",
+                    EnginePath = o as string
+                };
 
-				if (EngineBuildName != null /*&& ReturnValue.Contains(engineBuild) == false*/)
+                if (EngineBuildName != null /*&& ReturnValue.Contains(engineBuild) == false*/)
 				{
 					ReturnValue.Add(engineBuild);
 				}
@@ -76,9 +80,9 @@ namespace UnrealBinaryBuilder.Classes
 
 		public override bool Equals(object obj)
 		{
-			if (obj is EngineBuild)
+			if (obj is EngineBuild build)
 			{
-				return ((EngineBuild)obj).EngineName == EngineName;
+				return build.EngineName == EngineName;
 			}
 
 			return false;

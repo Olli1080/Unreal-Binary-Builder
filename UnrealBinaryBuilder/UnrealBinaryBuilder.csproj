@@ -27,7 +27,7 @@
     <PackageReference Include="CefSharp.Wpf.NETCore" Version="98.1.210" />
 	<!--PackageReference Include="DotNetZip" Version="1.16.0" /-->
     <PackageReference Include="GameAnalytics.Net.Core.SDK" Version="3.3.5" />
-    <PackageReference Include="HandyControl" Version="3.2.0" />
+    <PackageReference Include="HandyControl" Version="3.5.1" />
     <PackageReference Include="LibGit2Sharp" Version="0.27.0-preview-0175" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Sentry" Version="3.14.1" />

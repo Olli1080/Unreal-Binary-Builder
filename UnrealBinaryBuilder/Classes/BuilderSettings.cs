@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using UnrealBinaryBuilder.UserControls;
 using System.Diagnostics;
+using System.Linq;
 
 namespace UnrealBinaryBuilder.Classes
 {
@@ -234,9 +235,11 @@ namespace UnrealBinaryBuilder.Classes
 				ReturnValue = JsonConvert.DeserializeObject<BuilderSettingsJson>(JsonOutput);
 				if (bLog)
 				{
-					LogEntry logEntry = new LogEntry();
-					logEntry.Message = $"Settings loaded from {PROGRAM_SETTINGS_PATH}.";
-					Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
+					LogEntry logEntry = new LogEntry
+                    {
+                        Message = $"Settings loaded from {PROGRAM_SETTINGS_PATH}."
+                    };
+                    Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
 					Window.OpenSettingsBtn.IsEnabled = true;
 				}
 			}
@@ -247,9 +250,11 @@ namespace UnrealBinaryBuilder.Classes
 					Directory.CreateDirectory(PROGRAM_SAVED_PATH);
 					if (bLog)
 					{
-						LogEntry logEntry = new LogEntry();
-						logEntry.Message = $"Directory created: {PROGRAM_SAVED_PATH}.";
-						Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
+						LogEntry logEntry = new LogEntry
+                        {
+                            Message = $"Directory created: {PROGRAM_SAVED_PATH}."
+                        };
+                        Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
 					}
 				}
 
@@ -258,9 +263,11 @@ namespace UnrealBinaryBuilder.Classes
 					Directory.CreateDirectory(PROGRAM_SETTINGS_PATH_BASE);
 					if (bLog)
 					{
-						LogEntry logEntry = new LogEntry();
-						logEntry.Message = $"Directory created: {PROGRAM_SETTINGS_PATH_BASE}.";
-						Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
+						LogEntry logEntry = new LogEntry
+                        {
+                            Message = $"Directory created: {PROGRAM_SETTINGS_PATH_BASE}."
+                        };
+                        Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
 					}
 				}
 
@@ -346,13 +353,13 @@ namespace UnrealBinaryBuilder.Classes
 			{
 				string ComboBoxName = $"Git{gp.Name}Platform";
 				foreach (CheckBox c in ComboBoxCollection)
-				{
-					if (c.Name.ToLower() == ComboBoxName.ToLower())
-					{
-						gp.bIsIncluded = (bool)c.IsChecked;
-						break;
-					}
-				}
+                {
+                    if (c.Name.ToLower() != ComboBoxName.ToLower()) 
+                        continue;
+
+                    gp.bIsIncluded = (bool)c.IsChecked;
+                    break;
+                }
 			}
 			BSJ.GitDependencyPlatforms = GitPlatformList;
 
@@ -398,14 +405,11 @@ namespace UnrealBinaryBuilder.Classes
 			try
 			{
 				BuilderSettingsJson BSJ = GetSettingsFile();
-				foreach (GitPlatform gp in BSJ.GitDependencyPlatforms)
-				{
-					if (gp.Name.ToLower() == InPlatform.ToLower())
-					{
-						gp.bIsIncluded = bIncluded;
-						break;
-					}
-				}
+				foreach (var gp in BSJ.GitDependencyPlatforms.Where(gp => gp.Name.ToLower() == InPlatform.ToLower()))
+                {
+                    gp.bIsIncluded = bIncluded;
+                    break;
+                }
 
 				string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented);
 				File.WriteAllText(PROGRAM_SETTINGS_PATH, JsonOutput);
@@ -430,13 +434,13 @@ namespace UnrealBinaryBuilder.Classes
 			{
 				string ComboBoxName = $"Git{gp.Name}Platform";
 				foreach (CheckBox c in ComboBoxCollection)
-				{
-					if (c.Name.ToLower() == ComboBoxName.ToLower())
-					{
-						c.IsChecked = gp.bIsIncluded;
-						break;
-					}
-				}
+                {
+                    if (!string.Equals(c.Name, ComboBoxName, StringComparison.CurrentCultureIgnoreCase)) 
+                        continue;
+
+                    c.IsChecked = gp.bIsIncluded;
+                    break;
+                }
 			}
 		}
 
@@ -457,23 +461,23 @@ namespace UnrealBinaryBuilder.Classes
 		}
 
 		public static IEnumerable<T> GetChildrenOfType<T>(DependencyObject dependencyObject) where T : DependencyObject
-		{
-			if (dependencyObject != null)
-			{
-				for (int i = 0; i < VisualTreeHelper.GetChildrenCount(dependencyObject); i++)
-				{
-					DependencyObject child = VisualTreeHelper.GetChild(dependencyObject, i);
-					if (child != null && child is T)
-					{
-						yield return (T)child;
-					}
+        {
+            if (dependencyObject == null) 
+                yield break;
 
-					foreach (T childOfChild in GetChildrenOfType<T>(child))
-					{
-						yield return childOfChild;
-					}
-				}
-			}
-		}
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(dependencyObject); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(dependencyObject, i);
+                if (child != null && child is T)
+                {
+                    yield return (T)child;
+                }
+
+                foreach (T childOfChild in GetChildrenOfType<T>(child))
+                {
+                    yield return childOfChild;
+                }
+            }
+        }
 	}
 }

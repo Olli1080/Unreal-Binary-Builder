@@ -43,28 +43,25 @@ namespace UnrealBinaryBuilder.Classes
 
 			DirectoryInfo ZipDirectory = new DirectoryInfo(DirectoryPath);
 			bool bDirectoryExists = ZipDirectory.Exists;
-			bool bHasWriteAccess = false;
-			if (bDirectoryExists)
-			{
-				try
-				{
-					AuthorizationRuleCollection collection = new DirectoryInfo(ZipDirectory.FullName).GetAccessControl().GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
-					foreach (FileSystemAccessRule rule in collection)
-					{
-						if (rule.AccessControlType == AccessControlType.Allow)
-						{
-							bHasWriteAccess = true;
-							break;
-						}
-					}
-				}
-				catch (Exception)
-				{
+			
+            if (!bDirectoryExists) 
+                return false;
 
-				}
-			}
+            try
+            {
+                AuthorizationRuleCollection collection = new DirectoryInfo(ZipDirectory.FullName).GetAccessControl().GetAccessRules(true, true, typeof(System.Security.Principal.NTAccount));
+                if (collection.Cast<FileSystemAccessRule>().Any(rule => rule.AccessControlType == AccessControlType.Allow))
+                {
+                    //bHasWriteAccess
+                    return true;
+                }
+            }
+            catch (Exception)
+            {
 
-			return bDirectoryExists && bHasWriteAccess;
+            }
+
+            return false;
 		}
 
 		public void PrepareToSave()

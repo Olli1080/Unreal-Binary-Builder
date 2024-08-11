@@ -12,7 +12,7 @@ namespace UnrealBinaryBuilder.Classes
 			get
 			{
 				UpdateRepository();
-				return repository != null ? repository.Head.Tip.Sha : null;
+				return repository?.Head.Tip.Sha;
 			}
 		}
 
@@ -23,7 +23,7 @@ namespace UnrealBinaryBuilder.Classes
 			get
 			{
 				UpdateRepository();
-				return repository != null ? repository.Head.FriendlyName : null;
+				return repository?.Head.FriendlyName;
 			}
 		}
 
