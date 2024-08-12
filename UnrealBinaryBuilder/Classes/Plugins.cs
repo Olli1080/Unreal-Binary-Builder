@@ -42,7 +42,7 @@ namespace UnrealBinaryBuilder.Classes
                 {
                     bIsCustomEngine = true,
                     EngineAssociation = s,
-                    EngineName = $"{EngineBuildName} (Custom)",
+                    EngineName = $"{EngineBuildName} (Custom) {s}",
                     EnginePath = o as string
                 };
 
