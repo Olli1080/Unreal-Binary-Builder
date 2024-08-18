@@ -17,6 +17,7 @@ namespace UnrealBinaryBuilder.UserControls
     {
         private ObservableCollection<LogEntry> LogEntries { get; set; }
         private bool AutoScroll = true;
+        private bool addingEntry = false;
 
         public enum EMessageType
         {
@@ -54,7 +55,9 @@ namespace UnrealBinaryBuilder.UserControls
                 {
                     InLogEntry.MsgVisibility = Visibility.Hidden;
                 }
+                addingEntry = true;
                 LogEntries.Add(InLogEntry);
+                addingEntry = false;
             }));
         }
 
@@ -86,7 +89,10 @@ namespace UnrealBinaryBuilder.UserControls
                 {
                     InLogEntry.MsgVisibility = Visibility.Hidden;
                 }
+
+                addingEntry = true;
                 LogEntries.Add(InLogEntry);
+                addingEntry = false;
             }));
         }
 
@@ -97,35 +103,37 @@ namespace UnrealBinaryBuilder.UserControls
 
         private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
+            if (addingEntry)
+                return;
+
             try
             {
+                var scroller = (e.Source as ScrollViewer)!;
+                //TODO:: this stops auto scrolling if a message is bigger than the ScrollView
                 // User scroll event : set or unset autoscroll mode
                 if (e.ExtentHeightChange == 0)
-                {   // Content unchanged : user scroll event
-                    if ((e.Source as ScrollViewer).VerticalOffset == (e.Source as ScrollViewer).ScrollableHeight)
-                    {   // Scroll bar is in bottom
-                        // Set autoscroll mode
-                        AutoScroll = true;
-                    }
-                    else
-                    {   // Scroll bar isn't in bottom
-                        // Unset autoscroll mode
-                        AutoScroll = false;
-                    }
+                {
+                    // Content unchanged : user scroll event
+                    // Scroll bar is in bottom
+                    // Set autoscroll mode
+                    AutoScroll = Math.Abs(scroller.VerticalOffset - scroller.ScrollableHeight) < Double.Epsilon; // Scroll bar isn't in bottom
+                    // Unset autoscroll mode
                 }
 
                 // Content scroll event : autoscroll eventually
                 if (AutoScroll && e.ExtentHeightChange != 0)
                 {   // Content changed and autoscroll mode set
                     // Autoscroll
-                    (e.Source as ScrollViewer).ScrollToVerticalOffset((e.Source as ScrollViewer).ExtentHeight);
+                    scroller.ScrollToVerticalOffset(scroller.ExtentHeight);
                 }
             }
             catch (Exception ex)
             {
-                LogEntry logEntry = new LogEntry();
-                logEntry.Message = string.Format("APPLICATION ERROR: " + ex.Message);
-                logEntry.DateTime = DateTime.Now;
+                var logEntry = new LogEntry
+                {
+                    Message = string.Format("APPLICATION ERROR: " + ex.Message),
+                    DateTime = DateTime.Now
+                };
                 AddLogEntry(logEntry, EMessageType.Error);
             }
         }
@@ -133,7 +141,7 @@ namespace UnrealBinaryBuilder.UserControls
 		private void CopyBtn_Click(object sender, RoutedEventArgs e)
 		{
             Clipboard.SetDataObject(((Control)sender).Tag);
-            ((MainWindow)Application.Current.MainWindow).ShowToastMessage("Copied to clipboard!", EMessageType.Info, true, false, "", 1);
+            ((MainWindow)Application.Current.MainWindow)!.ShowToastMessage("Copied to clipboard!", EMessageType.Info, true, false, "", 1);
         }
 	}
 
@@ -146,7 +154,7 @@ namespace UnrealBinaryBuilder.UserControls
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
                 PropertyChangedEventHandler handler = PropertyChanged;
-                if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+                handler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }));
         }
     }
