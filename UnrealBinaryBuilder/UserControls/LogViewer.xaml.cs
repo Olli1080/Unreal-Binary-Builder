@@ -103,15 +103,12 @@ namespace UnrealBinaryBuilder.UserControls
 
         private void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e)
         {
-            if (addingEntry)
-                return;
-
             try
             {
                 var scroller = (e.Source as ScrollViewer)!;
                 //TODO:: this stops auto scrolling if a message is bigger than the ScrollView
                 // User scroll event : set or unset autoscroll mode
-                if (e.ExtentHeightChange == 0)
+                if (e.ExtentHeightChange == 0 && !addingEntry)
                 {
                     // Content unchanged : user scroll event
                     // Scroll bar is in bottom
@@ -121,7 +118,7 @@ namespace UnrealBinaryBuilder.UserControls
                 }
 
                 // Content scroll event : autoscroll eventually
-                if (AutoScroll && e.ExtentHeightChange != 0)
+                if (AutoScroll/* && e.ExtentHeightChange != 0*/)
                 {   // Content changed and autoscroll mode set
                     // Autoscroll
                     scroller.ScrollToVerticalOffset(scroller.ExtentHeight);
