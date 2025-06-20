@@ -1,16 +1,26 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using UnrealBinaryBuilder.UserControls;
-using System.Diagnostics;
-using System.Linq;
 
 namespace UnrealBinaryBuilder.Classes
 {
+    public enum BuildConfiguration
+    {
+        Debug,
+        DebugGame,
+        Development,
+        Shipping,
+        Test
+    }
+
 	public class BuilderSettingsJson
 	{
 		// Application settings
@@ -21,11 +31,11 @@ namespace UnrealBinaryBuilder.Classes
 		public bool bShowHTML5DeprecatedMessage { get; set; }
 		public bool bShowConsoleDeprecatedMessage { get; set; }
 
-		public string SetupBatFile { get; set; }
-		public string CustomBuildFile { get; set; }
-		public string GameConfigurations { get; set; }
-		public string CustomOptions { get; set; }
-		public string AnalyticsOverride { get; set; }
+		public string? SetupBatFile { get; set; }
+		public string? CustomBuildFile { get; set; }
+		public HashSet<BuildConfiguration> GameConfigurations { get; set; }
+		public string? CustomOptions { get; set; }
+		public string? AnalyticsOverride { get; set; }
 
 		public bool GitDependencyAll { get; set; }
 		public List<GitPlatform> GitDependencyPlatforms { get; set; }
@@ -60,7 +70,8 @@ namespace UnrealBinaryBuilder.Classes
 		public bool bEnableSymStore { get; set; }
 		public bool bWithFullDebugInfo { get; set; }
 		public bool bCleanBuild { get; set; }
-		public bool bWithServer { get; set; }
+        public bool bWithWin64NoPCH { get; set; }
+        public bool bWithServer { get; set; }
 		public bool bWithClient { get; set; }
 		public bool bCompileDatasmithPlugins { get; set; }
 		//public bool bVS2019 { get; set; }
@@ -130,11 +141,7 @@ namespace UnrealBinaryBuilder.Classes
 
 		private static readonly string DEFAULT_GIT_CUSTOM_CACHE_PATH = Path.Combine(PROGRAM_SAVED_PATH, "GitCache");
 
-		private static MainWindow Window => (MainWindow)Application.Current.MainWindow;
-
-        private static BuilderSettingsJson GenerateDefaultSettingsJSON()
-		{
-			BuilderSettingsJson BSJ = new()
+        private static readonly BuilderSettingsJson DEFAULT_SETTINGS = new BuilderSettingsJson
             {
                 Theme = "Dark",
                 bCheckForUpdatesAtStartup = true,
@@ -144,20 +151,23 @@ namespace UnrealBinaryBuilder.Classes
                 bShowConsoleDeprecatedMessage = true,
                 SetupBatFile = null,
                 CustomBuildFile = null,
-                GameConfigurations = "Development;Shipping",
+                GameConfigurations = [BuildConfiguration.Development, BuildConfiguration.Shipping],
                 CustomOptions = null,
                 AnalyticsOverride = null,
                 GitDependencyAll = true,
-                GitDependencyPlatforms = new List<GitPlatform> { 
-                    new("Win64", true), 
-                    new("Win32", true),
-                    new("Linux", false),
-                    new("Android", false),
-                    new("Mac", false), 
-                    new("IOS", false), 
-                    new("TVOS", false),
-                    new("HoloLens", false), 
-                    new("Lumin", false) },
+                GitDependencyPlatforms =
+                [
+                    new ("Win64", true),
+                    new ("Win32", true),
+                    new ("Linux", false),
+                    new ("LinuxArm64", false),
+                    new ("Android", false),
+                    new ("Mac", false),
+                    new ("IOS", false),
+                    new ("TVOS", false),
+                    new ("HoloLens", false),
+                    new ("Lumin", false)
+                ],
                 GitDependencyThreads = 4,
                 GitDependencyMaxRetries = 4,
                 GitDependencyProxy = "",
@@ -187,6 +197,7 @@ namespace UnrealBinaryBuilder.Classes
                 bEnableSymStore = false,
                 bWithFullDebugInfo = false,
                 bCleanBuild = false,
+                bWithWin64NoPCH = false,
                 bWithServer = false,
                 bWithClient = false,
                 bCompileDatasmithPlugins = false,
@@ -210,7 +221,15 @@ namespace UnrealBinaryBuilder.Classes
                 ZipEnginePath = ""
             };
 
-            string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented);
+    public static BuilderSettingsJson DefaultSettings => DEFAULT_SETTINGS;
+
+		private static MainWindow Window => (MainWindow)Application.Current.MainWindow;
+
+        private static BuilderSettingsJson GenerateDefaultSettingsJSON()
+        {
+            var BSJ = DefaultSettings;
+
+            string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented, [new Newtonsoft.Json.Converters.StringEnumConverter()]);
 			File.WriteAllText(PROGRAM_SETTINGS_PATH, JsonOutput);
 			LogEntry logEntry = new()
             {
@@ -218,7 +237,7 @@ namespace UnrealBinaryBuilder.Classes
             };
             Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
 			Window.OpenSettingsBtn.IsEnabled = true;
-			return JsonConvert.DeserializeObject<BuilderSettingsJson>(JsonOutput);
+			return JsonConvert.DeserializeObject<BuilderSettingsJson>(JsonOutput, [new Newtonsoft.Json.Converters.StringEnumConverter()])!;
 		}
 
 		public static BuilderSettingsJson GetSettingsFile(bool bLog = false)
@@ -228,142 +247,168 @@ namespace UnrealBinaryBuilder.Classes
 				Window.OpenLogFolderBtn.IsEnabled = true;
 			}
 
-			BuilderSettingsJson ReturnValue = null;
+			BuilderSettingsJson? ReturnValue = null;
 			if (File.Exists(PROGRAM_SETTINGS_PATH))
 			{
 				string JsonOutput = File.ReadAllText(PROGRAM_SETTINGS_PATH);
-				ReturnValue = JsonConvert.DeserializeObject<BuilderSettingsJson>(JsonOutput);
+				ReturnValue = JsonConvert.DeserializeObject<BuilderSettingsJson>(JsonOutput, [new Newtonsoft.Json.Converters.StringEnumConverter()]);
+                if (ReturnValue != null)
+                {
+                    if (bLog)
+                    {
+                        LogEntry logEntry = new LogEntry
+                        {
+                            Message = $"Settings loaded from {PROGRAM_SETTINGS_PATH}."
+                        };
+                        Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
+                        Window.OpenSettingsBtn.IsEnabled = true;
+                    }
+                    return ReturnValue;
+                }
+            }
+
+			if (Directory.Exists(PROGRAM_SAVED_PATH) == false)
+			{
+				Directory.CreateDirectory(PROGRAM_SAVED_PATH);
 				if (bLog)
 				{
 					LogEntry logEntry = new LogEntry
                     {
-                        Message = $"Settings loaded from {PROGRAM_SETTINGS_PATH}."
+                        Message = $"Directory created: {PROGRAM_SAVED_PATH}."
                     };
                     Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
-					Window.OpenSettingsBtn.IsEnabled = true;
 				}
 			}
-			else
+
+			if (Directory.Exists(PROGRAM_SETTINGS_PATH_BASE) == false)
 			{
-				if (Directory.Exists(PROGRAM_SAVED_PATH) == false)
+				Directory.CreateDirectory(PROGRAM_SETTINGS_PATH_BASE);
+				if (bLog)
 				{
-					Directory.CreateDirectory(PROGRAM_SAVED_PATH);
-					if (bLog)
-					{
-						LogEntry logEntry = new LogEntry
-                        {
-                            Message = $"Directory created: {PROGRAM_SAVED_PATH}."
-                        };
-                        Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
-					}
+					LogEntry logEntry = new LogEntry
+                    {
+                        Message = $"Directory created: {PROGRAM_SETTINGS_PATH_BASE}."
+                    };
+                    Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
 				}
-
-				if (Directory.Exists(PROGRAM_SETTINGS_PATH_BASE) == false)
-				{
-					Directory.CreateDirectory(PROGRAM_SETTINGS_PATH_BASE);
-					if (bLog)
-					{
-						LogEntry logEntry = new LogEntry
-                        {
-                            Message = $"Directory created: {PROGRAM_SETTINGS_PATH_BASE}."
-                        };
-                        Window.LogControl.AddLogEntry(logEntry, LogViewer.EMessageType.Info);
-					}
-				}
-
-				if (Directory.Exists(DEFAULT_GIT_CUSTOM_CACHE_PATH) == false)
-				{
-					Directory.CreateDirectory(DEFAULT_GIT_CUSTOM_CACHE_PATH);
-				}
-
-				ReturnValue = GenerateDefaultSettingsJSON();
 			}
+
+			if (Directory.Exists(DEFAULT_GIT_CUSTOM_CACHE_PATH) == false)
+			{
+				Directory.CreateDirectory(DEFAULT_GIT_CUSTOM_CACHE_PATH);
+			}
+
+			ReturnValue = GenerateDefaultSettingsJSON();
+
 			return ReturnValue;
 		}
 
 		public static void SaveSettings()
 		{
 			MainWindow mainWindow = Window;
-			BuilderSettingsJson BSJ = new()
+            var defaultSettings = GenerateDefaultSettingsJSON();
+
+            BuilderSettingsJson BSJ = new()
             {
                 Theme = mainWindow.CurrentTheme,
                 bCheckForUpdatesAtStartup = mainWindow.context.SettingsJSON.bCheckForUpdatesAtStartup,
                 SetupBatFile = mainWindow.SetupBatFilePath.Text,
                 CustomBuildFile = mainWindow.CustomBuildXMLFile.Text,
-                GameConfigurations = mainWindow.GameConfigurations.Text,
+                GameConfigurations = mainWindow.context.SettingsJSON.GameConfigurations,
                 CustomOptions = mainWindow.CustomOptions.Text,
                 AnalyticsOverride = mainWindow.AnalyticsOverride.Text,
-                GitDependencyAll = (bool)mainWindow.bGitSyncAll.IsChecked,
+                GitDependencyAll = mainWindow.bGitSyncAll.IsChecked ?? defaultSettings.GitDependencyAll,
                 GitDependencyThreads = Convert.ToInt32(mainWindow.GitNumberOfThreads.Text),
                 GitDependencyMaxRetries = Convert.ToInt32(mainWindow.GitNumberOfRetries.Text),
                 GitDependencyProxy = "",
                 GitDependencyCache = mainWindow.GitCachePath.Text,
                 GitDependencyCacheMultiplier = Convert.ToDouble(mainWindow.GitCacheMultiplier.Text),
                 GitDependencyCacheDays = Convert.ToInt32(mainWindow.GitCacheDays.Text),
-                GitDependencyEnableCache = (bool)mainWindow.bGitEnableCache.IsChecked,
-                bHostPlatformOnly = (bool)mainWindow.bHostPlatformOnly.IsChecked,
-                bHostPlatformEditorOnly = (bool)mainWindow.bHostPlatformEditorOnly.IsChecked,
-                bWithWin64 = (bool)mainWindow.bWithWin64.IsChecked,
-                bWithWin32 = (bool)mainWindow.bWithWin32.IsChecked,
-                bWithMac = (bool)mainWindow.bWithMac.IsChecked,
-                bWithLinux = (bool)mainWindow.bWithLinux.IsChecked,
-                bWithLinuxAArch64 = (bool)mainWindow.bWithLinuxAArch64.IsChecked,
-                bWithAndroid = (bool)mainWindow.bWithAndroid.IsChecked,
-                bWithIOS = (bool)mainWindow.bWithIOS.IsChecked,
-                bWithHTML5 = (bool)mainWindow.bWithHTML5.IsChecked,
-                bWithTVOS = (bool)mainWindow.bWithTVOS.IsChecked,
-                bWithSwitch = (bool)mainWindow.bWithSwitch.IsChecked,
-                bWithPS4 = (bool)mainWindow.bWithPS4.IsChecked,
-                bWithXboxOne = (bool)mainWindow.bWithXboxOne.IsChecked,
-                bWithLumin = (bool)mainWindow.bWithLumin.IsChecked,
-                bWithHoloLens = (bool)mainWindow.bWithHololens.IsChecked,
-                bWithDDC = (bool)mainWindow.bWithDDC.IsChecked,
-                bHostPlatformDDCOnly = (bool)mainWindow.bHostPlatformDDCOnly.IsChecked,
-                bSignExecutables = (bool)mainWindow.bSignExecutables.IsChecked,
-                bEnableSymStore = (bool)mainWindow.bEnableSymStore.IsChecked,
-                bWithFullDebugInfo = (bool)mainWindow.bWithFullDebugInfo.IsChecked,
-                bCleanBuild = (bool)mainWindow.bCleanBuild.IsChecked,
-                bWithServer = (bool)mainWindow.bWithServer.IsChecked,
-                bWithClient = (bool)mainWindow.bWithClient.IsChecked,
-                bCompileDatasmithPlugins = (bool)mainWindow.bCompileDatasmithPlugins.IsChecked,
-                //bVS2019 = (bool)mainWindow.bVS2019.IsChecked,
+                GitDependencyEnableCache = mainWindow.bGitEnableCache.IsChecked ?? defaultSettings.GitDependencyEnableCache,
+                bHostPlatformOnly = mainWindow.bHostPlatformOnly.IsChecked ?? defaultSettings.bHostPlatformOnly,
+                bHostPlatformEditorOnly = mainWindow.bHostPlatformEditorOnly.IsChecked ?? defaultSettings.bHostPlatformEditorOnly,
+                bWithWin64 = mainWindow.bWithWin64.IsChecked ?? defaultSettings.bWithWin64,
+                bWithWin32 = mainWindow.bWithWin32.IsChecked ?? defaultSettings.bWithWin32,
+                bWithMac = mainWindow.bWithMac.IsChecked ?? defaultSettings.bWithMac,
+                bWithLinux = mainWindow.bWithLinux.IsChecked ?? defaultSettings.bWithLinux,
+                bWithLinuxAArch64 = mainWindow.bWithLinuxAArch64.IsChecked ?? defaultSettings.bWithLinuxAArch64,
+                bWithAndroid = mainWindow.bWithAndroid.IsChecked ?? defaultSettings.bWithAndroid,
+                bWithIOS = mainWindow.bWithIOS.IsChecked ?? defaultSettings.bWithIOS,
+                bWithHTML5 = mainWindow.bWithHTML5.IsChecked ?? defaultSettings.bWithHTML5,
+                bWithTVOS = mainWindow.bWithTVOS.IsChecked ?? defaultSettings.bWithTVOS,
+                bWithSwitch = mainWindow.bWithSwitch.IsChecked ?? defaultSettings.bWithSwitch,
+                bWithPS4 = mainWindow.bWithPS4.IsChecked ?? defaultSettings.bWithPS4,
+                bWithXboxOne = mainWindow.bWithXboxOne.IsChecked ?? defaultSettings.bWithXboxOne,
+                bWithLumin = mainWindow.bWithLumin.IsChecked ?? defaultSettings.bWithLumin,
+                bWithHoloLens = mainWindow.bWithHololens.IsChecked ?? defaultSettings.bWithHoloLens,
+                bWithDDC = mainWindow.bWithDDC.IsChecked ?? defaultSettings.bWithDDC,
+                bHostPlatformDDCOnly = mainWindow.bHostPlatformDDCOnly.IsChecked ?? defaultSettings.bHostPlatformDDCOnly,
+                bSignExecutables = mainWindow.bSignExecutables.IsChecked ?? defaultSettings.bSignExecutables,
+                bEnableSymStore = mainWindow.bEnableSymStore.IsChecked ?? defaultSettings.bEnableSymStore,
+                bWithFullDebugInfo = mainWindow.bWithFullDebugInfo.IsChecked ?? defaultSettings.bWithFullDebugInfo,
+                bCleanBuild = mainWindow.bCleanBuild.IsChecked ?? defaultSettings.bCleanBuild,
+                bWithWin64NoPCH = mainWindow.bWithWin64NoPCH.IsChecked ?? defaultSettings.bWithWin64NoPCH,
+                bWithServer = mainWindow.bWithServer.IsChecked ?? defaultSettings.bWithServer,
+                bWithClient = mainWindow.bWithClient.IsChecked ?? defaultSettings.bWithClient,
+                bCompileDatasmithPlugins = mainWindow.bCompileDatasmithPlugins.IsChecked ?? defaultSettings.bCompileDatasmithPlugins,
 				//VisualStudio = (VisualStudio)mainWindow.,
-                bShutdownPC = (bool)mainWindow.bShutdownWindows.IsChecked,
-                bShutdownIfBuildSuccess = (bool)mainWindow.bShutdownIfSuccess.IsChecked,
-                bContinueToEngineBuild = (bool)mainWindow.bContinueToEngineBuild.IsChecked,
-                bBuildSetupBatFile = (bool)mainWindow.bBuildSetupBatFile.IsChecked,
-                bGenerateProjectFiles = (bool)mainWindow.bGenerateProjectFiles.IsChecked,
-                bBuildAutomationTool = (bool)mainWindow.bBuildAutomationTool.IsChecked,
-                bZipEngineBuild = (bool)mainWindow.bZipBuild.IsChecked,
-                bZipEngineDebug = (bool)mainWindow.bIncludeDEBUG.IsChecked,
-                bZipEngineDocumentation = (bool)mainWindow.bIncludeDocumentation.IsChecked,
-                bZipEngineExtras = (bool)mainWindow.bIncludeExtras.IsChecked,
-                bZipEngineFastCompression = (bool)mainWindow.bFastCompression.IsChecked,
-                bZipEngineFeaturePacks = (bool)mainWindow.bIncludeFeaturePacks.IsChecked,
-                bZipEnginePDB = (bool)mainWindow.bIncludePDB.IsChecked,
-                bZipEngineSamples = (bool)mainWindow.bIncludeSamples.IsChecked,
-                bZipEngineSource = (bool)mainWindow.bIncludeSource.IsChecked,
-                bZipEngineTemplates = (bool)mainWindow.bIncludeTemplates.IsChecked,
+                bShutdownPC = mainWindow.bShutdownWindows.IsChecked ?? defaultSettings.bShutdownPC,
+                bShutdownIfBuildSuccess = mainWindow.bShutdownIfSuccess.IsChecked ?? defaultSettings.bShutdownIfBuildSuccess,
+                bContinueToEngineBuild = mainWindow.bContinueToEngineBuild.IsChecked ?? defaultSettings.bContinueToEngineBuild,
+                bBuildSetupBatFile = mainWindow.bBuildSetupBatFile.IsChecked ?? defaultSettings.bBuildSetupBatFile,
+                bGenerateProjectFiles = mainWindow.bGenerateProjectFiles.IsChecked ?? defaultSettings.bGenerateProjectFiles,
+                bBuildAutomationTool = mainWindow.bBuildAutomationTool.IsChecked ?? defaultSettings.bBuildAutomationTool,
+                bZipEngineBuild = mainWindow.bZipBuild.IsChecked ?? defaultSettings.bZipEngineBuild,
+                bZipEngineDebug = mainWindow.bIncludeDEBUG.IsChecked ?? defaultSettings.bZipEngineDebug,
+                bZipEngineDocumentation = mainWindow.bIncludeDocumentation.IsChecked ?? defaultSettings.bZipEngineDocumentation,
+                bZipEngineExtras = mainWindow.bIncludeExtras.IsChecked ?? defaultSettings.bZipEngineExtras,
+                bZipEngineFastCompression = mainWindow.bFastCompression.IsChecked ?? defaultSettings.bZipEngineFastCompression,
+                bZipEngineFeaturePacks = mainWindow.bIncludeFeaturePacks.IsChecked ?? defaultSettings.bZipEngineFeaturePacks,
+                bZipEnginePDB = mainWindow.bIncludePDB.IsChecked ?? defaultSettings.bZipEnginePDB,
+                bZipEngineSamples = mainWindow.bIncludeSamples.IsChecked ?? defaultSettings.bZipEngineSamples,
+                bZipEngineSource = mainWindow.bIncludeSource.IsChecked ?? defaultSettings.bZipEngineSource,
+                bZipEngineTemplates = mainWindow.bIncludeTemplates.IsChecked ?? defaultSettings.bZipEngineTemplates,
                 ZipEnginePath = mainWindow.ZipPath.Text
             };
 
+            BSJ.GameConfigurations = mainWindow.context.SettingsJSON.GameConfigurations;
+            /*
+            var allBuildConfig = Enum.GetValues(typeof(BuildConfiguration)).Cast<BuildConfiguration>().ToArray();
+            foreach (var config in allBuildConfig)
+            {
+                string CheckboxName = $"GameConfig{Enum.GetName(config.GetType(), config)}";
+                bool? check_val = ((CheckBox?)mainWindow.FindName(CheckboxName))?.IsChecked;
+                if (check_val == null)
+                {
+                    check_val = defaultSettings.GameConfigurations.Contains(config);
+                }
+
+            }
+            */
+            /*var gameConfigurations = mainWindow.context.SettingsJSON.GameConfigurations;
+            foreach (var config in gameConfigurations)
+            {
+                string CheckboxName = $"GameConfig{Enum.GetName(config.GetType(), config)}";
+                ((CheckBox)mainWindow.FindName(CheckboxName)!).IsChecked;
+            }*/
+
             List<GitPlatform> GitPlatformList = mainWindow.context.SettingsJSON.GitDependencyPlatforms;
-			IEnumerable<CheckBox> ComboBoxCollection = GetChildrenOfType<CheckBox>(mainWindow.PlatformStackPanelMain);
+			IEnumerable<CheckBox> ComboBoxCollection = GetChildrenOfType<CheckBox>(mainWindow.PlatformStackPanelMain).ToArray();
 			foreach (GitPlatform gp in GitPlatformList)
 			{
 				string ComboBoxName = $"Git{gp.Name}Platform";
 				foreach (CheckBox c in ComboBoxCollection)
                 {
-                    if (c.Name.ToLower() != ComboBoxName.ToLower()) 
+                    if (!string.Equals(c.Name, ComboBoxName, StringComparison.CurrentCultureIgnoreCase)) 
                         continue;
 
-                    gp.bIsIncluded = (bool)c.IsChecked;
+                    gp.bIsIncluded = c.IsChecked ?? false;
                     break;
                 }
 			}
 			BSJ.GitDependencyPlatforms = GitPlatformList;
 
-			string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented);
+			string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented, [new Newtonsoft.Json.Converters.StringEnumConverter()]);
 			File.WriteAllText(PROGRAM_SETTINGS_PATH, JsonOutput);
 			LogEntry logEntry = new()
             {
@@ -405,13 +450,13 @@ namespace UnrealBinaryBuilder.Classes
 			try
 			{
 				BuilderSettingsJson BSJ = GetSettingsFile();
-				foreach (var gp in BSJ.GitDependencyPlatforms.Where(gp => gp.Name.ToLower() == InPlatform.ToLower()))
+				foreach (var gp in BSJ.GitDependencyPlatforms.Where(gp => string.Equals(gp.Name, InPlatform, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     gp.bIsIncluded = bIncluded;
                     break;
                 }
 
-				string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented);
+				string JsonOutput = JsonConvert.SerializeObject(BSJ, Formatting.Indented, [new Newtonsoft.Json.Converters.StringEnumConverter()]);
 				File.WriteAllText(PROGRAM_SETTINGS_PATH, JsonOutput);
 			}
 			catch (Exception ex)
@@ -427,8 +472,19 @@ namespace UnrealBinaryBuilder.Classes
 		public static void LoadInitialValues()
 		{
 			MainWindow mainWindow = Window;
-			List<GitPlatform> GitPlatformList = mainWindow.context.SettingsJSON.GitDependencyPlatforms;
-			IEnumerable<CheckBox> ComboBoxCollection = GetChildrenOfType<CheckBox>(mainWindow.PlatformStackPanelMain);
+
+            var allBuildConfig = Enum.GetValues(typeof(BuildConfiguration)).Cast<BuildConfiguration>().ToArray();
+            foreach (var config in allBuildConfig)
+            {
+                string CheckboxName = $"GameConfig{Enum.GetName(config.GetType(), config)}";
+                var checkbox = ((CheckBox?)mainWindow.FindName(CheckboxName));
+                if (checkbox == null) continue;
+
+                checkbox.IsChecked = mainWindow.context.SettingsJSON.GameConfigurations.Contains(config);
+            }
+
+            List<GitPlatform> GitPlatformList = mainWindow.context.SettingsJSON.GitDependencyPlatforms;
+			IEnumerable<CheckBox> ComboBoxCollection = GetChildrenOfType<CheckBox>(mainWindow.PlatformStackPanelMain).ToArray();
 
 			foreach (GitPlatform gp in GitPlatformList)
 			{
@@ -460,7 +516,7 @@ namespace UnrealBinaryBuilder.Classes
 			}
 		}
 
-		public static IEnumerable<T> GetChildrenOfType<T>(DependencyObject dependencyObject) where T : DependencyObject
+		public static IEnumerable<T> GetChildrenOfType<T>(DependencyObject? dependencyObject) where T : DependencyObject
         {
             if (dependencyObject == null) 
                 yield break;

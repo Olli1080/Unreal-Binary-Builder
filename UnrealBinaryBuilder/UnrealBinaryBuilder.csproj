@@ -13,13 +13,14 @@
     <Copyright>Copyright 2020-2021. Created by Satheesh (ryanjon2040)</Copyright>
     <Version>3.1.6</Version>
     <PackageProjectUrl>https://www.buymeacoffee.com/ryanjon2040</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/ryanjon2040/Unreal-Binary-Builder</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Olli1080/Unreal-Binary-Builder</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageIcon>compiler.png</PackageIcon>
     <ApplicationIcon>compiler.ico</ApplicationIcon>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

@@ -9,8 +9,8 @@ namespace UnrealBinaryBuilder.UserControls
 	public partial class DownloadDialog
 	{
 		long CurrentFileSize;
-		private MainWindow _mainWindow = null;
-		public string VersionText = null;
+		private MainWindow _mainWindow;
+		public string? VersionText = null;
 		public DownloadDialog(MainWindow mainWindow, string InVersion)
 		{
 			InitializeComponent();
