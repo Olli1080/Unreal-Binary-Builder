@@ -9,7 +9,7 @@ namespace UnrealBinaryBuilder.Classes
 {
     public class VisualStudioMsBuild
     {
-        public static VisualStudioMsBuild ParseMsBuild(string path)
+        public static VisualStudioMsBuild? ParseMsBuild(string path)
         {
             VisualStudioMsBuild msBuild = new VisualStudioMsBuild
             {
@@ -25,7 +25,7 @@ namespace UnrealBinaryBuilder.Classes
 
             foreach (string exePath in Directory.GetFiles(msBuildPath, "msbuild.exe", SearchOption.AllDirectories))
             {
-                string architecture = Path.GetFileName(Path.GetDirectoryName(exePath));
+                string architecture = Path.GetFileName(Path.GetDirectoryName(exePath)!);
                 if (architecture == "amd64")
                     msBuild._x64 = exePath;
                 else if (architecture == "Bin")
@@ -48,7 +48,7 @@ namespace UnrealBinaryBuilder.Classes
     }
     public class VisualStudioVersion
     {
-        public static VisualStudioVersion ParseVersion(string path)
+        public static VisualStudioVersion? ParseVersion(string path)
         {
             VisualStudioVersion version = new VisualStudioVersion
             {
@@ -62,37 +62,40 @@ namespace UnrealBinaryBuilder.Classes
                     version._msBuilds.Add(build);
             }
 
-            if (version._msBuilds.Count != 0)
-                return version;
-
-            return null;
+            return version._msBuilds.Count != 0 ? version : null;
         }
 
         public int Version => _version;
         public List<VisualStudioMsBuild> MsBuilds => _msBuilds;
 
         private int _version;
-        private List<VisualStudioMsBuild> _msBuilds = new();
+        private List<VisualStudioMsBuild> _msBuilds = [];
     }
 
     public class VisualStudioConfigurations
     {
         public static string MSVC = "Microsoft Visual Studio";
-        public static string GetX86()
+        public static string? GetX86()
         {
             return Environment.GetEnvironmentVariable("ProgramFiles(x86)");
         }
-        public static string GetX64()
+        public static string? GetX64()
         {
             return Environment.GetEnvironmentVariable("ProgramW6432");
         }
 
         public VisualStudioConfigurations()
         {
-            string x86Path = Path.Combine(GetX86(), MSVC);
-            string x64Path = Path.Combine(GetX64(), MSVC);
+            string? x86Path = GetX86();
+            string? x64Path = GetX64();
 
-            List<string> VisualStudioPaths = new List<string>();
+            if (x86Path != null)
+                x86Path = Path.Combine(x86Path, MSVC);
+
+            if (x64Path != null)
+                x64Path = Path.Combine(x64Path, MSVC);
+
+            List<string> VisualStudioPaths = [];
 
             if (Directory.Exists(x86Path))
                 VisualStudioPaths.Add(x86Path);
@@ -108,7 +111,7 @@ namespace UnrealBinaryBuilder.Classes
 
                 foreach (var potentialVersion in potentialVersions)
                 {
-                    VisualStudioVersion version = VisualStudioVersion.ParseVersion(potentialVersion);
+                    VisualStudioVersion? version = VisualStudioVersion.ParseVersion(potentialVersion);
                     if (version != null)
                         _versions.Add(version);
                 }
@@ -117,6 +120,6 @@ namespace UnrealBinaryBuilder.Classes
 
         public List<VisualStudioVersion> Versions => _versions;
 
-        private List<VisualStudioVersion> _versions = new List<VisualStudioVersion>();
+        private List<VisualStudioVersion> _versions = [];
     }
 }

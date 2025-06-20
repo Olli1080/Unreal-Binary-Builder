@@ -10,20 +10,22 @@ namespace UnrealBinaryBuilder
 	/// </summary>
 	public partial class App : Application
 	{
-		private CrashReporter crashReporter = null;
+		private CrashReporter? crashReporter = null;
 
 		public App()
 		{
 			DispatcherUnhandledException += App_DispatcherUnhandledException;
-			SentryOptions sentryOptions = new SentryOptions();
-			sentryOptions.Dsn = "https://23f478ac8a004c5782a7f6597c0b0325@o502371.ingest.sentry.io/5584682";
-			sentryOptions.StackTraceMode = StackTraceMode.Enhanced;
-			sentryOptions.AttachStacktrace = true;
-			sentryOptions.AutoSessionTracking = true;
-			sentryOptions.DetectStartupTime = StartupTimeDetectionMode.Best;
-			sentryOptions.Release = UnrealBinaryBuilderHelpers.GetProductVersionString();
-			sentryOptions.ReportAssembliesMode = ReportAssembliesMode.InformationalVersion;
-			SentrySdk.Init(sentryOptions);
+			SentryOptions sentryOptions = new SentryOptions
+            {
+                Dsn = "https://23f478ac8a004c5782a7f6597c0b0325@o502371.ingest.sentry.io/5584682",
+                StackTraceMode = StackTraceMode.Enhanced,
+                AttachStacktrace = true,
+                AutoSessionTracking = true,
+                DetectStartupTime = StartupTimeDetectionMode.Best,
+                Release = UnrealBinaryBuilderHelpers.GetProductVersionString(),
+                ReportAssembliesMode = ReportAssembliesMode.InformationalVersion
+            };
+            SentrySdk.Init(sentryOptions);
 		}
 
 		void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
@@ -31,10 +33,12 @@ namespace UnrealBinaryBuilder
 			SentryId sentryId = SentrySdk.CaptureException(e.Exception);
 			e.Handled = true;
 
-			crashReporter = new CrashReporter(e.Exception);
-			crashReporter.Owner = Current.MainWindow;
-			crashReporter.CurrentSentryId = sentryId;
-			crashReporter.ShowDialog();
+			crashReporter = new CrashReporter(e.Exception)
+            {
+                Owner = Current.MainWindow,
+                CurrentSentryId = sentryId
+            };
+            crashReporter.ShowDialog();
 			crashReporter = null;
 		}
 	}

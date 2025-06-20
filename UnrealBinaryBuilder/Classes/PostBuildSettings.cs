@@ -9,15 +9,16 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using UnrealBinaryBuilder.UserControls;
+using static System.IO.Path;
 
 namespace UnrealBinaryBuilder.Classes
 {
 	public class PostBuildSettings
 	{
-		Task ZippingTask = null;
-		static CancellationTokenSource ZipCancelTokenSource = new CancellationTokenSource();
+		Task? ZippingTask = null;
+		static CancellationTokenSource ZipCancelTokenSource = new();
 		CancellationToken ZipCancelToken = ZipCancelTokenSource.Token;
-		MainWindow mainWindow = null;
+		MainWindow mainWindow;
 
 		public PostBuildSettings(MainWindow _mainWindow)
 		{
@@ -26,12 +27,12 @@ namespace UnrealBinaryBuilder.Classes
 
 		public bool CanSaveToZip()
 		{
-			return ShouldSaveToZip() && DirectoryIsWritable(Path.GetDirectoryName(mainWindow.ZipPath.Text));
+			return ShouldSaveToZip() && DirectoryIsWritable(GetDirectoryName(mainWindow.ZipPath.Text));
 		}
 
 		public bool ShouldSaveToZip()
 		{
-			return (bool)mainWindow.bZipBuild.IsChecked && !string.IsNullOrEmpty(mainWindow.ZipPath.Text);
+			return (mainWindow.bZipBuild.IsChecked ?? BuilderSettings.DefaultSettings.bZipEngineBuild) && !string.IsNullOrEmpty(mainWindow.ZipPath.Text);
 		}
 
 		public bool DirectoryIsWritable(string DirectoryPath)
@@ -78,7 +79,7 @@ namespace UnrealBinaryBuilder.Classes
 				GameAnalyticsCSharp.AddProgressStart("PluginZip", "Progress");
 			});
 
-			CompressionLevel CL = (bool)mainWindow.bFastCompression.IsChecked ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
+			CompressionLevel CL = (mainWindow.bFastCompression.IsChecked ?? BuilderSettings.DefaultSettings.bZipEngineFastCompression) ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
             await Task.Run(() =>
 			{
                 using FileStream output = new FileStream(ZipLocationToSave, FileMode.CreateNew);
@@ -86,14 +87,14 @@ namespace UnrealBinaryBuilder.Classes
                 {
                     IEnumerable<string> files = Directory.EnumerateFiles(pluginCard.DestinationPath, "*.*",
                         SearchOption.AllDirectories);
-                    List<string> filesToAdd = new List<string>();
+                    List<string> filesToAdd = [];
 
                     foreach (string file in files)
                     {
                         bool bSkipFile = false;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            string CurrentFilePath = Path.GetFullPath(file).ToLower();
+                            string CurrentFilePath = GetFullPath(file).ToLower();
                             if (bZipForMarketplace && (CurrentFilePath.Contains(@"\binaries\") ||
                                                        CurrentFilePath.Contains(@"\intermediate\")))
                             {
@@ -118,7 +119,7 @@ namespace UnrealBinaryBuilder.Classes
                     foreach (string file in filesToAdd)
                     {
                         zipFile.CreateEntryFromFile(file,
-                            Path.GetDirectoryName(file)!.Replace(pluginCard.DestinationPath, string.Empty), CL);
+                            GetDirectoryName(file)!.Replace(pluginCard.DestinationPath, string.Empty), CL);
                         ++entriesSaved;
 
                         Application.Current.Dispatcher.Invoke(() =>
@@ -154,7 +155,7 @@ namespace UnrealBinaryBuilder.Classes
                 //zipFile.Save(ZipLocationToSave);
 				
                 Application.Current.Dispatcher.Invoke(() => { mainWindow.AddLogEntry($"Plugin zipped and saved to: {ZipLocationToSave}"); });
-            });
+            }, ZipCancelToken);
         }
 
 		public async void SaveToZip(string InBuildDirectory, string ZipLocationToSave)
@@ -169,19 +170,20 @@ namespace UnrealBinaryBuilder.Classes
 				mainWindow.ZipStatusStackPanel.Visibility = Visibility.Visible;
 			});
 
-			CompressionLevel CL = (bool)mainWindow.bFastCompression.IsChecked ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
+			CompressionLevel CL = (mainWindow.bFastCompression.IsChecked ?? BuilderSettings.DefaultSettings.bZipEngineFastCompression) ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
 
 			ZippingTask = Task.Run(() =>
 			{
                 using FileStream output = new FileStream(ZipLocationToSave, FileMode.CreateNew);
                 using var zipFile = new ZipArchive(output, ZipArchiveMode.Create);
+                
                 {
 					Application.Current.Dispatcher.Invoke(() => { mainWindow.FileSaveState.Content = $"State: Be Patient! This might take a long time. Ninjas are finding files in {InBuildDirectory}"; });
-					IEnumerable<string> files = Directory.EnumerateFiles(InBuildDirectory, "*.*", SearchOption.AllDirectories);
+					IEnumerable<string> files = Directory.EnumerateFiles(InBuildDirectory, "*.*", SearchOption.AllDirectories).ToArray();
 
 					ZipCancelToken.ThrowIfCancellationRequested();
 
-					List<string> filesToAdd = new List<string>();
+					List<string> filesToAdd = [];
 
 					int SkippedFiles = 0;
 					int AddedFiles = 0;
@@ -199,13 +201,13 @@ namespace UnrealBinaryBuilder.Classes
 						bool bSkipFile = false;
 						Application.Current.Dispatcher.Invoke(() =>
 						{
-							string CurrentFilePath = Path.GetFullPath(file).ToLower();
-							if (mainWindow.bIncludePDB.IsChecked == false && Path.GetExtension(file).ToLower() == ".pdb")
+							string CurrentFilePath = GetFullPath(file).ToLower();
+							if (mainWindow.bIncludePDB.IsChecked == false && GetExtension(file).ToLower() == ".pdb")
 							{
 								bSkipFile = true;
 							}
 
-							if (mainWindow.bIncludeDEBUG.IsChecked == false && Path.GetExtension(file).ToLower() == ".debug")
+							if (mainWindow.bIncludeDEBUG.IsChecked == false && GetExtension(file).ToLower() == ".debug")
 							{
 								bSkipFile = true;
 							}
@@ -266,7 +268,7 @@ namespace UnrealBinaryBuilder.Classes
 						TotalSizeInString = BytesToString(TotalSize);
 						if (bSkipFile)
 						{
-							SkippedFiles++;
+							++SkippedFiles;
 							SkippedSize += new FileInfo(file).Length;
 							SkippedSizeToZipInString = BytesToString(SkippedSize);
 							//Application.Current.Dispatcher.Invoke(() => { mainWindow.AddZipLog($"File Skipped: {file}", MainWindow.ZipLogInclusionType.FileSkipped); });
@@ -321,14 +323,14 @@ namespace UnrealBinaryBuilder.Classes
                         {
                             mainWindow.FileSaveState.Content = "State: Begin Writing...";
                             mainWindow.CurrentFileSaving.Content =
-                                $"Saving File: {Path.GetFileName(file)} ({(entriesSaved)}/{(TotalFiles)})";
+                                $"Saving File: {GetFileName(file)} ({(entriesSaved)}/{(TotalFiles)})";
                             mainWindow.OverallProgressbar.Value = Convert.ToInt32(entriesSaved);
                         });
 
-                        zipFile.CreateEntryFromFile(file, Path.GetDirectoryName(file).Replace(InBuildDirectory, string.Empty), CL);
+                        zipFile.CreateEntryFromFile(file, GetDirectoryName(file)!.Replace(InBuildDirectory, string.Empty), CL);
                         ++entriesSaved;
 
-                        ProcessedSize += new FileInfo(Path.Combine(InBuildDirectory, Path.GetFileName(file))).Length;
+                        ProcessedSize += new FileInfo(Combine(InBuildDirectory, GetFileName(file))).Length;
                         ProcessSizeInString = BytesToString(ProcessedSize);
                         Application.Current.Dispatcher.Invoke(() => {
                             mainWindow.TotalResult.Content =
@@ -434,7 +436,7 @@ namespace UnrealBinaryBuilder.Classes
 
 		public static string BytesToString(long byteCount)
 		{
-			string[] suf = { "B", "KB", "MB", "GB", "TB" };
+			string[] suf = ["B", "KB", "MB", "GB", "TB"];
 			if (byteCount == 0)
 			{
 				return "0" + suf[0];

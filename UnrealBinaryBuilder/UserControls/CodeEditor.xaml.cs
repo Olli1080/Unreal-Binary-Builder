@@ -8,21 +8,20 @@ namespace UnrealBinaryBuilder.UserControls
 	/// </summary>
 	public partial class CodeEditor
 	{
-		private string Internal_FilePath = null;
+		private string? Internal_FilePath = null;
 
 		private bool _isDirty = false;
 		public bool IsDirty
 		{
-			get { return _isDirty; }
-			set
-			{
-				if (_isDirty != value)
-				{
-					_isDirty = value;
-					Title = _isDirty ? "Code Editor (Modified)" : "Code Editor";
-					SaveBtn.IsEnabled = _isDirty;
-				}
-			}
+			get => _isDirty;
+            set
+            {
+                if (_isDirty == value) return;
+
+                _isDirty = value;
+                Title = _isDirty ? "Code Editor (Modified)" : "Code Editor";
+                SaveBtn.IsEnabled = _isDirty;
+            }
 		}
 
 		public CodeEditor()
@@ -33,21 +32,18 @@ namespace UnrealBinaryBuilder.UserControls
 		public bool LoadFile(string FilePath)
 		{
 			FileInfo fileInfo = new FileInfo(FilePath);
-			if (fileInfo.Exists)
-			{
-				Internal_FilePath = FilePath;
-				TextEditor.Load(FilePath);
-				if (fileInfo.IsReadOnly)
-				{
-					TextEditor.IsEnabled = false;
-					SaveBtn.IsEnabled = false;
-				}
-				IsDirty = false;
-				return true;
-			}
+            if (!fileInfo.Exists) return false;
 
-			return false;
-		}
+            Internal_FilePath = FilePath;
+            TextEditor.Load(FilePath);
+            if (fileInfo.IsReadOnly)
+            {
+                TextEditor.IsEnabled = false;
+                SaveBtn.IsEnabled = false;
+            }
+            IsDirty = false;
+            return true;
+        }
 
 		private void MainCodeEditor_Closed(object sender, System.EventArgs e)
 		{
@@ -55,7 +51,8 @@ namespace UnrealBinaryBuilder.UserControls
 		}
 
 		private void SaveBtn_Click(object sender, RoutedEventArgs e)
-		{
+        {
+            if (Internal_FilePath == null) return;
 			File.WriteAllText(Internal_FilePath, TextEditor.Text);
 			IsDirty = false;
 		}

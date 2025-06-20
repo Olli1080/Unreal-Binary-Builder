@@ -13,25 +13,23 @@ namespace UnrealBinaryBuilder.UserControls
 {
 	public partial class PluginCard : UserControl
 	{
-		public readonly string PluginPath = null;
-		public readonly string DestinationPath = null;
-		public readonly string RunUATFile = null;
+		public readonly string PluginPath;
+		public readonly string DestinationPath;
+		public readonly string RunUATFile;
 
-		private readonly List<string> TargetPlatforms = null;
-		private readonly bool IsUsing2019Compiler = false;
+		private readonly List<string>? TargetPlatforms;
 		private bool bBuildFinished = false;
 		private readonly bool bCanZip = false;
 		private readonly bool bZipForMarketplaceZip = false;
-		private string TargetZipPath = null;
-		private readonly MainWindow mainWindow = null;
+		private string TargetZipPath;
+		private readonly MainWindow mainWindow;
 
-		public PluginCard(MainWindow _mainWindow, string InPluginPath, string InDestination, string InEnginePath, bool bUse2019Compiler, List<string> InTargetPlatformsList, bool bZipBuild, string ZipPath, bool bForMarketplace)
+		public PluginCard(MainWindow _mainWindow, string InPluginPath, string InDestination, string InEnginePath, List<string>? InTargetPlatformsList, bool bZipBuild, string ZipPath, bool bForMarketplace)
 		{
 			InitializeComponent();
 			mainWindow = _mainWindow;
 			TargetPlatforms = InTargetPlatformsList;
-			IsUsing2019Compiler = bUse2019Compiler;
-			CompilerText.Text = IsUsing2019Compiler ? "2019" : "2017";
+			//TODO:: CompilerText.Text = IsUsing2019Compiler ? "2019" : "2017";
 			PluginPath = InPluginPath;
 			DestinationPath = InDestination;
 			RunUATFile = Path.Combine(InEnginePath, "Engine", "Build", "BatchFiles", "RunUAT.bat");
@@ -40,7 +38,7 @@ namespace UnrealBinaryBuilder.UserControls
 			using (StreamReader reader = File.OpenText(PluginPath))
 			{
 				JObject o = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
-				PluginDescription.Text = o.GetValue("Description").ToString();
+				PluginDescription.Text = o.GetValue("Description")?.ToString();
 				PluginDescription.ToolTip = PluginDescription.Text;
 			}
 
@@ -54,7 +52,7 @@ namespace UnrealBinaryBuilder.UserControls
 			ZipProgressbar.Visibility = Visibility.Collapsed;
 
 			const string DigitsPattern = @"\d.+";
-			Regex DigitsPatternRgx = new Regex(DigitsPattern, RegexOptions.IgnoreCase);
+			Regex DigitsPatternRgx = new(DigitsPattern, RegexOptions.IgnoreCase);
 			EngineVersionText.Text = DigitsPatternRgx.Match(InEnginePath).Value;
 
 			bCanZip = bZipBuild;
@@ -67,21 +65,19 @@ namespace UnrealBinaryBuilder.UserControls
 			return File.Exists(PluginPath) && Directory.Exists(DestinationPath) && File.Exists(RunUATFile);
 		}
 
-		public string GetTargetPlatforms()
+		public string? GetTargetPlatforms()
 		{
-			if (TargetPlatforms != null)
-			{
-				string TargetPlatformsString = "";
-				foreach (string s in TargetPlatforms)
-				{
-					TargetPlatformsString += $"{s}+";
-				}
+            if (TargetPlatforms == null) return null;
 
-				return $"-TargetPlatforms={TargetPlatformsString.Remove(TargetPlatformsString.Length - 1, 1)}";
-			}
+            string TargetPlatformsString = "";
+            foreach (string s in TargetPlatforms)
+            {
+                TargetPlatformsString += $"{s}+";
+            }
 
-			return "";
-		}
+            return $"-TargetPlatforms={TargetPlatformsString.Remove(TargetPlatformsString.Length - 1, 1)}";
+
+        }
 
 		public void BuildStarted()
 		{
@@ -98,18 +94,17 @@ namespace UnrealBinaryBuilder.UserControls
 				OpenBtn.Visibility = Visibility.Visible;
 				LoadingCircle.Visibility = Visibility.Collapsed;
 				CancelBtn.Visibility = Visibility.Collapsed;
-				if (bCanZip)
-				{
-					if (mainWindow.postBuildSettings.DirectoryIsWritable(TargetZipPath) == false)
-					{
-						TargetZipPath = DestinationPath;
-						mainWindow.AddZipLog($"{PluginName.Text} - Zip path was not found or not writable. New save location is {TargetZipPath}", MainWindow.ZipLogInclusionType.FileSkipped);
-					}
+                if (!bCanZip) return;
 
-					ZipProgressbar.Visibility = Visibility.Visible;
-					mainWindow.postBuildSettings.SavePluginToZip(this, $"{TargetZipPath}\\{Path.GetFileNameWithoutExtension(PluginPath)}_{EngineVersionText.Text}.zip", bZipForMarketplaceZip);
-				}
-			}
+                if (mainWindow.postBuildSettings.DirectoryIsWritable(TargetZipPath) == false)
+                {
+                    TargetZipPath = DestinationPath;
+                    mainWindow.AddZipLog($"{PluginName.Text} - Zip path was not found or not writable. New save location is {TargetZipPath}", MainWindow.ZipLogInclusionType.FileSkipped);
+                }
+
+                ZipProgressbar.Visibility = Visibility.Visible;
+                mainWindow.postBuildSettings.SavePluginToZip(this, $"{TargetZipPath}\\{Path.GetFileNameWithoutExtension(PluginPath)}_{EngineVersionText.Text}.zip", bZipForMarketplaceZip);
+            }
 			else
 			{
 				CancelBtn.Visibility = Visibility.Visible;
@@ -125,13 +120,12 @@ namespace UnrealBinaryBuilder.UserControls
 		}
 
 		public string GetCompiler()
-		{
-			return IsUsing2019Compiler ? "-VS2019" : "-VS2017";
-		}
+        {
+            return ""; //IsUsing2019Compiler ? "-VS2019" : "-VS2017";
+        }
 
 		private void CancelBtn_Click(object sender, RoutedEventArgs e)
 		{
-			MainWindow mainWindow = (MainWindow)Application.Current.MainWindow;
 			mainWindow.RemovePluginFromList(this);
 		}
 

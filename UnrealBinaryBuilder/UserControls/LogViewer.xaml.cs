@@ -30,24 +30,19 @@ namespace UnrealBinaryBuilder.UserControls
         public LogViewer()
         {
             InitializeComponent();
-            DataContext = LogEntries = new ObservableCollection<LogEntry>();
+            DataContext = LogEntries = [];
         }
 
         public void AddZipLog(LogEntry InLogEntry, ZipLogInclusionType InType)
 		{
             InLogEntry.DateTime = DateTime.Now;
-            switch (InType)
-			{
-                case ZipLogInclusionType.FileIncluded:
-                    InLogEntry.MessageColor = Brushes.Green;
-                    break;
-                case ZipLogInclusionType.FileSkipped:
-                    InLogEntry.MessageColor = Brushes.Orange;
-                    break;
-                case ZipLogInclusionType.ExtensionSkipped:
-                    InLogEntry.MessageColor = Brushes.OrangeRed;
-                    break;
-			}
+            InLogEntry.MessageColor = InType switch
+            {
+                ZipLogInclusionType.FileIncluded => Brushes.Green,
+                ZipLogInclusionType.FileSkipped => Brushes.Orange,
+                ZipLogInclusionType.ExtensionSkipped => Brushes.OrangeRed,
+                _ => InLogEntry.MessageColor
+            };
 
             Dispatcher.BeginInvoke((Action)(() =>
             {

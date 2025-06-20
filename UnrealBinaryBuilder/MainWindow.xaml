@@ -78,7 +78,8 @@
 											<CheckBox x:Name="GitWin64Platform" Content="Windows 64" Margin="5" HorizontalAlignment="Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
 											<CheckBox x:Name="GitWin32Platform" Content="Windows 32" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
 											<CheckBox x:Name="GitLinuxPlatform" Content="Linux" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
-											<CheckBox x:Name="GitAndroidPlatform" Content="Android" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
+                                            <CheckBox x:Name="GitLinuxArm64Platform" Content="LinuxArm64" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
+                                            <CheckBox x:Name="GitAndroidPlatform" Content="Android" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
 											<CheckBox x:Name="GitLuminPlatform" Content="Lumin" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
 											<CheckBox x:Name="GitHololensPlatform" Content="HoloLens" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
 											<CheckBox x:Name="GitMacPlatform" Content="Mac" Margin="5" HorizontalAlignment = "Left" Checked="GitPlatform_CheckedChanged" Unchecked="GitPlatform_CheckedChanged"/>
@@ -115,7 +116,7 @@
 							</hc:SimplePanel>
 						</hc:TabItem>
 
-						<hc:TabItem Header="Zip Build" ToolTip="Let's you choose a location to save compiled Unreal Engine as a zip file for easy distribution among team.">
+						<hc:TabItem Header="Zip Build" ToolTip="Lets you choose a location to save compiled Unreal Engine as a zip file for easy distribution among team.">
 							<StackPanel Orientation="Horizontal">
 								<Grid Margin="10" Width="540">
 									<CheckBox x:Name="bZipBuild" Content="Zip final build." VerticalAlignment="Top" HorizontalAlignment="Left"/>
@@ -200,6 +201,7 @@
                                                 <CheckBox x:Name="bEnableSymStore" Content="Symbol Store" Margin="10" IsChecked="{Binding SettingsJSON.bEnableSymStore}" ToolTip="Whether to add Source indexing to Windows game apps so they can be added to a symbol server." />
                                                 <CheckBox x:Name="bWithFullDebugInfo" Content="Include Full Debug Info" Margin="10" IsChecked="{Binding SettingsJSON.bWithFullDebugInfo}" ToolTip="Generate full debug info for binary editor and packaged application builds." />
                                                 <CheckBox x:Name="bCleanBuild" Content="Remove Previous" Margin="10" IsChecked="{Binding SettingsJSON.bCleanBuild}" ToolTip="Cleans any previous builds. Appends -clean to command line." />
+                                                <CheckBox x:Name="bWithWin64NoPCH" Content="Win64 No PCH" Margin="10" IsChecked="{Binding SettingsJSON.bWithWin64NoPCH}" ToolTip="Compile Win64 with NoPCH" />
                                                 <CheckBox x:Name="bWithServer" Content="Include Server" Margin="10" IsChecked="{Binding SettingsJSON.bWithServer}" ToolTip="Create dedicated server target." IsEnabled="{Binding SupportServerClientTargets, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
                                                 <CheckBox x:Name="bWithClient" Content="Include Client" Margin="10" IsChecked="{Binding SettingsJSON.bWithClient}" ToolTip="Create client target." IsEnabled="{Binding SupportServerClientTargets, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
                                                 <CheckBox x:Name="bCompileDatasmithPlugins" Content="Include Datasmith" Margin="10" IsChecked="{Binding SettingsJSON.bCompileDatasmithPlugins}" ToolTip="If Datasmith plugins should be compiled." IsEnabled="{Binding IsEngineSelection425OrAbove, BindingGroupName=EngineChanged, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local1:MainWindow}}}"/>
@@ -225,7 +227,14 @@
 
 								<StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
 									<WrapPanel>
-                                        <TextBox x:Name="GameConfigurations" Margin="12 5 12 5" Width="400" Text="{Binding SettingsJSON.GameConfigurations}" hc:InfoElement.Placeholder="Game Configurations. E.g: Debug;Development;Shipping" Style="{StaticResource TextBoxExtend}" ToolTip="Which game configurations to include for packaged applications. Defaults to Development;Shipping"/>
+                                        <StackPanel Orientation="Horizontal" Width="450" Margin="12 5 12 5" VerticalAlignment="Center">
+                                            <CheckBox x:Name="GameConfigDebug" Content="Debug" Margin="10" Checked="GameConfig_OnChecked" Unchecked="GameConfig_OnUnchecked"/>
+                                            <CheckBox x:Name="GameConfigDebugGame" Content="DebugGame" Margin="10" Checked="GameConfig_OnChecked" Unchecked="GameConfig_OnUnchecked"/>
+                                            <CheckBox x:Name="GameConfigDevelopment" Content="Development" Margin="10" Checked="GameConfig_OnChecked" Unchecked="GameConfig_OnUnchecked"/>
+                                            <CheckBox x:Name="GameConfigShipping" Content="Shipping" Margin="10" Checked="GameConfig_OnChecked" Unchecked="GameConfig_OnUnchecked"/>
+                                            <CheckBox x:Name="GameConfigTest" Content="Test" Margin="10" Checked="GameConfig_OnChecked" Unchecked="GameConfig_OnUnchecked"/>
+                                        </StackPanel>
+                                        <!--TextBox x:Name="GameConfigurations" Margin="12 5 12 5" Width="400" Text="{Binding SettingsJSON.GameConfigurations}" hc:InfoElement.Placeholder="Game Configurations. E.g: Debug;Development;Shipping" Style="{StaticResource TextBoxExtend}" ToolTip="Which game configurations to include for packaged applications. Defaults to Development;Shipping"/-->
                                         <TextBox x:Name="CustomOptions" Margin="12 5 12 5" Width="400" Text="{Binding SettingsJSON.CustomOptions}" hc:InfoElement.Placeholder="Custom Options (if any)" Style="{StaticResource TextBoxExtend}" ToolTip="Pass custom command line options. Typically used when using custom Build XML."/>
                                         <TextBox x:Name="AnalyticsOverride" Margin="12 5 12 5" Width="400" Text="{Binding SettingsJSON.AnalyticsOverride}" hc:InfoElement.Placeholder="Analytics Type" Style="{StaticResource TextBoxExtend}" ToolTip="Identifier for analytic events to send."/>
 									</WrapPanel>
@@ -284,9 +293,8 @@
 										<CheckBox x:Name="bPluginOverrideTargetPlatforms" HorizontalAlignment="Left" Margin="10,15,0,0" VerticalAlignment="Top" Content="Override Target Platforms" />
 									</Grid>
 
-									<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
-										<CheckBox x:Name="bUse2019Compiler" Content="Use 2019 Compiler" HorizontalAlignment="Left" />
-										<Button x:Name="PluginQueueBtn" Content="Queue Build" Style="{StaticResource ButtonDashedPrimary}" HorizontalAlignment="Right" Click="PluginQueueBtn_Click"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">
+                                        <Button x:Name="PluginQueueBtn" Content="Queue Build" Style="{StaticResource ButtonDashedPrimary}" HorizontalAlignment="Right" Click="PluginQueueBtn_Click"/>
 									</StackPanel>
 
 									<StackPanel Orientation="Vertical" HorizontalAlignment="Left" VerticalAlignment="Top" Width="400">

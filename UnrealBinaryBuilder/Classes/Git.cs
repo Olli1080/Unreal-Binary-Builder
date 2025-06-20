@@ -5,9 +5,9 @@ namespace UnrealBinaryBuilder.Classes
 {
     public static class Git
     {
-		private static Repository repository = null;
+		private static Repository? repository = null;
 
-		public static string CommitHash
+		public static string? CommitHash
 		{
 			get
 			{
@@ -16,9 +16,9 @@ namespace UnrealBinaryBuilder.Classes
 			}
 		}
 
-		public static string CommitHashShort => string.IsNullOrWhiteSpace(CommitHash) ? null : CommitHash.Remove(CommitHash.Length - 33);
+		public static string? CommitHashShort => string.IsNullOrWhiteSpace(CommitHash) ? null : CommitHash.Remove(CommitHash.Length - 33);
 
-		public static string BranchName
+		public static string? BranchName
 		{
 			get
 			{
@@ -27,23 +27,20 @@ namespace UnrealBinaryBuilder.Classes
 			}
 		}
 
-		public static string TrackedBranchName
+		public static string? TrackedBranchName
 		{
 			get
 			{
 				UpdateRepository();
-				if (repository != null)
-				{
-					return repository.Head.IsTracking ? repository.Head.TrackedBranch.FriendlyName : null;
-				}
-
-				return null;
+                if (repository == null) return null;
+				
+				return repository.Head.IsTracking ? repository.Head.TrackedBranch.FriendlyName : null;
 			}
 		}
 
 		private static void UpdateRepository()
 		{
-			MainWindow mainWindow = (MainWindow)Application.Current.MainWindow;
+			MainWindow mainWindow = (MainWindow)Application.Current.MainWindow!;
 			if (repository == null && Repository.IsValid(mainWindow.SetupBatFilePath.Text))
 			{
 				repository = new Repository(mainWindow.SetupBatFilePath.Text);

@@ -1,59 +1,74 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using Microsoft.Win32;
 
 namespace UnrealBinaryBuilder.Classes
 {
 	public class Plugins
 	{
-		public static List<EngineBuild> GetInstalledEngines()
-		{
-			RegistryKey EngineInstallations = Registry.LocalMachine.OpenSubKey("Software\\EpicGames\\Unreal Engine");
-			if (EngineInstallations == null)
-			{
-				return null;
-			}
+        public static List<EngineBuild>? GetInstalledEpicEngines()
+        {
+            RegistryKey? EngineInstallations = Registry.LocalMachine.OpenSubKey(@"Software\EpicGames\Unreal Engine");
+            if (EngineInstallations == null) return null;
 
-			List<EngineBuild> ReturnValue = new List<EngineBuild>();
-			string[] InstalledEngines = EngineInstallations.GetSubKeyNames();
-			foreach (var s in InstalledEngines)
-			{
-				RegistryKey InstalledDirectoryKey = EngineInstallations.OpenSubKey(s);
-				object o = InstalledDirectoryKey.GetValue("InstalledDirectory");
+            List<EngineBuild> ReturnValue = [];
+            string[] InstalledEngines = EngineInstallations.GetSubKeyNames();
+            foreach (var s in InstalledEngines)
+            {
+                RegistryKey? InstalledDirectoryKey = EngineInstallations.OpenSubKey(s);
 
-				EngineBuild engineBuild = new EngineBuild
+                object? o = InstalledDirectoryKey?.GetValue("InstalledDirectory");
+
+                if (o is not string EnginePath) continue;
+                if (!Directory.Exists(EnginePath)) continue;
+
+                EngineBuild engineBuild = new EngineBuild
                 {
                     bIsCustomEngine = false,
                     EngineAssociation = s,
                     EngineName = s,
-                    EnginePath = o as string
+                    EnginePath = EnginePath
                 };
 
                 ReturnValue.Add(engineBuild);
-			}
+            }
+			return ReturnValue;
+        }
 
-			RegistryKey CustomEngineInstallations = Registry.CurrentUser.OpenSubKey("Software\\Epic Games\\Unreal Engine\\Builds");
-			InstalledEngines = CustomEngineInstallations.GetValueNames();
-			foreach (var s in InstalledEngines)
-			{
-				object o = CustomEngineInstallations.GetValue(s);
-				string EngineBuildName = UnrealBinaryBuilderHelpers.GetEngineVersion(o as string);
+        public static List<EngineBuild>? GetInstalledCustomEngines()
+        {
+            RegistryKey? CustomEngineInstallations = Registry.CurrentUser.OpenSubKey(@"Software\Epic Games\Unreal Engine\Builds");
 
-				EngineBuild engineBuild = new EngineBuild
+            if (CustomEngineInstallations == null) return null;
+
+            List<EngineBuild> ReturnValue = [];
+            string[] InstalledEngines = CustomEngineInstallations.GetValueNames();
+            foreach (var s in InstalledEngines)
+            {
+                object? o = CustomEngineInstallations.GetValue(s);
+
+                if (o is not string BaseEnginePath) continue;
+                if (!Directory.Exists(BaseEnginePath)) continue;
+
+                string? EngineBuildName = UnrealBinaryBuilderHelpers.GetEngineVersion(BaseEnginePath);
+                if (EngineBuildName == null) continue;
+
+                EngineBuild engineBuild = new EngineBuild
                 {
                     bIsCustomEngine = true,
                     EngineAssociation = s,
                     EngineName = $"{EngineBuildName} (Custom) {s}",
-                    EnginePath = o as string
+                    EnginePath = BaseEnginePath
                 };
+                ReturnValue.Add(engineBuild);
+            }
+            return ReturnValue;
+        }
 
-                if (EngineBuildName != null /*&& ReturnValue.Contains(engineBuild) == false*/)
-				{
-					ReturnValue.Add(engineBuild);
-				}
-			}
-
-			return ReturnValue;
-		}
+		public static List<EngineBuild> GetInstalledEngines()
+        {
+            return [..GetInstalledEpicEngines() ?? [], ..GetInstalledCustomEngines() ?? []];
+        }
 	}
 
 	class UE4PluginJson
