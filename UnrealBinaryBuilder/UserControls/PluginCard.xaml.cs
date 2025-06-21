@@ -8,6 +8,7 @@ using System.Windows;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace UnrealBinaryBuilder.UserControls
 {
@@ -24,7 +25,7 @@ namespace UnrealBinaryBuilder.UserControls
 		private string TargetZipPath;
 		private readonly MainWindow mainWindow;
 
-		public PluginCard(MainWindow _mainWindow, string InPluginPath, string InDestination, string InEnginePath, List<string>? InTargetPlatformsList, bool bZipBuild, string ZipPath, bool bForMarketplace)
+		public PluginCard(MainWindow _mainWindow, string InPluginPath, string InDestination, string InEnginePath, List<string>? InTargetPlatformsList, bool bZipBuild, string ZipPath, bool bForMarketplace, string engineName)
 		{
 			InitializeComponent();
 			mainWindow = _mainWindow;
@@ -51,9 +52,7 @@ namespace UnrealBinaryBuilder.UserControls
 			OpenBtn.Visibility = Visibility.Collapsed;
 			ZipProgressbar.Visibility = Visibility.Collapsed;
 
-			const string DigitsPattern = @"\d.+";
-			Regex DigitsPatternRgx = new(DigitsPattern, RegexOptions.IgnoreCase);
-			EngineVersionText.Text = DigitsPatternRgx.Match(InEnginePath).Value;
+			EngineVersionText.Text = engineName;
 
 			bCanZip = bZipBuild;
 			TargetZipPath = ZipPath;
@@ -103,7 +102,22 @@ namespace UnrealBinaryBuilder.UserControls
                 }
 
                 ZipProgressbar.Visibility = Visibility.Visible;
-                mainWindow.postBuildSettings.SavePluginToZip(this, $"{TargetZipPath}\\{Path.GetFileNameWithoutExtension(PluginPath)}_{EngineVersionText.Text}.zip", bZipForMarketplaceZip);
+                string normalized_version_path = EngineVersionText.Text;
+                foreach (char c in Path.GetInvalidPathChars())
+                {
+                    normalized_version_path = normalized_version_path.Replace(c.ToString(), "_");
+                }
+
+                normalized_version_path = normalized_version_path.Replace('.', '_').Replace('\\', '_').Replace('/', '_');
+                normalized_version_path = Regex.Replace(normalized_version_path, @"(__+)", "_");
+
+				//var task = Task.Run(() => 
+                //{
+                    mainWindow.postBuildSettings.SavePluginToZip(this,
+                        $@"{TargetZipPath}\{Path.GetFileNameWithoutExtension(PluginPath)}_{normalized_version_path}.zip",
+                        bZipForMarketplaceZip);
+                //});
+				//task.GetAwaiter().GetResult();
             }
 			else
 			{

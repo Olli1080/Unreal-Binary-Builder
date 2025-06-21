@@ -82,8 +82,9 @@ namespace UnrealBinaryBuilder.Classes
 			CompressionLevel CL = (mainWindow.bFastCompression.IsChecked ?? BuilderSettings.DefaultSettings.bZipEngineFastCompression) ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
             await Task.Run(() =>
 			{
-                using FileStream output = new FileStream(ZipLocationToSave, FileMode.CreateNew);
-                using var zipFile = new ZipArchive(output, ZipArchiveMode.Create);
+                using FileStream output = new FileStream(ZipLocationToSave, FileMode.Create);
+
+                using (var zipFile = new ZipArchive(output, ZipArchiveMode.Create))
                 {
                     IEnumerable<string> files = Directory.EnumerateFiles(pluginCard.DestinationPath, "*.*",
                         SearchOption.AllDirectories);
@@ -118,8 +119,11 @@ namespace UnrealBinaryBuilder.Classes
                     int entriesSaved = 0;
                     foreach (string file in filesToAdd)
                     {
-                        zipFile.CreateEntryFromFile(file,
-                            GetDirectoryName(file)!.Replace(pluginCard.DestinationPath, string.Empty), CL);
+                        string entry = GetDirectoryName(file)!.Replace(pluginCard.DestinationPath, string.Empty);
+                        entry = Combine(entry, GetFileName(file));
+                        entry = entry.TrimStart('\\').TrimStart('/');
+
+                        zipFile.CreateEntryFromFile(file, entry, CL);
                         ++entriesSaved;
 
                         Application.Current.Dispatcher.Invoke(() =>
