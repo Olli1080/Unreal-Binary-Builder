@@ -361,7 +361,7 @@ namespace UnrealBinaryBuilder
 
 			ChangeStatusLabel("Idle.");
 
-			DispatchTimer.Tick += new EventHandler(DispatchTimer_Tick);
+			DispatchTimer.Tick += DispatchTimer_Tick;
 			DispatchTimer.Interval = new TimeSpan(0, 0, 1);
 
 			CurrentTheme = context.SettingsJSON.Theme;
@@ -516,7 +516,7 @@ namespace UnrealBinaryBuilder
 #pragma warning restore 4014
         }
 
-        private void CloseApplication(object sender, EventArgs e)
+        private void CloseApplication(object? sender, EventArgs e)
 		{
 			downloadDialog!.Close();
 			Close();
@@ -940,9 +940,9 @@ namespace UnrealBinaryBuilder
 				CurrentProcess = new Process();
 				CurrentProcess.StartInfo = processStartInfo;
 				CurrentProcess.EnableRaisingEvents = true;
-				CurrentProcess.OutputDataReceived += new DataReceivedEventHandler(CurrentProcess_OutputDataReceived);
-				CurrentProcess.ErrorDataReceived += new DataReceivedEventHandler(CurrentProcess_ErrorDataReceived);
-				CurrentProcess.Exited += new EventHandler(CurrentProcess_Exited);
+				CurrentProcess.OutputDataReceived += CurrentProcess_OutputDataReceived;
+				CurrentProcess.ErrorDataReceived += CurrentProcess_ErrorDataReceived;
+				CurrentProcess.Exited += CurrentProcess_Exited;
 				CurrentProcess.Start();
 				CurrentProcess.BeginErrorReadLine();
 				CurrentProcess.BeginOutputReadLine();
@@ -1331,7 +1331,12 @@ namespace UnrealBinaryBuilder
 			return UnrealBinaryBuilderHelpers.DetectEngineVersion(SetupBatFilePath.Text);
 		}
 
-		private double GetEngineValue()
+        private string? GetEngineName(string path)
+        {
+            return UnrealBinaryBuilderHelpers.DetectEngineVersion(path);
+        }
+
+        private double GetEngineValue()
 		{
 			string? MyEngineName = GetEngineName();
             if (MyEngineName == null) return 0;
@@ -1578,7 +1583,7 @@ namespace UnrealBinaryBuilder
 					}
 				}
 
-				PluginQueues.Children.Add(new PluginCard(this, PluginPath.Text, PluginDestinationPath.Text, PluginBuildEnginePath[PluginEngineVersionSelection.SelectedIndex], TargetPlatformsList, (bool)PluginZip.IsChecked, PluginZipPath.Text, (bool)PluginZipForMarketplace.IsChecked));
+				PluginQueues.Children.Add(new PluginCard(this, PluginPath.Text, PluginDestinationPath.Text, PluginBuildEnginePath[PluginEngineVersionSelection.SelectedIndex], TargetPlatformsList, (bool)PluginZip.IsChecked, PluginZipPath.Text, (bool)PluginZipForMarketplace.IsChecked, GetEngineName(PluginBuildEnginePath[PluginEngineVersionSelection.SelectedIndex])));
 				PluginQueueBtn.IsEnabled = false;
 				PluginPath.Text = "";
 				PluginDestinationPath.Text = "";
