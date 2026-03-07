@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="UnrealBinaryBuilder.Avalonia.Views.UserControls.LogViewer">
+    <DockPanel>
+        <TextBlock x:Name="LogCountTextBlock" DockPanel.Dock="Bottom" Margin="5,0,5,0" Text="Total log entries: 0"/>
+        <AvaloniaEdit:TextEditor x:Name="LogTextEditor"
+                                 Background="#FF111111"
+                                 Foreground="WhiteSmoke"
+                                 FontFamily="Consolas,Monospace"
+                                 FontSize="12"
+                                 IsReadOnly="True"
+                                 ShowLineNumbers="True"
+                                 HorizontalScrollBarVisibility="Auto"
+                                 VerticalScrollBarVisibility="Auto"/>
+    </DockPanel>
+</UserControl>

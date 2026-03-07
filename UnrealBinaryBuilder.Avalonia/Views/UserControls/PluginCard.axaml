@@ -1,0 +1,71 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:UnrealBinaryBuilder.Avalonia.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             mc:Ignorable="d" d:DesignWidth="240" d:DesignHeight="320"
+             x:Class="UnrealBinaryBuilder.Avalonia.Views.UserControls.PluginCard"
+             x:DataType="vm:PluginCardViewModel">
+    
+    <Border Classes="Card" Margin="8" Width="220" Height="300"
+            Background="{DynamicResource CardBackgroundFillColorDefault}"
+            BorderBrush="{DynamicResource CardStrokeColorDefault}"
+            BorderThickness="1"
+            CornerRadius="8"
+            BoxShadow="0 2 8 0 #1A000000">
+        <Grid RowDefinitions="*, Auto">
+            <StackPanel Grid.Row="0" Margin="12" Spacing="8">
+                <Border Width="96" Height="96" CornerRadius="8" ClipToBounds="True" Background="Gray">
+                    <Image Source="{Binding PluginIcon}" Stretch="UniformToFill" />
+                </Border>
+                
+                <TextBlock Text="{Binding PluginName}" 
+                           FontWeight="Bold" 
+                           FontSize="16" 
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip.Tip="{Binding PluginPath}" />
+                
+                <TextBlock Text="{Binding PluginDescription}" 
+                           FontSize="12" 
+                           TextWrapping="Wrap" 
+                           Height="60"
+                           Opacity="0.7" 
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip.Tip="{Binding PluginDescription}" />
+                
+                <TextBlock Text="{Binding EngineVersion}" 
+                           FontSize="10" 
+                           Opacity="0.5" 
+                           HorizontalAlignment="Right" />
+            </StackPanel>
+            
+            <Border Grid.Row="1" Padding="12" Background="{DynamicResource CardBackgroundFillColorSecondary}" CornerRadius="0,0,8,8">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                        <Button Content="Remove" 
+                                IsVisible="{Binding !IsLoading}"
+                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemovePluginCommand}"
+                                CommandParameter="{Binding}"
+                                Theme="{StaticResource TransparentButtonStyle}" />
+                        
+                        <Button Content="Open" 
+                                IsVisible="{Binding IsSuccess}"
+                                Command="{Binding OpenDestinationCommand}" 
+                                Theme="{StaticResource AccentButtonStyle}" />
+
+                        <ui:ProgressRing Width="24" Height="24" 
+                                         IsVisible="{Binding IsLoading}" 
+                                         IsIndeterminate="True" />
+                    </StackPanel>
+                    
+                    <ProgressBar IsVisible="{Binding ShowZipProgress}" 
+                                 IsIndeterminate="True" 
+                                 VerticalAlignment="Bottom" 
+                                 Height="2" 
+                                 Margin="-12,0,-12,-12" />
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

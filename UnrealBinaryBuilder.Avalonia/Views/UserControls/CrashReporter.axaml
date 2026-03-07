@@ -1,0 +1,48 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="UnrealBinaryBuilder.Avalonia.Views.UserControls.CrashReporter"
+        Title="Crash Reporter" Width="960" Height="500"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Text="Unreal Binary Builder Crash Report" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0 0 0 10" FontWeight="Bold" FontSize="18"/>
+        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Margin="0 0 0 10" Text="Apologies but something happened and an internal unhandled exception has occurred which should be resolved to improve Unreal Binary Builder. An exception report has been sent but please submit any additional information that you can provide." TextWrapping="Wrap"/>
+
+        <TextBox x:Name="StackTraceText" Grid.Row="2" Grid.ColumnSpan="2" Margin="0 0 0 10" FontSize="10" AcceptsReturn="True" IsReadOnly="True" HorizontalContentAlignment="Left" VerticalContentAlignment="Top"/>
+
+        <TextBlock Text="Name:" Grid.Row="3" VerticalAlignment="Center" Margin="0 0 10 5"/>
+        <TextBox x:Name="Username" Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0 0 0 5"/>
+        
+        <TextBlock Text="Email:" Grid.Row="4" VerticalAlignment="Center" Margin="0 0 10 5"/>
+        <TextBox x:Name="Email" Grid.Row="4" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0 0 0 5"/>
+        
+        <TextBlock Text="Comments:" Grid.Row="5" Margin="0 0 10 5"/>
+        <TextBox x:Name="Comment" Grid.Row="5" Grid.Column="1" Height="100" Margin="0 0 0 5" Watermark="Describe what you were doing when this error occurred." VerticalContentAlignment="Top" FontSize="10" AcceptsReturn="True"/>
+        
+        <TextBlock Grid.Row="6" Grid.Column="1" Text="No personal information has been collected in this crash report." FontSize="10" Margin="0 0 0 10" Opacity="0.7"/>
+        <Separator Grid.Row="7" Grid.ColumnSpan="2" Margin="0 10"/>
+        
+        <StackPanel Grid.Row="8" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="SubmitBtn" Content="Submit" Width="100" Click="SubmitBtn_Click" Theme="{StaticResource AccentButtonStyle}"/>
+            <Button x:Name="CancelBtn" Content="Close" Width="100" Margin="10 0 0 0" Click="CancelBtn_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

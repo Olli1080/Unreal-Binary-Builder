@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ae="using:AvaloniaEdit"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="UnrealBinaryBuilder.Avalonia.Views.CodeEditorWindow"
+        Title="Code Editor"
+        WindowStartupLocation="CenterOwner"
+        Width="900" Height="600">
+    <Grid RowDefinitions="Auto, *">
+        <Menu Grid.Row="0">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Save" x:Name="SaveBtn" Click="SaveBtn_Click" HotKey="Ctrl+S" />
+                <Separator />
+                <MenuItem Header="_Close" Click="CloseBtn_Click" />
+            </MenuItem>
+        </Menu>
+        <ae:TextEditor Grid.Row="1"
+                       Name="TextEditor"
+                       HorizontalScrollBarVisibility="Auto"
+                       VerticalScrollBarVisibility="Visible"
+                       FontFamily="Cascadia Code,Consolas,Monospace"
+                       FontSize="14"
+                       ShowLineNumbers="True"
+                       TextChanged="TextEditor_TextChanged" />
+    </Grid>
+</Window>

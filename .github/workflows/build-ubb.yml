@@ -1,26 +1,50 @@
-name: .NET
+name: Build Avalonia Port
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, rework ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, rework ]
 
 env:
-  PROJECT_PATH: UnrealBinaryBuilder.sln
+  PROJECT_PATH: UnrealBinaryBuilder.Avalonia/UnrealBinaryBuilder.Avalonia.csproj
 
 jobs:
   build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            name: Windows-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+            name: Linux-x64
+          - os: macos-13
+            rid: osx-x64
+            name: macOS-x64
+          - os: macos-latest
+            rid: osx-arm64
+            name: macOS-arm64
 
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-dotnet@v1
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 3.1.x
+        dotnet-version: '10.0.x'
         
     - name: Restore Dependencies
       run: dotnet restore ${{ env.PROJECT_PATH }}
-    - name: Build
-      run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
+      
+    - name: Publish
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o publish_output/${{ matrix.rid }}
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: UnrealBinaryBuilder-${{ matrix.name }}
+        path: publish_output/${{ matrix.rid }}

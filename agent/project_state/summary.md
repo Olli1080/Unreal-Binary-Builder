@@ -1,0 +1,21 @@
+# Project State
+
+- **Core Goal**: A cross-platform desktop application (Windows, macOS, Linux) to automate "Installed Builds" (binary builds) of Unreal Engine (UE4/UE5) and Plugins from GitHub source code.
+- **Current Version**: 4.0.0 (Avalonia Port).
+- **Architecture**: MVVM pattern via `CommunityToolkit.Mvvm`.
+- **Technical Status**: 
+  - **100% Feature Parity** with the original WPF v3.1.6 application.
+  - Successfully migrated from a Windows-only WPF codebase to a modern, cross-platform Avalonia UI (.NET 10.0) application.
+  - Features robust asynchronous build orchestration, real-time logging, native file picking, and dynamic theme switching.
+- **Key Components**:
+  - `UnrealBinaryBuilder.Avalonia`: The main executable project containing Views, ViewModels, Models, and core Logic classes.
+  - Legacy `UnrealBinaryBuilder` (WPF) and `UnrealBinaryBuilderUpdater` projects remain in the repository but are superseded by the new Avalonia port.
+- **Dependencies**: 
+  - Avalonia UI & FluentAvalonia
+  - AvaloniaEdit (Code/Log Editor)
+  - CommunityToolkit.Mvvm
+  - LibGit2Sharp (Git metadata parsing)
+  - NetSparkleUpdater (Integrated Auto-Updates)
+  - Sentry (Crash reporting)
+  - GameAnalytics (Telemetry)
+  - Newtonsoft.Json

@@ -1,0 +1,77 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Avalonia.Media.Imaging;
+using System.IO;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+
+namespace UnrealBinaryBuilder.Avalonia.ViewModels;
+
+public partial class PluginCardViewModel : ViewModelBase
+{
+    [ObservableProperty] private string _pluginName = string.Empty;
+    [ObservableProperty] private string _pluginDescription = "No description available.";
+    [ObservableProperty] private string _engineVersion = string.Empty;
+    [ObservableProperty] private Bitmap? _pluginIcon;
+    [ObservableProperty] private bool _isLoading = false;
+    [ObservableProperty] private bool _isSuccess = false;
+    [ObservableProperty] private bool _isFailed = false;
+    [ObservableProperty] private bool _showZipProgress = false;
+
+    public string PluginPath { get; init; } = string.Empty;
+    public string DestinationPath { get; init; } = string.Empty;
+    public string RunUATFile { get; init; } = string.Empty;
+
+    // Build configuration
+    public List<string>? TargetPlatforms { get; set; }
+    public bool bCanZip { get; set; }
+    public string TargetZipPath { get; set; } = string.Empty;
+    public bool bZipForMarketplaceZip { get; set; }
+
+    public event EventHandler? RemoveRequested;
+
+    public PluginCardViewModel(string inPluginPath, string inDestination, string inEnginePath, string inEngineName)
+    {
+        PluginPath = inPluginPath;
+        DestinationPath = inDestination;
+        RunUATFile = Path.Combine(inEnginePath, "Engine", "Build", "BatchFiles", "RunUAT.bat");
+        EngineVersion = inEngineName;
+        PluginName = Path.GetFileNameWithoutExtension(inPluginPath);
+
+        LoadPluginData();
+    }
+
+    private void LoadPluginData()
+    {
+        try {
+            if (File.Exists(PluginPath)) {
+                using (StreamReader reader = File.OpenText(PluginPath)) {
+                    JObject o = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
+                    PluginDescription = o.GetValue("Description")?.ToString() ?? "No description available.";
+                }
+                string pluginDir = Path.GetDirectoryName(PluginPath) ?? string.Empty;
+                string iconPath = Path.Combine(pluginDir, "Resources", "Icon128.png");
+                if (File.Exists(iconPath)) PluginIcon = new Bitmap(iconPath);
+            }
+        } catch (Exception ex) { Debug.WriteLine($"Error loading plugin data: {ex.Message}"); }
+    }
+
+    [RelayCommand]
+    private void OpenDestination()
+    {
+        if (Directory.Exists(DestinationPath)) {
+            if (OperatingSystem.IsWindows()) Process.Start("explorer.exe", DestinationPath);
+            else if (OperatingSystem.IsLinux()) Process.Start("xdg-open", DestinationPath);
+            else if (OperatingSystem.IsMacOS()) Process.Start("open", DestinationPath);
+        }
+    }
+
+    [RelayCommand] private void Cancel() => RemoveRequested?.Invoke(this, EventArgs.Empty);
+
+    public void StartBuild() { IsLoading = true; IsSuccess = false; IsFailed = false; }
+    public void FinishBuild(bool success) { IsLoading = false; IsSuccess = success; IsFailed = !success; }
+}

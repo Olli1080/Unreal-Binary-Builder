@@ -1,0 +1,21 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="UnrealBinaryBuilder.Avalonia.App"
+             xmlns:local="using:UnrealBinaryBuilder.Avalonia"
+             xmlns:sty="using:FluentAvalonia.Styling"
+             xmlns:conv="using:UnrealBinaryBuilder.Avalonia.Converters"
+             RequestedThemeVariant="Default">
+
+    <Application.DataTemplates>
+        <local:ViewLocator/>
+    </Application.DataTemplates>
+  
+    <Application.Resources>
+        <conv:StringEqualsConverter x:Key="StringEqualsConverter" />
+    </Application.Resources>
+
+    <Application.Styles>
+        <sty:FluentAvaloniaTheme PreferUserAccentColor="True" />
+        <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+    </Application.Styles>
+</Application>

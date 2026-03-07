@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="300"
+        x:Class="UnrealBinaryBuilder.Avalonia.Views.AboutDialog"
+        Title="About"
+        Icon="/Assets/compiler.ico"
+        Width="650" Height="300"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        SystemDecorations="Full">
+    <Panel Margin="20">
+        <StackPanel Spacing="10" VerticalAlignment="Center">
+            <TextBlock Text="Unreal Binary Builder" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+            <TextBlock TextWrapping="Wrap" TextAlignment="Center"
+                       Text="A helper application designed to create binary version of Unreal Engine 4 from source and package plugins as well as projects too."/>
+            
+            <TextBlock TextAlignment="Center" Margin="0,10,0,0">
+                Created by Satheesh (ryanjon2040)
+            </TextBlock>
+            
+            <TextBlock TextWrapping="Wrap" TextAlignment="Center" FontSize="12" Opacity="0.8">
+                Updated for 4.18 and PS4/Xbox Support by James Baxter (TheJamsh)&#x0a;
+                Updated for 4.21 and Lumin support by KarstenMaxim (AlphaSoftLLC)&#x0a;
+                Step counter added by Ben Vaccaro (freaksed)&#x0a;
+                Some small updates for 4.24 by Christian Walde (wchristian)
+            </TextBlock>
+        </StackPanel>
+        
+        <Button Content="Close" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="CloseBtn_Click"/>
+    </Panel>
+</Window>

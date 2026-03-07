@@ -1,0 +1,370 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:UnrealBinaryBuilder.Avalonia.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
+        xmlns:ae="using:AvaloniaEdit"
+        xmlns:uc="using:UnrealBinaryBuilder.Avalonia.Views.UserControls"
+        xmlns:cls="using:UnrealBinaryBuilder.Avalonia.Classes"
+        mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
+        x:Class="UnrealBinaryBuilder.Avalonia.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/compiler.ico"
+        Title="Unreal Binary Builder (Avalonia Port)">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <ui:NavigationView PaneDisplayMode="Left"
+                       IsSettingsVisible="True"
+                       SelectedItem="{Binding SelectedCategory}">
+        <ui:NavigationView.MenuItems>
+            <ui:NavigationViewItem Content="Engine Builder" Tag="Engine" IconSource="Build" IsSelected="True" />
+            <ui:NavigationViewItem Content="Plugin Builder" Tag="Plugins" IconSource="Library" />
+            <ui:NavigationViewItem Content="Logs" Tag="Logs" IconSource="Document" />
+        </ui:NavigationView.MenuItems>
+
+        <ui:NavigationView.FooterMenuItems>
+            <ui:NavigationViewItem Content="Get UE Source" Tag="SourceCode" IconSource="Link" />
+            <ui:NavigationViewItem Content="Changelog" Tag="Changelog" IconSource="Calendar" />
+            <ui:NavigationViewItem Content="About" Tag="About" IconSource="Info" />
+            <ui:NavigationViewItem Content="Support" Tag="Support" IconSource="Help" />
+        </ui:NavigationView.FooterMenuItems>
+
+        <ui:NavigationView.Content>
+            <Grid Margin="12">
+                <!-- Engine Builder View -->
+                <Grid IsVisible="{Binding SelectedCategoryTag, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Engine}" 
+                      RowDefinitions="Auto, *">
+                    <StackPanel Grid.Row="0" Spacing="8">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBlock Text="Unreal Engine Binary Builder" Theme="{StaticResource TitleTextBlockStyle}" />
+                            <TextBlock Grid.Column="1" Text="{Binding GitInfo}" VerticalAlignment="Center" Opacity="0.6" FontSize="12" />
+                        </Grid>
+                        
+                        <TabControl Background="Transparent">
+                            <TabItem Header="Setup" ToolTip.Tip="Allows you to configure Setup.bat settings and run it.">
+                                <ScrollViewer Height="450">
+                                    <StackPanel Spacing="10" Margin="0,10">
+                                        <TextBlock Text="Select Unreal Engine source folder to begin." />
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <TextBox Grid.Column="0" Text="{Binding EnginePath}" Watermark="C:\UnrealEngine" ToolTip.Tip="The root folder where Setup.bat and GenerateProjectFiles.bat exists." />
+                                            <Button Grid.Column="1" Content="Browse" Command="{Binding BrowseEnginePathCommand}" Margin="5,0,0,0" />
+                                        </Grid>
+                                        
+                                        <Grid ColumnDefinitions="*, *, *">
+                                            <HeaderedContentControl Header="Visual Studio Version" Margin="0,0,5,0">
+                                                <ComboBox ItemsSource="{Binding VsVersions}" SelectedItem="{Binding SelectedVsVersion}" HorizontalAlignment="Stretch" ToolTip.Tip="Select the Visual Studio version to use for the build.">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate DataType="cls:VisualStudioVersion">
+                                                            <TextBlock Text="{Binding Version, StringFormat='Visual Studio {0}'}" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                            </HeaderedContentControl>
+                                            
+                                            <HeaderedContentControl Grid.Column="1" Header="Edition" Margin="5,0,5,0">
+                                                <ComboBox ItemsSource="{Binding SelectedVsVersion.MsBuilds}" SelectedItem="{Binding SelectedMsBuild}" HorizontalAlignment="Stretch">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate DataType="cls:VisualStudioMsBuild">
+                                                            <TextBlock Text="{Binding Edition}" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                            </HeaderedContentControl>
+
+                                            <HeaderedContentControl Grid.Column="2" Header="Architecture" Margin="5,0,0,0">
+                                                <ComboBox SelectedItem="{Binding SelectedArchitecture}" HorizontalAlignment="Stretch">
+                                                    <ComboBoxItem Content="x64" />
+                                                    <ComboBoxItem Content="x86" />
+                                                </ComboBox>
+                                            </HeaderedContentControl>
+                                        </Grid>
+
+                                        <HeaderedContentControl Header="Setup Options">
+                                            <StackPanel Spacing="10">
+                                                <StackPanel Orientation="Horizontal" Spacing="20">
+                                                    <CheckBox Content="Build Setup" IsChecked="{Binding Settings.bBuildSetupBatFile}" ToolTip.Tip="Run Setup.bat to download dependencies." />
+                                                    <CheckBox Content="Generate Project Files" IsChecked="{Binding Settings.bGenerateProjectFiles}" ToolTip.Tip="Run GenerateProjectFiles.bat to create the Visual Studio solution." />
+                                                    <CheckBox Content="Build Automation Tool" IsChecked="{Binding Settings.bBuildAutomationTool}" ToolTip.Tip="Build the AutomationTool needed for the engine build." />
+                                                    <CheckBox Content="Continue to Engine Build" IsChecked="{Binding Settings.bContinueToEngineBuild}" ToolTip.Tip="Automatically start the engine build after setup steps finish." />
+                                                </StackPanel>
+                                                <Button Content="Start Setup Process" Command="{Binding StartSetupCommand}" Theme="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" />
+                                            </StackPanel>
+                                        </HeaderedContentControl>
+
+                                        <Expander Header="Git Dependencies Options">
+                                            <StackPanel Spacing="10">
+                                                <CheckBox Content="Sync All" IsChecked="{Binding Settings.GitDependencyAll}" ToolTip.Tip="Sync all folders." />
+                                                <TextBlock Text="Platforms to Include:" FontWeight="SemiBold" />
+                                                <ItemsControl ItemsSource="{Binding Settings.GitDependencyPlatforms}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <CheckBox Content="{Binding Name}" IsChecked="{Binding bIsIncluded}" Margin="5" />
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <Grid ColumnDefinitions="*, *, *, *">
+                                                    <HeaderedContentControl Header="Threads">
+                                                        <NumericUpDown Value="{Binding Settings.GitDependencyThreads}" Minimum="1" Maximum="64" ToolTip.Tip="Use N CPU threads when downloading new files." />
+                                                    </HeaderedContentControl>
+                                                    <HeaderedContentControl Grid.Column="1" Header="Max Retries" Margin="10,0">
+                                                        <NumericUpDown Value="{Binding Settings.GitDependencyMaxRetries}" Minimum="1" Maximum="100" ToolTip.Tip="Override maximum number of retries per file." />
+                                                    </HeaderedContentControl>
+                                                    <HeaderedContentControl Grid.Column="2" Header="Multiplier" Margin="0,0,10,0">
+                                                        <NumericUpDown Value="{Binding Settings.GitDependencyCacheMultiplier}" Minimum="0.1" Maximum="10.0" Increment="0.1" ToolTip.Tip="Cache size multiplier." />
+                                                    </HeaderedContentControl>
+                                                    <HeaderedContentControl Grid.Column="3" Header="Days">
+                                                        <NumericUpDown Value="{Binding Settings.GitDependencyCacheDays}" Minimum="1" Maximum="365" ToolTip.Tip="Cache life time in days." />
+                                                    </HeaderedContentControl>
+                                                </Grid>
+                                                <HeaderedContentControl Header="Cache Settings">
+                                                    <StackPanel Spacing="5">
+                                                        <CheckBox Content="Enable Cache" IsChecked="{Binding Settings.GitDependencyEnableCache}" ToolTip.Tip="Enable/Disable caching of downloaded files." />
+                                                        <TextBox Text="{Binding Settings.GitDependencyCache}" IsEnabled="{Binding Settings.GitDependencyEnableCache}" Watermark="Cache Directory" ToolTip.Tip="Custom path for the download cache." />
+                                                    </StackPanel>
+                                                </HeaderedContentControl>
+                                            </StackPanel>
+                                        </Expander>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </TabItem>
+                            
+                            <TabItem Header="Zip Build" ToolTip.Tip="Choose a location to save compiled Unreal Engine as a zip file.">
+                                <StackPanel Spacing="10" Margin="0,10">
+                                    <CheckBox Content="Zip final build" IsChecked="{Binding Settings.bZipEngineBuild}" />
+                                    <Grid ColumnDefinitions="*, Auto" IsEnabled="{Binding Settings.bZipEngineBuild}">
+                                        <TextBox Grid.Column="0" Text="{Binding Settings.ZipEnginePath}" Watermark="Zip save location" ToolTip.Tip="Browse and select the folder where you want to move the zip file after build." />
+                                        <Button Grid.Column="1" Content="Browse" Command="{Binding BrowseZipPathCommand}" Margin="5,0,0,0" />
+                                    </Grid>
+                                    
+                                    <Expander Header="Contents to Zip" IsExpanded="True" IsEnabled="{Binding Settings.bZipEngineBuild}">
+                                        <WrapPanel Orientation="Horizontal">
+                                            <CheckBox Content="Core (Always)" IsChecked="True" IsEnabled="False" Margin="5" ToolTip.Tip="Required files. Cannot edit." />
+                                            <CheckBox Content="Include PDB" IsChecked="{Binding Settings.bZipEnginePDB}" Margin="5" ToolTip.Tip="Include *.pdb in zip (significantly increases size)." />
+                                            <CheckBox Content="Include Debug" IsChecked="{Binding Settings.bZipEngineDebug}" Margin="5" ToolTip.Tip="Include *.debug files in zip (significantly increases size)." />
+                                            <CheckBox Content="Include Documentation" IsChecked="{Binding Settings.bZipEngineDocumentation}" Margin="5" ToolTip.Tip="Include documentation folder." />
+                                            <CheckBox Content="Include Extras" IsChecked="{Binding Settings.bZipEngineExtras}" Margin="5" ToolTip.Tip="Include extras folder." />
+                                            <CheckBox Content="Include Source" IsChecked="{Binding Settings.bZipEngineSource}" Margin="5" ToolTip.Tip="Include source code (significantly increases size)." />
+                                            <CheckBox Content="Include Feature Packs" IsChecked="{Binding Settings.bZipEngineFeaturePacks}" Margin="5" ToolTip.Tip="Include feature packs (First Person, Third Person, etc)." />
+                                            <CheckBox Content="Include Samples" IsChecked="{Binding Settings.bZipEngineSamples}" Margin="5" ToolTip.Tip="Include samples (Starter content)." />
+                                            <CheckBox Content="Include Templates" IsChecked="{Binding Settings.bZipEngineTemplates}" Margin="5" ToolTip.Tip="Include templates folder." />
+                                            <CheckBox Content="Fast Compression" IsChecked="{Binding Settings.bZipEngineFastCompression}" Margin="5" ToolTip.Tip="If false, uses Best Compression (slowest but smallest size)." />
+                                        </WrapPanel>
+                                    </Expander>
+                                </StackPanel>
+                            </TabItem>
+                            
+                            <TabItem Header="Compile" ToolTip.Tip="Various options to choose how you want to compile Unreal Engine.">
+                                <ScrollViewer Height="450">
+                                    <StackPanel Spacing="15" Margin="0,10">
+                                        <Grid ColumnDefinitions="*, Auto, Auto">
+                                            <TextBox Grid.Column="0" Text="{Binding Settings.CustomBuildFile}" Watermark="(Optional) Custom Build XML File" />
+                                            <Button Grid.Column="1" Content="Browse" Command="{Binding BrowseCustomBuildFileCommand}" Margin="5,0,0,0" />
+                                            <Button Grid.Column="2" Content="Reset" Command="{Binding ResetDefaultBuildXMLCommand}" Margin="5,0,0,0" ToolTip.Tip="Reset to default InstalledEngineBuild.xml." />
+                                        </Grid>
+
+                                        <Grid ColumnDefinitions="*, *">
+                                            <Expander Grid.Column="0" Header="Platforms" IsExpanded="True" Margin="0,0,5,0">
+                                                <WrapPanel>
+                                                    <CheckBox Content="Host Only" IsChecked="{Binding Settings.bHostPlatformOnly}" Margin="5" ToolTip.Tip="Build for the host platform only." />
+                                                    <CheckBox Content="Win64" IsChecked="{Binding Settings.bWithWin64}" Margin="5"/>
+                                                    <CheckBox Content="Win32" IsChecked="{Binding Settings.bWithWin32}" IsEnabled="{Binding SupportWin32}" Margin="5"/>
+                                                    <CheckBox Content="Mac" IsChecked="{Binding Settings.bWithMac}" Margin="5"/>
+                                                    <CheckBox Content="Linux" IsChecked="{Binding Settings.bWithLinux}" Margin="5"/>
+                                                    <CheckBox Content="Linux 64" IsChecked="{Binding Settings.bWithLinuxAArch64}" IsEnabled="{Binding SupportLinuxAArch64}" Margin="5" ToolTip.Tip="Build for Linux AArch64 (UE4 4.24+)" />
+                                                    <CheckBox Content="Linux Arm64" IsChecked="{Binding Settings.bWithLinuxAArch64}" IsEnabled="{Binding SupportLinuxArm64}" Margin="5" ToolTip.Tip="Build for Linux Arm64 (UE5+)" />
+                                                    <CheckBox Content="Android" IsChecked="{Binding Settings.bWithAndroid}" Margin="5"/>
+                                                    <CheckBox Content="iOS" IsChecked="{Binding Settings.bWithIOS}" Margin="5"/>
+                                                    <CheckBox Content="TVOS" IsChecked="{Binding Settings.bWithTVOS}" Margin="5"/>
+                                                    <CheckBox Content="HTML5" IsChecked="{Binding Settings.bWithHTML5}" IsEnabled="{Binding SupportHTML5}" Margin="5"/>
+                                                    <CheckBox Content="Switch" IsChecked="{Binding Settings.bWithSwitch}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
+                                                    <CheckBox Content="PS4" IsChecked="{Binding Settings.bWithPS4}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
+                                                    <CheckBox Content="XboxOne" IsChecked="{Binding Settings.bWithXboxOne}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
+                                                    <CheckBox Content="Lumin" IsChecked="{Binding Settings.bWithLumin}" Margin="5"/>
+                                                </WrapPanel>
+                                            </Expander>
+                                            
+                                            <Expander Grid.Column="1" Header="Build Options" IsExpanded="True" Margin="5,0,0,0">
+                                                <WrapPanel>
+                                                    <CheckBox Content="Include DDC" IsChecked="{Binding Settings.bWithDDC}" Margin="5" ToolTip.Tip="Build a standalone derived-data cache for engine content and templates (slowest aspect)." />
+                                                    <CheckBox Content="Host DDC Only" IsChecked="{Binding Settings.bHostPlatformDDCOnly}" IsEnabled="{Binding Settings.bWithDDC}" Margin="5" ToolTip.Tip="Whether to include DDC for the host platform only. Requires DDC to be turned on." />
+                                                    <CheckBox Content="Sign Executables" IsChecked="{Binding Settings.bSignExecutables}" Margin="5" ToolTip.Tip="Sign produced executables where signing is available." />
+                                                    <CheckBox Content="Symbol Store" IsChecked="{Binding Settings.bEnableSymStore}" Margin="5" ToolTip.Tip="Add Source indexing to Windows game apps for symbol server." />
+                                                    <CheckBox Content="Full Debug Info" IsChecked="{Binding Settings.bWithFullDebugInfo}" Margin="5" ToolTip.Tip="Generate full debug info for binary editor and applications." />
+                                                    <CheckBox Content="Clean Build" IsChecked="{Binding Settings.bCleanBuild}" Margin="5" ToolTip.Tip="Cleans previous builds before starting." />
+                                                    <CheckBox Content="Include Server" IsChecked="{Binding Settings.bWithServer}" IsEnabled="{Binding SupportServerClientTargets}" Margin="5" ToolTip.Tip="Create dedicated server target." />
+                                                    <CheckBox Content="Include Client" IsChecked="{Binding Settings.bWithClient}" IsEnabled="{Binding SupportServerClientTargets}" Margin="5" ToolTip.Tip="Create client target." />
+                                                    <CheckBox Content="Include HoloLens" IsChecked="{Binding Settings.bWithHoloLens}" IsEnabled="{Binding SupportServerClientTargets}" Margin="5" ToolTip.Tip="Create HoloLens target." />
+                                                    <CheckBox Content="Include Datasmith" IsChecked="{Binding Settings.bCompileDatasmithPlugins}" IsEnabled="{Binding IsEngineSelection425OrAbove}" Margin="5" ToolTip.Tip="If Datasmith plugins should be compiled." />
+                                                </WrapPanel>
+                                            </Expander>
+                                        </Grid>
+
+                                        <HeaderedContentControl Header="Game Configurations" ToolTip.Tip="Which game configurations to include for packaged applications.">
+                                            <ItemsControl ItemsSource="{Binding GameConfigWrappers}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel Orientation="Horizontal" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" Margin="10,0" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </HeaderedContentControl>
+
+                                        <HeaderedContentControl Header="Advanced Options">
+                                            <StackPanel Spacing="10">
+                                                <TextBox Text="{Binding Settings.AnalyticsOverride}" Watermark="Analytics Override" ToolTip.Tip="Identifier for analytic events to send." />
+                                                <TextBox Text="{Binding Settings.CustomOptions}" Watermark="Additional Command-line Options" ToolTip.Tip="Pass custom command line options." />
+                                            </StackPanel>
+                                        </HeaderedContentControl>
+
+                                        <StackPanel Orientation="Horizontal" Spacing="20">
+                                            <Button Content="Build Unreal Engine" Command="{Binding BuildEngineCommand}" Width="200" Theme="{StaticResource AccentButtonStyle}" />
+                                            <Button Content="Copy Commandline" Command="{Binding CopyCommandLineCommand}" Width="180" ToolTip.Tip="Copy the generated command line to clipboard." />
+                                            <TextBlock VerticalAlignment="Center" Text="{Binding StatusText}" FontWeight="Bold" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </TabItem>
+                        </TabControl>
+                        <Separator Margin="0,5" />
+                    </StackPanel>
+                    
+                    <Grid Grid.Row="1" RowDefinitions="*, Auto">
+                         <ae:TextEditor Grid.Row="0" Name="Editor" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Visible" FontFamily="Cascadia Code,Consolas,Monospace" FontSize="14" ShowLineNumbers="True" IsReadOnly="True" />
+                         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,5">
+                             <TextBlock VerticalAlignment="Center" Text="{Binding ElapsedTime}" FontWeight="SemiBold" />
+                             <TextBlock VerticalAlignment="Center" Text="{Binding CompiledFilesText}" Opacity="0.7" />
+                             <Button Content="Logs" Command="{Binding OpenLogFolderCommand}" Theme="{StaticResource TransparentButtonStyle}" ToolTip.Tip="Open logs folder." />
+                             <Button Content="Builds" Command="{Binding OpenBuildFolderCommand}" Theme="{StaticResource TransparentButtonStyle}" ToolTip.Tip="Open build folder." />
+                             <Separator Margin="5,0" />
+                             <Button Content="Edit Server" Command="{Binding EditTargetFileCommand}" CommandParameter="Server" Theme="{StaticResource TransparentButtonStyle}" />
+                             <Button Content="Edit Game" Command="{Binding EditTargetFileCommand}" CommandParameter="Game" Theme="{StaticResource TransparentButtonStyle}" />
+                             <Button Content="Edit Editor" Command="{Binding EditTargetFileCommand}" CommandParameter="Editor" Theme="{StaticResource TransparentButtonStyle}" />
+                             <Button Content="Edit Client" Command="{Binding EditTargetFileCommand}" CommandParameter="Client" Theme="{StaticResource TransparentButtonStyle}" />
+                         </StackPanel>
+                    </Grid>
+                </Grid>
+
+                <!-- Plugin Builder View -->
+                <Grid IsVisible="{Binding SelectedCategoryTag, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Plugins}" 
+                      RowDefinitions="Auto, *">
+                    <StackPanel Grid.Row="0" Spacing="10">
+                        <TextBlock Text="Plugin Builder" Theme="{StaticResource TitleTextBlockStyle}" />
+                        
+                        <Grid ColumnDefinitions="*, Auto" Margin="0,10">
+                            <TextBox Grid.Column="0" Text="{Binding PluginPath}" Watermark="Select .uplugin file" ToolTip.Tip="The plugin you want to build." />
+                            <Button Grid.Column="1" Content="Browse" Command="{Binding BrowsePluginPathCommand}" Margin="5,0,0,0" />
+                        </Grid>
+                        
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBox Grid.Column="0" Text="{Binding PluginDestinationPath}" Watermark="Select Output Folder" />
+                            <Button Grid.Column="1" Content="Browse" Command="{Binding BrowsePluginDestinationPathCommand}" Margin="5,0,0,0" />
+                        </Grid>
+
+                        <Expander Header="Plugin Options" IsExpanded="True">
+                            <StackPanel Spacing="10">
+                                <CheckBox Content="Zip Plugin After Build" IsChecked="{Binding PluginZip}" />
+                                <Grid ColumnDefinitions="*, Auto" IsEnabled="{Binding PluginZip}">
+                                    <TextBox Grid.Column="0" Text="{Binding PluginZipPath}" Watermark="Zip save location" />
+                                    <Button Grid.Column="1" Content="Browse" Command="{Binding BrowsePluginZipPathCommand}" Margin="5,0,0,0" />
+                                </Grid>
+                                <CheckBox Content="Zip for Marketplace" IsChecked="{Binding PluginZipForMarketplace}" IsEnabled="{Binding PluginZip}" ToolTip.Tip="Will ignore Binaries and Intermediate folders." />
+                                
+                                <Separator Margin="0,5" />
+                                <CheckBox Content="Override Target Platforms" IsChecked="{Binding PluginOverridePlatforms}" />
+                                <ItemsControl ItemsSource="{Binding PluginPlatforms}" IsEnabled="{Binding PluginOverridePlatforms}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" Margin="5" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Expander>
+
+                        <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,10">
+                            <Button Content="Add Plugin to Queue" Command="{Binding AddPluginCommand}" Theme="{StaticResource AccentButtonStyle}" />
+                            <Button Content="Start All Plugin Builds" Command="{Binding BuildPluginsCommand}" />
+                        </StackPanel>
+                        <Separator Margin="0,10" />
+                    </StackPanel>
+                    
+                    <ScrollViewer Grid.Row="1">
+                        <ItemsControl ItemsSource="{Binding PluginQueue}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <uc:PluginCard DataContext="{Binding}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+                
+                <!-- Logs View -->
+                <Grid IsVisible="{Binding SelectedCategoryTag, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Logs}"
+                      RowDefinitions="Auto, *">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+                        <Button Content="Export Log" Command="{Binding ExportLogCommand}" />
+                        <Button Content="Open Log Folder" Command="{Binding OpenLogFolderCommand}" Theme="{StaticResource TransparentButtonStyle}" />
+                    </StackPanel>
+                    <ae:TextEditor Grid.Row="1" Name="LogViewEditor" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Visible" FontFamily="Cascadia Code,Consolas,Monospace" FontSize="14" ShowLineNumbers="True" IsReadOnly="True" />
+                </Grid>
+
+                <!-- Settings View -->
+                <Grid IsVisible="{Binding SelectedCategoryTag, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Settings}">
+                    <ScrollViewer>
+                        <StackPanel Spacing="20" Margin="20">
+                            <TextBlock Text="Application Settings" Theme="{StaticResource TitleTextBlockStyle}" />
+                            
+                            <Expander Header="Updates" IsExpanded="True">
+                                <CheckBox Content="Check for updates at startup" IsChecked="{Binding Settings.bCheckForUpdatesAtStartup}" />
+                            </Expander>
+                            
+                            <Expander Header="UI &amp; Experience" IsExpanded="True">
+                                <StackPanel Spacing="10">
+                                    <HeaderedContentControl Header="Application Theme">
+                                        <ComboBox SelectedItem="{Binding SelectedTheme}" HorizontalAlignment="Stretch">
+                                            <ComboBoxItem Content="Light" />
+                                            <ComboBoxItem Content="Dark" />
+                                            <ComboBoxItem Content="Default" />
+                                        </ComboBox>
+                                    </HeaderedContentControl>
+                                    <CheckBox Content="Enable DDC confirmation messages" IsChecked="{Binding Settings.bEnableDDCMessages}" />
+                                    <CheckBox Content="Enable build confirmation message" IsChecked="{Binding Settings.bEnableEngineBuildConfirmationMessage}" />
+                                </StackPanel>
+                            </Expander>
+
+                            <Expander Header="Automation" IsExpanded="True">
+                                <StackPanel Spacing="10">
+                                    <CheckBox Content="Shutdown PC if build successful" IsChecked="{Binding Settings.bShutdownIfBuildSuccess}" />
+                                    <CheckBox Content="Shutdown PC (Enable/Disable)" IsChecked="{Binding Settings.bShutdownPC}" />
+                                </StackPanel>
+                            </Expander>
+
+                            <Button Content="Check for Updates Now" Command="{Binding CheckForUpdatesCommand}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </ui:NavigationView.Content>
+    </ui:NavigationView>
+</Window>
