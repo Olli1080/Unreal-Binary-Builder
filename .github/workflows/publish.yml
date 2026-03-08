@@ -55,16 +55,22 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Setup MSYS2 and Install Cairo (Windows)
+    - name: Install Cairo (Windows)
       if: matrix.os == 'windows-latest'
-      uses: msys2/setup-msys2@v2
-      with:
-        update: true
-        install: >-
-          mingw-w64-x86_64-cairo
-          mingw-w64-x86_64-pango
-          mingw-w64-x86_64-gdk-pixbuf2
-          mingw-w64-x86_64-libffi
+      run: choco install gtk-runtime --no-progress
+      
+    - name: Find and Add Cairo to Environment (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        $gtkPath = Get-ChildItem -Path "C:\Program Files\GTK3-Runtime Win64", "C:\Program Files\GTKRuntime" -Filter "bin" -Directory -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($gtkPath) {
+          Write-Host "Found GTK Runtime at: $($gtkPath.FullName)"
+          echo "CAIRO_BIN_DIR=$($gtkPath.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "$($gtkPath.FullName)" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        } else {
+          Write-Error "GTK Runtime bin directory not found. Cairo might not be available."
+        }
       
     - name: Install Cairo (Linux)
       if: matrix.os == 'ubuntu-latest'

@@ -6,10 +6,18 @@ def add_cairo_dll_directory():
     if sys.platform != "win32" or sys.version_info < (3, 8):
         return
         
-    paths_to_check = [
+    paths_to_check = []
+    
+    # Highest priority: Explicit environment variable from CI
+    cairo_bin_dir = os.environ.get("CAIRO_BIN_DIR")
+    if cairo_bin_dir:
+        paths_to_check.append(cairo_bin_dir)
+        
+    paths_to_check.extend([
+        r"C:\Program Files\GTK3-Runtime Win64\bin",
         r"C:\Program Files\GTKRuntime\bin",
         r"C:\msys64\mingw64\bin"
-    ]
+    ])
     
     path_env = os.environ.get("PATH", "").split(os.pathsep)
     paths_to_check.extend(p for p in path_env if p)
