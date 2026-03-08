@@ -20,7 +20,6 @@
     <ui:NavigationView x:Name="MainNavigation"
                        PaneDisplayMode="Left"
                        IsSettingsVisible="True"
-                       SettingsItemToolTip="Application Settings"
                        SelectedItem="{Binding SelectedCategory}">
         <ui:NavigationView.MenuItems>
             <ui:NavigationViewItem Content="Engine Builder" Tag="Engine" IconSource="Build" IsSelected="True" />
