@@ -65,6 +65,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ISetupService _setupService;
     private readonly IZipService _zipService;
     private readonly IEngineBuildService _engineBuildService;
+    private readonly IPluginBuildService _pluginBuildService;
     private UnrealEngineMetadata? _engineMetadata;
 
     [ObservableProperty] private object? _selectedCategory;
@@ -127,7 +128,8 @@ public partial class MainWindowViewModel : ViewModelBase
         App.Current?.Services?.GetRequiredService<IUIService>() ?? throw new InvalidOperationException("UIService not found"),
         App.Current?.Services?.GetRequiredService<ISetupService>() ?? throw new InvalidOperationException("SetupService not found"),
         App.Current?.Services?.GetRequiredService<IZipService>() ?? throw new InvalidOperationException("ZipService not found"),
-        App.Current?.Services?.GetRequiredService<IEngineBuildService>() ?? throw new InvalidOperationException("EngineBuildService not found")
+        App.Current?.Services?.GetRequiredService<IEngineBuildService>() ?? throw new InvalidOperationException("EngineBuildService not found"),
+        App.Current?.Services?.GetRequiredService<IPluginBuildService>() ?? throw new InvalidOperationException("PluginBuildService not found")
     ) { }
 
     public MainWindowViewModel(
@@ -141,7 +143,8 @@ public partial class MainWindowViewModel : ViewModelBase
         IUIService uiService, 
         ISetupService setupService,
         IZipService zipService,
-        IEngineBuildService engineBuildService)
+        IEngineBuildService engineBuildService,
+        IPluginBuildService pluginBuildService)
     {
         _processExecutor = processExecutor;
         _updater = updater;
@@ -153,6 +156,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _setupService = setupService;
         _zipService = zipService;
         _engineBuildService = engineBuildService;
+        _pluginBuildService = pluginBuildService;
 
         Settings = _settingsService.GetSettings();
         _updater.SilentUpdateFinishedEventHandler += OnUpdateFinished;
@@ -423,23 +427,15 @@ public partial class MainWindowViewModel : ViewModelBase
         if (IsBuilding) return;
         if (PluginQueue.Count == 0) { await ShowMessageDialog("Queue Empty", "Queue is empty. Add one or more plugin to queue and build."); return; }
 
-        IsBuilding = true; StartTiming(); ShowToast($"Building {PluginQueue.Count} plugins.", UBBNotificationType.Info);
-        foreach (var plugin in PluginQueue.ToList()) {
-            StatusText = $"Building {plugin.PluginName}..."; GameAnalyticsCSharp.AddProgressStart("Build", "Plugin");
-            plugin.StartBuild();
-            string args = BuildArgumentBuilder.BuildPluginArguments(plugin).ToString();
-            int ec = await _processExecutor.ExecuteAsync(plugin.RunUATFile, args, Path.GetDirectoryName(plugin.RunUATFile)!, LogCategory.Build);
-            bool success = ec == 0;
-            if (success && plugin.bCanZip) {
-                GameAnalyticsCSharp.AddDesignEvent($"ZipPlugin:Started:{plugin.PluginName}");
-                // Note: Zip logic for plugins will be moved to PluginBuildService in next step
-                await _zipService.SavePluginToZip(plugin.PluginPath, plugin.TargetZipPath, plugin.bZipForMarketplaceZip, true);
-                GameAnalyticsCSharp.AddDesignEvent($"ZipPlugin:Finished:{plugin.PluginName}");
-            }
-            plugin.FinishBuild(success); GameAnalyticsCSharp.AddProgressEnd("Build", "Plugin", !success);
-            if (!success) { _logger.Error($"Plugin Build Failed: {plugin.PluginName}", LogCategory.Build); break; }
-        }
-        IsBuilding = false; StopTiming(); StatusText = "Plugin builds finished."; ShowToast("Plugin builds finished.", UBBNotificationType.Success);
+        IsBuilding = true; StartTiming(); StatusText = "Building Plugins..."; 
+        ShowToast($"Building {PluginQueue.Count} plugins.", UBBNotificationType.Info);
+        
+        bool success = await _pluginBuildService.BuildPluginsAsync(PluginQueue);
+        
+        IsBuilding = false; StopTiming(); 
+        StatusText = success ? "Plugin builds finished." : "Plugin builds failed."; 
+        if (success) ShowToast("Plugin builds finished.", UBBNotificationType.Success);
+        else ShowToast("Plugin builds failed.", UBBNotificationType.Error);
     }
 
     [RelayCommand]

@@ -18,7 +18,7 @@ Decompose `MainWindowViewModel.cs` from a 500+ line "God Object" into specialize
 ## Execution Subplans
 - [x] [Step 1: UI Service Extraction](refactor_god_viewmodel_step1_ui.md)
 - [x] [Step 2: Engine Setup Service Extraction](refactor_god_viewmodel_step2_setup.md)
-- [/] [Step 3: Build Orchestration Service Extraction](refactor_god_viewmodel_step3_build.md) (Engine part done)
+- [x] [Step 3: Build Orchestration Service Extraction](refactor_god_viewmodel_step3_build.md)
 - [ ] [Step 4: Integration & ViewModel Cleanup](refactor_god_viewmodel_step4_integration.md)
 
 ## Validation Strategy

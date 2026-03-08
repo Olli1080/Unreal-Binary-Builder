@@ -79,6 +79,7 @@ public class MainWindowViewModelTests : IDisposable
     private readonly MockSetupService _setupService;
     private readonly MockZipService _zipService;
     private readonly MockEngineBuildService _engineBuildService;
+    private readonly MockPluginBuildService _pluginBuildService;
 
     public MainWindowViewModelTests()
     {
@@ -94,6 +95,7 @@ public class MainWindowViewModelTests : IDisposable
         _setupService = new MockSetupService();
         _zipService = new MockZipService();
         _engineBuildService = new MockEngineBuildService();
+        _pluginBuildService = new MockPluginBuildService();
     }
 
     public void Dispose()
@@ -115,7 +117,8 @@ public class MainWindowViewModelTests : IDisposable
         _uiService, 
         _setupService,
         _zipService,
-        _engineBuildService);
+        _engineBuildService,
+        _pluginBuildService);
 
     [Fact]
     public void ShowToast_TriggersUiService()

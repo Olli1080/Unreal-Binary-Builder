@@ -53,7 +53,7 @@
 - [ ] Refactor God ViewModel (`MainWindowViewModel`) into services
   - [x] Step 1: UI & Dialog Service Extraction
   - [x] Step 2: Engine Setup Service Extraction
-  - [/] Step 3: Build Orchestration Service Extraction (Engine part done)
+  - [x] Step 3: Build Orchestration Service Extraction
   - [ ] Step 4: Integration & ViewModel Cleanup
 - [x] Implement Unified Logging Strategy
 - [x] Centralize platform-specific shell execution logic
