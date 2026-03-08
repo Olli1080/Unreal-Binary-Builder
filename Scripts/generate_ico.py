@@ -14,6 +14,7 @@ def add_cairo_dll_directory():
         paths_to_check.append(cairo_bin_dir)
         
     paths_to_check.extend([
+        r"C:\Program Files\Inkscape\bin",
         r"C:\Program Files\GTK3-Runtime Win64\bin",
         r"C:\Program Files\GTKRuntime\bin",
         r"C:\msys64\mingw64\bin"
