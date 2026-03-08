@@ -28,9 +28,16 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Install Cairo (Windows)
+    - name: Setup MSYS2 and Install Cairo (Windows)
       if: matrix.os == 'windows-latest'
-      run: choco install gtk-runtime --no-progress
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          mingw-w64-x86_64-cairo
+          mingw-w64-x86_64-pango
+          mingw-w64-x86_64-gdk-pixbuf2
+          mingw-w64-x86_64-libffi
       
     - name: Install Cairo (Linux)
       if: matrix.os == 'ubuntu-latest'

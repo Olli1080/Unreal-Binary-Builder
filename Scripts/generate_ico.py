@@ -2,11 +2,36 @@ import os
 import sys
 import subprocess
 
+def add_cairo_dll_directory():
+    if sys.platform != "win32" or sys.version_info < (3, 8):
+        return
+        
+    paths_to_check = [
+        r"C:\Program Files\GTKRuntime\bin",
+        r"C:\msys64\mingw64\bin"
+    ]
+    
+    path_env = os.environ.get("PATH", "").split(os.pathsep)
+    paths_to_check.extend(p for p in path_env if p)
+    
+    for path in paths_to_check:
+        if path and os.path.exists(path) and os.path.isdir(path):
+            # Check for common Cairo DLL names
+            if os.path.exists(os.path.join(path, "cairo.dll")) or os.path.exists(os.path.join(path, "libcairo-2.dll")):
+                try:
+                    os.add_dll_directory(path)
+                    print(f"Successfully added Cairo DLL directory: {path}")
+                    break
+                except Exception as e:
+                    print(f"Could not add DLL directory {path}: {e}")
+
 def install_deps():
     print("Installing dependencies (cairosvg, pillow)...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "cairosvg", "pillow"])
 
 def generate():
+    add_cairo_dll_directory()
+    
     need_install = False
     try:
         import cairosvg
