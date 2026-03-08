@@ -102,8 +102,13 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _pluginZip;
     [ObservableProperty] private bool _pluginZipForMarketplace = true;
     [ObservableProperty] private string _pluginZipPath = string.Empty;
+    partial void OnPluginZipPathChanged(string value) => PluginZipPath = PathHelpers.NormalizePath(value);
+
     [ObservableProperty] private string _pluginPath = string.Empty;
+    partial void OnPluginPathChanged(string value) => PluginPath = PathHelpers.NormalizePath(value);
+
     [ObservableProperty] private string _pluginDestinationPath = string.Empty;
+    partial void OnPluginDestinationPathChanged(string value) => PluginDestinationPath = PathHelpers.NormalizePath(value);
     public ObservableCollection<PluginPlatformWrapper> PluginPlatforms { get; } = new();
 
     public List<GameConfigWrapper> GameConfigWrappers { get; } = new();
@@ -112,9 +117,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private int _compiledFilesTotal = 0;
     private string? _logMessageErrors = null;
 
-    public MainWindowViewModel()
+    public MainWindowViewModel(IProcessExecutor? processExecutor = null)
     {
-        _processExecutor = new ProcessExecutor();
+        _processExecutor = processExecutor ?? new ProcessExecutor();
         Settings = BuilderSettings.GetSettingsFile(true);
         _updater = new UBBUpdater();
         _updater.SilentUpdateFinishedEventHandler += OnUpdateFinished;
@@ -187,15 +192,19 @@ public partial class MainWindowViewModel : ViewModelBase
         string? versionStr = UnrealBinaryBuilderHelpers.GetEngineVersion(EnginePath);
         if (versionStr != null) {
             var match = Regex.Match(versionStr, @"^(\d+)\.(\d+)");
-            if (match.Success && double.TryParse($"{match.Groups[1].Value}.{match.Groups[2].Value}", out double version)) {
-                bool isUE4 = match.Groups[1].Value == "4";
-                SupportWin32 = version < 4.23;
-                SupportHTML5 = version < 4.24;
-                SupportConsoles = version < 4.25;
-                IsEngineSelection425OrAbove = version >= 4.25;
-                SupportServerClientTargets = version >= 4.21;
-                SupportLinuxAArch64 = isUE4 && version >= 4.24;
-                SupportLinuxArm64 = !isUE4;
+            if (match.Success) {
+                int major = int.Parse(match.Groups[1].Value);
+                int minor = int.Parse(match.Groups[2].Value);
+                double version = double.Parse($"{major}.{minor}");
+
+                bool isUE4 = major == 4;
+                SupportWin32 = major < 5 && minor < 23;
+                SupportHTML5 = major < 5 && minor < 24;
+                SupportConsoles = major < 5 && minor < 25;
+                IsEngineSelection425OrAbove = major >= 5 || minor >= 25;
+                SupportServerClientTargets = major >= 5 || minor >= 21;
+                SupportLinuxAArch64 = isUE4 && minor >= 4.24;
+                SupportLinuxArm64 = major >= 5;
             }
         }
         UpdateGitInfo();
@@ -238,7 +247,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public string EnginePath {
         get => Settings.SetupBatFile ?? string.Empty;
-        set { Settings.SetupBatFile = value; OnPropertyChanged(); UpdateVersionDependencies(); }
+        set { Settings.SetupBatFile = PathHelpers.NormalizePath(value); OnPropertyChanged(); UpdateVersionDependencies(); }
     }
 
     partial void OnSelectedCategoryChanged(object? value)
@@ -314,7 +323,7 @@ public partial class MainWindowViewModel : ViewModelBase
             FileTypeChoices = new[] { new FilePickerFileType("Zip File") { Patterns = new[] { "*.zip" } } },
             DefaultExtension = ".zip"
         });
-        if (res != null) { Settings.ZipEnginePath = res.Path.LocalPath; BuilderSettings.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); }
+        if (res != null) { Settings.ZipEnginePath = PathHelpers.NormalizePath(res.Path.LocalPath); BuilderSettings.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); }
     }
 
     [RelayCommand]
@@ -384,7 +393,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!Settings.GitDependencyEnableCache) args += " --no-cache";
         else if (!string.IsNullOrEmpty(Settings.GitDependencyCache))
         {
-            args += $" --cache={Settings.GitDependencyCache.Replace("\\", "/")} --cache-size-multiplier={Settings.GitDependencyCacheMultiplier} --cache-days={Settings.GitDependencyCacheDays}";
+            args += $" --cache={PathHelpers.ToUnixPath(Settings.GitDependencyCache)} --cache-size-multiplier={Settings.GitDependencyCacheMultiplier} --cache-days={Settings.GitDependencyCacheDays}";
         }
         if (!string.IsNullOrEmpty(Settings.GitDependencyProxy)) args += $" --proxy={Settings.GitDependencyProxy}";
         return args;
@@ -490,7 +499,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task CopyCommandLine() { if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow?.Clipboard != null) { await desktop.MainWindow.Clipboard.SetTextAsync(PrepareCommandline()); StatusText = "Command line copied to clipboard!"; ShowToast("Command line copied to clipboard!"); GameAnalyticsCSharp.AddDesignEvent("CommandLine:CopyToClipboard"); } }
 
-    private string PrepareCommandline()
+    internal string PrepareCommandline()
     {
         string xml = Settings.CustomBuildFile ?? UnrealBinaryBuilderHelpers.DEFAULT_BUILD_XML_FILE;
         string configs = string.Join(";", Settings.GameConfigurations);

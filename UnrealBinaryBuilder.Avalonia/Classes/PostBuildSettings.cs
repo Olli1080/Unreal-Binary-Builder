@@ -31,6 +31,7 @@ public class PostBuildSettings
 
     public bool DirectoryIsWritable(string directoryPath)
     {
+        directoryPath = PathHelpers.NormalizePath(directoryPath);
         if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath))
         {
             return false;
@@ -60,6 +61,7 @@ public class PostBuildSettings
     public async Task SavePluginToZip(string sourcePath, string zipLocationToSave, bool bZipForMarketplace, bool bFastCompression, IProgress<ZipProgress>? progress = null)
     {
         CompressionLevel cl = bFastCompression ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
+        sourcePath = PathHelpers.NormalizePath(sourcePath);
         
         await Task.Run(() =>
         {
@@ -71,9 +73,8 @@ public class PostBuildSettings
 
                 foreach (string file in files)
                 {
-                    string currentFilePath = Path.GetFullPath(file).ToLower();
-                    if (bZipForMarketplace && (currentFilePath.Contains(@"\binaries\") || currentFilePath.Contains(@"\intermediate\") ||
-                                               currentFilePath.Contains(@"/binaries/") || currentFilePath.Contains(@"/intermediate/")))
+                    string currentFilePath = PathHelpers.ToUnixPath(Path.GetFullPath(file)).ToLower();
+                    if (bZipForMarketplace && (currentFilePath.Contains("/binaries/") || currentFilePath.Contains("/intermediate/")))
                     {
                         continue;
                     }
@@ -87,9 +88,8 @@ public class PostBuildSettings
                 {
                     _zipCancelToken.ThrowIfCancellationRequested();
 
-                    string entry = Path.GetDirectoryName(file)!.Replace(sourcePath, string.Empty);
-                    entry = Path.Combine(entry, Path.GetFileName(file));
-                    entry = entry.TrimStart(Path.DirectorySeparatorChar).TrimStart(Path.AltDirectorySeparatorChar);
+                    string normalizedFile = PathHelpers.ToUnixPath(file);
+                    string entry = normalizedFile.Replace(sourcePath, string.Empty).TrimStart('/');
 
                     zipFile.CreateEntryFromFile(file, entry, cl);
                     ++entriesSaved;
@@ -135,26 +135,26 @@ public class PostBuildSettings
             {
                 _zipCancelToken.ThrowIfCancellationRequested();
                 bool bSkipFile = false;
-                string currentFilePath = Path.GetFullPath(file).ToLower();
+                string currentFilePath = PathHelpers.ToUnixPath(Path.GetFullPath(file)).ToLower();
                 string extension = Path.GetExtension(file).ToLower();
 
                 if (!settings.bZipEnginePDB && extension == ".pdb") bSkipFile = true;
                 if (!settings.bZipEngineDebug && extension == ".debug") bSkipFile = true;
-                if (!settings.bZipEngineDocumentation && !currentFilePath.Contains(@"\source\") && !currentFilePath.Contains(@"/source/") && (currentFilePath.Contains(@"\documentation\") || currentFilePath.Contains(@"/documentation/"))) bSkipFile = true;
-                if (!settings.bZipEngineExtras && !currentFilePath.Contains(@"\extras\redist\") && !currentFilePath.Contains(@"/extras/redist/") && (currentFilePath.Contains(@"\extras\") || currentFilePath.Contains(@"/extras/"))) bSkipFile = true;
+                if (!settings.bZipEngineDocumentation && !currentFilePath.Contains("/source/") && currentFilePath.Contains("/documentation/")) bSkipFile = true;
+                if (!settings.bZipEngineExtras && !currentFilePath.Contains("/extras/redist/") && currentFilePath.Contains("/extras/")) bSkipFile = true;
                 
                 if (!settings.bZipEngineSource)
                 {
-                    if (currentFilePath.Contains(@"\source\developer\") || currentFilePath.Contains(@"/source/developer/")) bSkipFile = true;
-                    else if (currentFilePath.Contains(@"\source\editor\") || currentFilePath.Contains(@"/source/editor/")) bSkipFile = true;
-                    else if (currentFilePath.Contains(@"\source\programs\") || currentFilePath.Contains(@"/source/programs/")) bSkipFile = true;
-                    else if (currentFilePath.Contains(@"\source\runtime\") || currentFilePath.Contains(@"/source/runtime/")) bSkipFile = true;
-                    else if (currentFilePath.Contains(@"\source\thirdparty\") || currentFilePath.Contains(@"/source/thirdparty/")) bSkipFile = true;
+                    if (currentFilePath.Contains("/source/developer/")) bSkipFile = true;
+                    else if (currentFilePath.Contains("/source/editor/")) bSkipFile = true;
+                    else if (currentFilePath.Contains("/source/programs/")) bSkipFile = true;
+                    else if (currentFilePath.Contains("/source/runtime/")) bSkipFile = true;
+                    else if (currentFilePath.Contains("/source/thirdparty/")) bSkipFile = true;
                 }
 
-                if (!settings.bZipEngineFeaturePacks && (currentFilePath.Contains(@"\featurepacks\") || currentFilePath.Contains(@"/featurepacks/"))) bSkipFile = true;
-                if (!settings.bZipEngineSamples && (currentFilePath.Contains(@"\samples\") || currentFilePath.Contains(@"/samples/"))) bSkipFile = true;
-                if (!settings.bZipEngineTemplates && !currentFilePath.Contains(@"\source\") && !currentFilePath.Contains(@"/source/") && !currentFilePath.Contains(@"\content\editor") && !currentFilePath.Contains(@"/content/editor") && (currentFilePath.Contains(@"\templates\") || currentFilePath.Contains(@"/templates/"))) bSkipFile = true;
+                if (!settings.bZipEngineFeaturePacks && currentFilePath.Contains("/featurepacks/")) bSkipFile = true;
+                if (!settings.bZipEngineSamples && currentFilePath.Contains("/samples/")) bSkipFile = true;
+                if (!settings.bZipEngineTemplates && !currentFilePath.Contains("/source/") && !currentFilePath.Contains("/content/editor") && currentFilePath.Contains("/templates/")) bSkipFile = true;
 
                 long fileSize = new FileInfo(file).Length;
                 totalSize += fileSize;

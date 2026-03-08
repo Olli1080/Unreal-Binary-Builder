@@ -10,24 +10,26 @@ public class VisualStudioMsBuild
 {
     public static VisualStudioMsBuild? ParseMsBuild(string path)
     {
+        path = PathHelpers.NormalizePath(path);
         VisualStudioMsBuild msBuild = new VisualStudioMsBuild
         {
             _edition = Path.GetFileName(path)
         };
 
-        string msBuildPath = Path.Combine(path, "MSBuild");
-        if (Directory.Exists(Path.Combine(msBuildPath, "Current")))
-            msBuildPath = Path.Combine(msBuildPath, "Current");
+        string msBuildPath = PathHelpers.ToUnixPath(Path.Combine(path, "MSBuild"));
+        if (Directory.Exists(PathHelpers.ToUnixPath(Path.Combine(msBuildPath, "Current"))))
+            msBuildPath = PathHelpers.ToUnixPath(Path.Combine(msBuildPath, "Current"));
 
         if (Directory.Exists(msBuildPath))
         {
             foreach (string exePath in Directory.GetFiles(msBuildPath, "msbuild.exe", SearchOption.AllDirectories))
             {
-                string? architecture = Path.GetFileName(Path.GetDirectoryName(exePath));
+                string normalizedExePath = PathHelpers.NormalizePath(exePath);
+                string? architecture = Path.GetFileName(PathHelpers.GetParentDirectory(normalizedExePath));
                 if (architecture == "amd64")
-                    msBuild._x64 = exePath;
+                    msBuild._x64 = normalizedExePath;
                 else if (architecture == "Bin")
-                    msBuild._x32 = exePath;
+                    msBuild._x32 = normalizedExePath;
             }
         }
 
@@ -50,6 +52,7 @@ public class VisualStudioVersion
 {
     public static VisualStudioVersion? ParseVersion(string path)
     {
+        path = PathHelpers.NormalizePath(path);
         if (!int.TryParse(Path.GetFileName(path), out int parsedVersion))
         {
             return null;
@@ -91,32 +94,35 @@ public class VisualStudioConfigurations
         return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Environment.GetEnvironmentVariable("ProgramW6432") : null;
     }
 
-    public VisualStudioConfigurations()
+    public VisualStudioConfigurations(string? overridePath = null)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && overridePath == null)
         {
             return;
         }
 
-        string? x86Path = GetX86();
-        string? x64Path = GetX64();
-
-        if (x86Path != null)
-            x86Path = Path.Combine(x86Path, MSVC);
-
-        if (x64Path != null)
-            x64Path = Path.Combine(x64Path, MSVC);
-
         List<string> visualStudioPaths = [];
 
-        if (x86Path != null && Directory.Exists(x86Path))
-            visualStudioPaths.Add(x86Path);
+        if (overridePath != null)
+        {
+            visualStudioPaths.Add(PathHelpers.NormalizePath(overridePath));
+        }
+        else
+        {
+            string? x86Path = GetX86();
+            string? x64Path = GetX64();
 
-        if (x64Path != null && Directory.Exists(x64Path))
-            visualStudioPaths.Add(x64Path);
+            if (x86Path != null)
+                visualStudioPaths.Add(PathHelpers.NormalizePath(Path.Combine(x86Path, MSVC)));
+
+            if (x64Path != null)
+                visualStudioPaths.Add(PathHelpers.NormalizePath(Path.Combine(x64Path, MSVC)));
+        }
 
         foreach (var topLevelDir in visualStudioPaths)
         {
+            if (!Directory.Exists(topLevelDir)) continue;
+
             IEnumerable<string> potentialVersions = from dir in Directory.GetDirectories(topLevelDir)
                                                     where int.TryParse(Path.GetFileName(dir), out _)
                                                     select dir;

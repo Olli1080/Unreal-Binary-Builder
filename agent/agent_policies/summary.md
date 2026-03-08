@@ -12,3 +12,6 @@ The following policies apply to this project:
 - **Updates**: Use `NetSparkleUpdater.UI.Avalonia` for seamless cross-platform updates. The legacy WPF `UnrealBinaryBuilderUpdater` CLI is considered obsolete.
 - **Versioning**: Follow semantic versioning and maintain the separated `CHANGELOG.md` system in the `changelogs/` folder.
 - **Target Framework**: .NET 10.0.
+
+## Platform-Specific Policies
+- [Windows Policies](windows.md)

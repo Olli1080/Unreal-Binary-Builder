@@ -21,3 +21,11 @@ The following major plans and milestones have been completed:
     - Modern `NavigationView` based layout with full navigation parity.
 - **Continuous Integration**:
   - Implemented cross-platform GitHub Actions build matrix for Windows, Linux, and macOS.
+- **Path Normalization & Archiving**:
+  - Introduced `PathHelpers` for standardized Unix-style path handling (cross-platform and Unreal CLI compatibility).
+  - Standardized path handling in all ViewModels and Services.
+  - Archived legacy WPF project and updater to `archive/` folder.
+  - Updated root solution and added `.geminiignore` to exclude legacy code from AI sessions.
+- **Exhaustive Testing**:
+  - Implemented comprehensive unit tests for path normalization and Visual Studio detection.
+  - Reached 100% test pass rate for all active Avalonia project tests.

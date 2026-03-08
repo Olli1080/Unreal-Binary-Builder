@@ -33,6 +33,13 @@ public static class Git
         return _repository.Head.IsTracking ? _repository.Head.TrackedBranch.FriendlyName : null;
     }
 
+    internal static void Reset()
+    {
+        _repository?.Dispose();
+        _repository = null;
+        _currentPath = null;
+    }
+
     private static void UpdateRepository(string repoPath)
     {
         if (string.IsNullOrWhiteSpace(repoPath))

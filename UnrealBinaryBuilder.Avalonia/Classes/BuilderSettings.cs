@@ -12,23 +12,28 @@ public enum LogMessageType { Info, Warning, Error }
 
 public static class BuilderSettings
 {
-    private static readonly string PROGRAM_SAVED_PATH_BASE = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-    public static readonly string PROGRAM_SAVED_PATH = Path.Combine(PROGRAM_SAVED_PATH_BASE, "UnrealBinaryBuilder");
+    private static string _programSavedPath = PathHelpers.NormalizePath(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "UnrealBinaryBuilder"));
+    public static string PROGRAM_SAVED_PATH => _programSavedPath;
 
-    private static readonly string PROGRAM_SETTINGS_PATH_BASE = Path.Combine(PROGRAM_SAVED_PATH, "Saved");
-    private static readonly string PROGRAM_SETTINGS_FILE_NAME = "Settings.json";
+    private static string PROGRAM_SETTINGS_PATH_BASE => PathHelpers.ToUnixPath(Path.Combine(PROGRAM_SAVED_PATH, "Saved"));
+    private static string PROGRAM_SETTINGS_FILE_NAME => "Settings.json";
 
-    private static readonly string PROGRAM_LOG_PATH_BASE = Path.Combine(PROGRAM_SAVED_PATH, "Logs");
-    private static readonly string PROGRAM_LOG_FILE_NAME = "UnrealBinaryBuilder.log";
-    private static readonly string PROGRAM_ERRORLOG_FILE_NAME = "BuildErrors.log";
+    private static string PROGRAM_LOG_PATH_BASE => PathHelpers.ToUnixPath(Path.Combine(PROGRAM_SAVED_PATH, "Logs"));
+    private static string PROGRAM_LOG_FILE_NAME => "UnrealBinaryBuilder.log";
+    private static string PROGRAM_ERRORLOG_FILE_NAME => "BuildErrors.log";
 
-    private static readonly string PROGRAM_SETTINGS_PATH = Path.Combine(PROGRAM_SETTINGS_PATH_BASE, PROGRAM_SETTINGS_FILE_NAME);
-    private static readonly string PROGRAM_LOG_PATH = Path.Combine(PROGRAM_LOG_PATH_BASE, PROGRAM_LOG_FILE_NAME);
-    private static readonly string PROGRAM_ERRORLOG_PATH = Path.Combine(PROGRAM_LOG_PATH_BASE, PROGRAM_ERRORLOG_FILE_NAME);
+    private static string PROGRAM_SETTINGS_PATH => PathHelpers.ToUnixPath(Path.Combine(PROGRAM_SETTINGS_PATH_BASE, PROGRAM_SETTINGS_FILE_NAME));
+    private static string PROGRAM_LOG_PATH => PathHelpers.ToUnixPath(Path.Combine(PROGRAM_LOG_PATH_BASE, PROGRAM_LOG_FILE_NAME));
+    private static string PROGRAM_ERRORLOG_PATH => PathHelpers.ToUnixPath(Path.Combine(PROGRAM_LOG_PATH_BASE, PROGRAM_ERRORLOG_FILE_NAME));
 
-    private static readonly string DEFAULT_GIT_CUSTOM_CACHE_PATH = Path.Combine(PROGRAM_SAVED_PATH, "GitCache");
+    private static string DEFAULT_GIT_CUSTOM_CACHE_PATH => PathHelpers.ToUnixPath(Path.Combine(PROGRAM_SAVED_PATH, "GitCache"));
 
-    private static readonly BuilderSettingsJson DEFAULT_SETTINGS = new()
+    internal static void SetProgramSavedPath(string path)
+    {
+        _programSavedPath = PathHelpers.NormalizePath(path);
+    }
+
+    public static BuilderSettingsJson DefaultSettings => new()
     {
         Theme = "Dark",
         bCheckForUpdatesAtStartup = true,
@@ -106,8 +111,6 @@ public static class BuilderSettings
         bZipEngineTemplates = true,
         ZipEnginePath = ""
     };
-
-    public static BuilderSettingsJson DefaultSettings => DEFAULT_SETTINGS;
 
     public static event Action<string, LogMessageType>? OnLog;
 

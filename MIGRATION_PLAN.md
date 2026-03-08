@@ -46,3 +46,14 @@ This plan tracks the specific porting tasks for moving the Unreal-Binary-Builder
 - [x] Implement Theme switching (Light/Dark/System)
 - [x] Setup Cross-platform build pipeline (GitHub Actions)
 - [ ] Create distribution packages (Windows .exe, Linux AppImage/deb, macOS .app)
+
+---
+
+# Phase 2: Architecture Modernization (New)
+
+The following architectural plans have been moved to `agent/plans_wip/` for detailed execution:
+1. `refactor_god_viewmodel.md`
+2. `centralize_engine_knowledge.md`
+3. `unified_logging_strategy.md`
+4. `dependency_injection_setup.md`
+5. `strong_typed_build_config.md`

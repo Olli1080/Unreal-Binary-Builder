@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using UnrealBinaryBuilder.Avalonia.Classes;
 
 namespace UnrealBinaryBuilder.Avalonia.ViewModels;
 
@@ -36,11 +37,11 @@ public partial class PluginCardViewModel : ViewModelBase
 
     public PluginCardViewModel(string inPluginPath, string inDestination, string inEnginePath, string inEngineName)
     {
-        PluginPath = inPluginPath;
-        DestinationPath = inDestination;
-        RunUATFile = Path.Combine(inEnginePath, "Engine", "Build", "BatchFiles", "RunUAT.bat");
+        PluginPath = PathHelpers.NormalizePath(inPluginPath);
+        DestinationPath = PathHelpers.NormalizePath(inDestination);
+        RunUATFile = PathHelpers.ToUnixPath(Path.Combine(inEnginePath, "Engine", "Build", "BatchFiles", "RunUAT.bat"));
         EngineVersion = inEngineName;
-        PluginName = Path.GetFileNameWithoutExtension(inPluginPath);
+        PluginName = Path.GetFileNameWithoutExtension(PluginPath);
 
         LoadPluginData();
     }
@@ -53,8 +54,8 @@ public partial class PluginCardViewModel : ViewModelBase
                     JObject o = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
                     PluginDescription = o.GetValue("Description")?.ToString() ?? "No description available.";
                 }
-                string pluginDir = Path.GetDirectoryName(PluginPath) ?? string.Empty;
-                string iconPath = Path.Combine(pluginDir, "Resources", "Icon128.png");
+                string pluginDir = PathHelpers.GetParentDirectory(PluginPath);
+                string iconPath = PathHelpers.ToUnixPath(Path.Combine(pluginDir, "Resources", "Icon128.png"));
                 if (File.Exists(iconPath)) PluginIcon = new Bitmap(iconPath);
             }
         } catch (Exception ex) { Debug.WriteLine($"Error loading plugin data: {ex.Message}"); }
@@ -64,7 +65,7 @@ public partial class PluginCardViewModel : ViewModelBase
     private void OpenDestination()
     {
         if (Directory.Exists(DestinationPath)) {
-            if (OperatingSystem.IsWindows()) Process.Start("explorer.exe", DestinationPath);
+            if (OperatingSystem.IsWindows()) Process.Start("explorer.exe", PathHelpers.ToWindowsPath(DestinationPath));
             else if (OperatingSystem.IsLinux()) Process.Start("xdg-open", DestinationPath);
             else if (OperatingSystem.IsMacOS()) Process.Start("open", DestinationPath);
         }
