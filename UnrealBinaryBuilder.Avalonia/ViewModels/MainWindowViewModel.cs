@@ -9,16 +9,10 @@ using UnrealBinaryBuilder.Avalonia.Classes;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 using UnrealBinaryBuilder.Avalonia.Classes.Logging;
 using UnrealBinaryBuilder.Avalonia.Models;
-using Avalonia;
-using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Platform.Storage;
 using System.Collections.Generic;
 using System;
 using System.Linq;
-using Avalonia.Styling;
-using UnrealBinaryBuilder.Avalonia.Views;
 using Avalonia.Threading;
-using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace UnrealBinaryBuilder.Avalonia.ViewModels;
@@ -59,9 +53,6 @@ public class PluginPlatformWrapper : ObservableObject
     public PluginPlatformWrapper(string name, bool isChecked = false) { Name = name; IsChecked = isChecked; }
 }
 
-public enum UBBNotificationType { Info, Success, Warning, Error }
-public record NotificationEventArgs(string Title, string Message, UBBNotificationType Type);
-
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IProcessExecutor _processExecutor;
@@ -70,6 +61,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ISettingsService _settingsService;
     private readonly IUnrealEngineProvider _ueProvider;
     private readonly IUBBLogger _logger;
+    private readonly IUIService _uiService;
     private readonly PostBuildSettings _postBuildSettings = new();
     private UnrealEngineMetadata? _engineMetadata;
 
@@ -81,8 +73,6 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _compiledFilesText = string.Empty;
     [ObservableProperty] private string _elapsedTime = "00:00:00";
     [ObservableProperty] private ObservableCollection<PluginCardViewModel> _pluginQueue = new();
-
-    public event EventHandler<NotificationEventArgs>? ShowNotification;
 
     private readonly Stopwatch _buildStopwatch = new();
     private readonly DispatcherTimer _buildTimer = new(DispatcherPriority.Background);
@@ -131,10 +121,11 @@ public partial class MainWindowViewModel : ViewModelBase
         App.Current?.Services?.GetRequiredService<ISettingsService>() ?? throw new InvalidOperationException("SettingsService not found"),
         App.Current?.Services?.GetRequiredService<IUnrealEngineProvider>() ?? throw new InvalidOperationException("UnrealEngineProvider not found"),
         App.Current?.Services?.GetRequiredService<IUBBLogger>() ?? throw new InvalidOperationException("Logger not found"),
-        App.Current?.Services?.GetRequiredService<UiLogSink>() ?? throw new InvalidOperationException("UiLogSink not found")
+        App.Current?.Services?.GetRequiredService<UiLogSink>() ?? throw new InvalidOperationException("UiLogSink not found"),
+        App.Current?.Services?.GetRequiredService<IUIService>() ?? throw new InvalidOperationException("UIService not found")
     ) { }
 
-    public MainWindowViewModel(IProcessExecutor processExecutor, IUBBUpdater updater, IPlatformService platformService, ISettingsService settingsService, IUnrealEngineProvider ueProvider, IUBBLogger logger, UiLogSink uiLogSink)
+    public MainWindowViewModel(IProcessExecutor processExecutor, IUBBUpdater updater, IPlatformService platformService, ISettingsService settingsService, IUnrealEngineProvider ueProvider, IUBBLogger logger, UiLogSink uiLogSink, IUIService uiService)
     {
         _processExecutor = processExecutor;
         _updater = updater;
@@ -142,6 +133,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _settingsService = settingsService;
         _ueProvider = ueProvider;
         _logger = logger;
+        _uiService = uiService;
 
         Settings = _settingsService.GetSettings();
         _updater.SilentUpdateFinishedEventHandler += OnUpdateFinished;
@@ -178,16 +170,7 @@ public partial class MainWindowViewModel : ViewModelBase
         set { if (Settings.Theme != value) { Settings.Theme = value; OnPropertyChanged(); ApplyTheme(); _settingsService.SaveSettings(Settings); } }
     }
 
-    private void ApplyTheme()
-    {
-        if (Application.Current == null) return;
-        GameAnalyticsCSharp.AddDesignEvent($"Theme:{Settings.Theme}");
-        switch (Settings.Theme?.ToLower()) {
-            case "light": Application.Current.RequestedThemeVariant = ThemeVariant.Light; break;
-            case "dark": Application.Current.RequestedThemeVariant = ThemeVariant.Dark; break;
-            default: Application.Current.RequestedThemeVariant = ThemeVariant.Default; break;
-        }
-    }
+    private void ApplyTheme() => _uiService.ApplyTheme(Settings.Theme);
 
     private void LoadVisualStudio()
     {
@@ -226,24 +209,11 @@ public partial class MainWindowViewModel : ViewModelBase
         UpdateGitInfo();
     }
 
-    private void ShowToast(string message, UBBNotificationType type = UBBNotificationType.Info, string title = "") => ShowNotification?.Invoke(this, new NotificationEventArgs(title, message, type));
+    private void ShowToast(string message, UBBNotificationType type = UBBNotificationType.Info, string title = "") => _uiService.ShowToast(message, type, title);
     
-    private async Task<ContentDialogResult> ShowMessageDialog(string title, string content, string primaryButton = "OK", string? secondaryButton = null, string? closeButton = null)
+    private async Task<UBBDialogResult> ShowMessageDialog(string title, string content, string primaryButton = "OK", string? secondaryButton = null, string? closeButton = null)
     {
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            var dialog = new ContentDialog
-            {
-                Title = title,
-                Content = content,
-                PrimaryButtonText = primaryButton,
-                SecondaryButtonText = secondaryButton,
-                CloseButtonText = closeButton,
-                DefaultButton = ContentDialogButton.Primary
-            };
-            return await dialog.ShowAsync();
-        }
-        return ContentDialogResult.None;
+        return await _uiService.ShowMessageDialog(title, content, primaryButton, secondaryButton, closeButton);
     }
 
     private void StartTiming() { _buildStopwatch.Restart(); _buildTimer.Start(); }
@@ -278,24 +248,18 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private IStorageProvider? GetStorageProvider() => (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) ? desktop.MainWindow?.StorageProvider : null;
-
     [RelayCommand]
     private async Task BrowseEnginePath()
     {
-        var sp = GetStorageProvider();
-        if (sp == null) return;
-        var res = await sp.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Select Unreal Engine Root Folder", AllowMultiple = false });
-        if (res.Count > 0) { EnginePath = res[0].Path.LocalPath; _settingsService.SaveSettings(Settings); }
+        var path = await _uiService.BrowseFolderAsync("Select Unreal Engine Root Folder");
+        if (path != null) { EnginePath = path; _settingsService.SaveSettings(Settings); }
     }
 
     [RelayCommand]
     private async Task BrowseCustomBuildFile()
     {
-        var sp = GetStorageProvider();
-        if (sp == null) return;
-        var res = await sp.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "Select Custom Build XML File", FileTypeFilter = new[] { new FilePickerFileType("XML Files") { Patterns = new[] { "*.xml" } } }, AllowMultiple = false });
-        if (res.Count > 0) { Settings.CustomBuildFile = res[0].Path.LocalPath; _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); GameAnalyticsCSharp.AddDesignEvent($"BuildXML:Custom:{Path.GetFileName(Settings.CustomBuildFile)}"); }
+        var path = await _uiService.BrowseFileAsync("Select Custom Build XML File", new[] { "*.xml" }, "XML Files");
+        if (path != null) { Settings.CustomBuildFile = path; _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); GameAnalyticsCSharp.AddDesignEvent($"BuildXML:Custom:{Path.GetFileName(path)}"); }
     }
 
     [RelayCommand] private void ResetDefaultBuildXML() { Settings.CustomBuildFile = null; _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); GameAnalyticsCSharp.AddDesignEvent("BuildXML:ResetToDefault"); }
@@ -303,43 +267,31 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task BrowsePluginPath()
     {
-        var sp = GetStorageProvider();
-        if (sp == null) return;
-        var res = await sp.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "Select .uplugin file", FileTypeFilter = new[] { new FilePickerFileType("Unreal Plugin") { Patterns = new[] { "*.uplugin" } } } });
-        if (res.Count > 0) PluginPath = res[0].Path.LocalPath;
+        var path = await _uiService.BrowseFileAsync("Select .uplugin file", new[] { "*.uplugin" }, "Unreal Plugin");
+        if (path != null) PluginPath = path;
     }
 
     [RelayCommand]
     private async Task BrowsePluginDestinationPath()
     {
-        var sp = GetStorageProvider();
-        if (sp == null) return;
-        var res = await sp.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Select Output Folder" });
-        if (res.Count > 0) PluginDestinationPath = res[0].Path.LocalPath;
+        var path = await _uiService.BrowseFolderAsync("Select Output Folder");
+        if (path != null) PluginDestinationPath = path;
     }
 
     [RelayCommand]
     private async Task BrowsePluginZipPath()
     {
-        var sp = GetStorageProvider();
-        if (sp == null) return;
-        var res = await sp.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Select Zip Output Folder" });
-        if (res.Count > 0) PluginZipPath = res[0].Path.LocalPath;
+        var path = await _uiService.BrowseFolderAsync("Select Zip Output Folder");
+        if (path != null) PluginZipPath = path;
     }
 
     [RelayCommand]
     private async Task BrowseZipPath()
     {
-        var sp = GetStorageProvider();
-        if (sp == null) return;
-        var res = await sp.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = "Select Zip Save Location",
-            SuggestedFileName = string.IsNullOrEmpty(Git.GetCommitHashShort(EnginePath)) ? "EngineBuild" : Git.GetCommitHashShort(EnginePath),
-            FileTypeChoices = new[] { new FilePickerFileType("Zip File") { Patterns = new[] { "*.zip" } } },
-            DefaultExtension = ".zip"
-        });
-        if (res != null) { Settings.ZipEnginePath = PathHelpers.NormalizePath(res.Path.LocalPath); _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); }
+        string? hash = Git.GetCommitHashShort(EnginePath);
+        string suggestedName = string.IsNullOrEmpty(hash) ? "EngineBuild" : hash;
+        var path = await _uiService.SaveFileAsync("Select Zip Save Location", suggestedName, ".zip", "Zip File");
+        if (path != null) { Settings.ZipEnginePath = PathHelpers.NormalizePath(path); _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); }
     }
 
     [RelayCommand]
@@ -450,20 +402,20 @@ public partial class MainWindowViewModel : ViewModelBase
         if (Settings.bWithWin64NoPCH)
         {
             var res = await ShowMessageDialog("Warning", "Building with Precompiled Headers disabled will take a long time. Are you sure you want to continue?", "Yes", null, "No");
-            if (res != ContentDialogResult.Primary) return;
+            if (res != UBBDialogResult.Primary) return;
         }
 
         if (Settings.bEnableEngineBuildConfirmationMessage)
         {
             var res = await ShowMessageDialog("Build Binary Version", "You are going to build a binary version of Unreal Engine. This is a long process and might take time to finish. Are you sure you want to continue?", "Yes", null, "No");
-            if (res != ContentDialogResult.Primary) return;
+            if (res != UBBDialogResult.Primary) return;
         }
 
         if (Settings.bWithDDC && Settings.bEnableDDCMessages)
         {
             var res = await ShowMessageDialog("Warning", "Building Derived Data Cache (DDC) is one of the slowest aspect of the build. You can skip this step if you want to. Do you want to continue with DDC enabled?", "Yes", "No", "Cancel");
-            if (res == ContentDialogResult.None || res == ContentDialogResult.Secondary) Settings.bWithDDC = false;
-            else if (res == ContentDialogResult.Primary) { /* Keep DDC */ }
+            if (res == UBBDialogResult.None || res == UBBDialogResult.Secondary) Settings.bWithDDC = false;
+            else if (res == UBBDialogResult.Primary) { /* Keep DDC */ }
             else return; // Cancel
         }
 
@@ -524,20 +476,12 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task ExportLog()
     {
-        var sp = GetStorageProvider();
-        if (sp == null) return;
-        var res = await sp.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = "Export Build Log",
-            SuggestedFileName = "BuildLog",
-            DefaultExtension = ".log",
-            FileTypeChoices = new[] { new FilePickerFileType("Log File") { Patterns = new[] { "*.log", "*.txt" } } }
-        });
-        if (res != null) { await File.WriteAllTextAsync(res.Path.LocalPath, LogText); ShowToast("Log exported successfully."); _logger.Info($"Log exported to: {res.Path.LocalPath}", LogCategory.General); }
+        var path = await _uiService.SaveFileAsync("Export Build Log", "BuildLog", ".log", "Log File");
+        if (path != null) { await File.WriteAllTextAsync(path, LogText); ShowToast("Log exported successfully."); _logger.Info($"Log exported to: {path}", LogCategory.General); }
     }
 
     [RelayCommand]
-    private async Task CopyCommandLine() { if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow?.Clipboard != null) { await desktop.MainWindow.Clipboard.SetTextAsync(PrepareCommandline()); StatusText = "Command line copied to clipboard!"; ShowToast("Command line copied to clipboard!"); GameAnalyticsCSharp.AddDesignEvent("CommandLine:CopyToClipboard"); } }
+    private async Task CopyCommandLine() { await _uiService.CopyTextToClipboard(PrepareCommandline()); StatusText = "Command line copied to clipboard!"; ShowToast("Command line copied to clipboard!"); GameAnalyticsCSharp.AddDesignEvent("CommandLine:CopyToClipboard"); }
 
     internal string PrepareCommandline()
     {
@@ -558,11 +502,8 @@ public partial class MainWindowViewModel : ViewModelBase
         string ue4 = $"UE4{type}.Target.cs", ue5 = $"Unreal{type}.Target.cs";
         string path = Path.Combine(EnginePath, "Engine", "Source", ue5);
         if (!File.Exists(path)) path = Path.Combine(EnginePath, "Engine", "Source", ue4);
-        if (File.Exists(path)) {
-            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
-                var editor = new CodeEditorWindow(); editor.LoadFile(path); editor.Show(desktop.MainWindow!);
-            }
-        } else ShowToast($"{path} does not exist.", UBBNotificationType.Error);
+        if (File.Exists(path)) _uiService.OpenCodeEditor(path);
+        else ShowToast($"{path} does not exist.", UBBNotificationType.Error);
     }
 
     [RelayCommand]
@@ -570,15 +511,15 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (string.IsNullOrEmpty(EnginePath)) return;
         string path = Path.Combine(EnginePath, "LocalBuilds", "Engine");
-        if (Directory.Exists(path)) _platformService.OpenFolder(path);
+        if (Directory.Exists(path)) _uiService.OpenFolder(path);
         else ShowToast("Build folder does not exist yet.", UBBNotificationType.Info);
     }
 
-    [RelayCommand] private void GetSourceCode() => _platformService.OpenUrl("https://github.com/EpicGames/UnrealEngine");
+    [RelayCommand] private void GetSourceCode() => _uiService.OpenUrl("https://github.com/EpicGames/UnrealEngine");
     [RelayCommand] private void OpenLogFolder() => _settingsService.OpenLogFolder();
     [RelayCommand] private void RemovePlugin(PluginCardViewModel p) => PluginQueue.Remove(p);
-    [RelayCommand] private void OpenSupport() => _platformService.OpenUrl("https://github.com/ryanjon2040/Unreal-Binary-Builder");
-    [RelayCommand] private void OpenChangelog() => _platformService.OpenUrl("https://github.com/ryanjon2040/Unreal-Binary-Builder/blob/master/CHANGELOG.md");
-    [RelayCommand] private void OpenAbout() { if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime d) { var dlg = new AboutDialog(); dlg.ShowDialog(d.MainWindow!); } }
+    [RelayCommand] private void OpenSupport() => _uiService.OpenUrl("https://github.com/ryanjon2040/Unreal-Binary-Builder");
+    [RelayCommand] private void OpenChangelog() => _uiService.OpenUrl("https://github.com/ryanjon2040/Unreal-Binary-Builder/blob/master/CHANGELOG.md");
+    [RelayCommand] private void OpenAbout() => _uiService.ShowAboutDialog();
     [RelayCommand] private void OpenSettings() => _settingsService.OpenSettings();
 }

@@ -75,6 +75,7 @@ public class MainWindowViewModelTests : IDisposable
     private readonly MockUnrealEngineProvider _ueProvider;
     private readonly MockLogger _logger;
     private readonly UiLogSink _uiLogSink;
+    private readonly MockUIService _uiService;
 
     public MainWindowViewModelTests()
     {
@@ -86,6 +87,7 @@ public class MainWindowViewModelTests : IDisposable
         _ueProvider = new MockUnrealEngineProvider();
         _logger = new MockLogger();
         _uiLogSink = new UiLogSink();
+        _uiService = new MockUIService();
     }
 
     public void Dispose()
@@ -96,7 +98,29 @@ public class MainWindowViewModelTests : IDisposable
         }
     }
 
-    private MainWindowViewModel CreateViewModel() => new MainWindowViewModel(_processExecutor, _updater, _platformService, _settingsService, _ueProvider, _logger, _uiLogSink);
+    private MainWindowViewModel CreateViewModel() => new MainWindowViewModel(_processExecutor, _updater, _platformService, _settingsService, _ueProvider, _logger, _uiLogSink, _uiService);
+
+    [Fact]
+    public void ShowToast_TriggersUiService()
+    {
+        // Arrange
+        var vm = CreateViewModel();
+        string receivedMessage = string.Empty;
+        UBBNotificationType receivedType = UBBNotificationType.Info;
+        
+        _uiService.ShowNotification += (s, e) => {
+            receivedMessage = e.Message;
+            receivedType = e.Type;
+        };
+
+        // Act
+        var method = typeof(MainWindowViewModel).GetMethod("ShowToast", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        method?.Invoke(vm, new object[] { "Test Message", UBBNotificationType.Success, "Test Title" });
+
+        // Assert
+        Assert.Equal("Test Message", receivedMessage);
+        Assert.Equal(UBBNotificationType.Success, receivedType);
+    }
 
     [Fact]
     public void EnginePath_UpdatesVersionDependencies()

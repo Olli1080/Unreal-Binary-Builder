@@ -18,6 +18,7 @@ namespace UnrealBinaryBuilder.Avalonia.Views;
 public partial class MainWindow : Window
 {
     private WindowNotificationManager? _notificationManager;
+    private IUIService? _uiService;
 
     public MainWindow()
     {
@@ -28,9 +29,15 @@ public partial class MainWindow : Window
             MaxItems = 3
         };
 
+        _uiService = App.Current?.Services?.GetService<IUIService>();
+        if (_uiService != null)
+        {
+            _uiService.ShowNotification += OnShowNotification;
+        }
+
         DataContextChanged += OnDataContextChanged;
         Closing += MainWindow_Closing;
-        
+
         // Restore window state
         var settingsService = App.Current?.Services?.GetService<ISettingsService>();
         var settings = settingsService?.GetSettings();
@@ -72,7 +79,7 @@ public partial class MainWindow : Window
                 }
                 return;
             }
-            
+
             FinalizeExit(vm);
         }
     }
@@ -85,11 +92,16 @@ public partial class MainWindow : Window
         vm.Settings.WindowLeft = Position.X;
         vm.Settings.WindowTop = Position.Y;
         vm.Settings.bWindowMaximized = WindowState == WindowState.Maximized;
-        
+
         var settingsService = App.Current?.Services?.GetService<ISettingsService>();
         settingsService?.SaveSettings(vm.Settings);
         GameAnalyticsCSharp.EndSession();
-        
+
+        if (_uiService != null)
+        {
+            _uiService.ShowNotification -= OnShowNotification;
+        }
+
         Closing -= MainWindow_Closing;
         Close();
     }
@@ -99,10 +111,8 @@ public partial class MainWindow : Window
         if (DataContext is MainWindowViewModel vm)
         {
             vm.PropertyChanged += OnViewModelPropertyChanged;
-            vm.ShowNotification += OnShowNotification;
         }
     }
-
     private void OnShowNotification(object? sender, NotificationEventArgs e)
     {
         AvaloniaNotificationType targetType = e.Type switch

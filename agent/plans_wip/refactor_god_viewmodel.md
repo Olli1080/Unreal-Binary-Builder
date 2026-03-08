@@ -9,28 +9,18 @@ Decompose `MainWindowViewModel.cs` from a 500+ line "God Object" into specialize
 - High risk of regression when changing unrelated features.
 
 ## Target Architecture
-1. **IEngineBuildService**: Handles the orchestration of Engine builds (BuildGraph).
-2. **IPluginBuildService**: Handles the orchestration of Plugin builds (UAT).
-3. **ISetupService**: Handles `Setup.bat` and `GenerateProjectFiles.bat` execution.
-4. **IUIService**: Manages navigation, toast notifications, and dialogs.
+1. **IUIService**: UI notifications, message dialogs, and navigation.
+2. **ISetupService**: Engine setup (Setup.bat, GenerateProjectFiles.bat).
+3. **IEngineBuildService**: Engine builds (BuildGraph orchestration).
+4. **IPluginBuildService**: Plugin builds (UAT orchestration).
 
-## Execution Steps
+## Execution Subplans
+- [x] [Step 1: UI Service Extraction](refactor_god_viewmodel_step1_ui.md)
+- [ ] [Step 2: Engine Setup Service Extraction](refactor_god_viewmodel_step2_setup.md)
+- [ ] [Step 3: Build Orchestration Service Extraction](refactor_god_viewmodel_step3_build.md)
+- [ ] [Step 4: Integration & ViewModel Cleanup](refactor_god_viewmodel_step4_integration.md)
 
-### Step 1: Interface Definition
-- Define interfaces for the new services in `UnrealBinaryBuilder.Avalonia.Classes.Interfaces`.
-
-### Step 2: Extract Build Services
-- Move `Internal_BuildEngine` and `PrepareCommandline` to `EngineBuildService`.
-- Move `BuildPlugins` logic to `PluginBuildService`.
-- Move `StartSetup` logic to `SetupService`.
-
-### Step 3: Extract UI Utilities
-- Move `ShowToast`, `ShowMessageDialog`, and `ApplyTheme` to a `UIService` or keep in a leaner `MainWindowViewModel`.
-
-### Step 4: Component Integration
-- Inject the new services into `MainWindowViewModel` via constructor (DI).
-- Update the ViewModel to delegate build commands to these services.
-
-## Validation
-- Ensure unit tests for `MainWindowViewModel` can now use mocks for build services.
-- Verify build workflows still function correctly from the UI.
+## Validation Strategy
+- **Unit Testing**: All extracted services must have unit tests. `MainWindowViewModel` must have its dependencies mocked.
+- **Regression Testing**: All build workflows (Setup Chain, Engine Build, Plugin Build) must be manually verified.
+- **Complexity Analysis**: `MainWindowViewModel` should be reduced to UI-state management only, with a line count under 250.
