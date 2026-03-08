@@ -80,6 +80,9 @@ public class MainWindowViewModelTests : IDisposable
     private readonly MockZipService _zipService;
     private readonly MockEngineBuildService _engineBuildService;
     private readonly MockPluginBuildService _pluginBuildService;
+    private readonly MockGitService _gitService;
+    private readonly MockBuildTimerService _timerService;
+    private readonly MockLogFormatterService _logFormatter;
 
     public MainWindowViewModelTests()
     {
@@ -96,6 +99,9 @@ public class MainWindowViewModelTests : IDisposable
         _zipService = new MockZipService();
         _engineBuildService = new MockEngineBuildService();
         _pluginBuildService = new MockPluginBuildService();
+        _gitService = new MockGitService();
+        _timerService = new MockBuildTimerService();
+        _logFormatter = new MockLogFormatterService();
     }
 
     public void Dispose()
@@ -118,10 +124,13 @@ public class MainWindowViewModelTests : IDisposable
         _setupService,
         _zipService,
         _engineBuildService,
-        _pluginBuildService);
+        _pluginBuildService,
+        _gitService,
+        _timerService,
+        _logFormatter);
 
     [Fact]
-    public void ShowToast_TriggersUiService()
+    public async Task ShowToast_TriggersUiService()
     {
         // Arrange
         var vm = CreateViewModel();
@@ -134,12 +143,12 @@ public class MainWindowViewModelTests : IDisposable
         };
 
         // Act
-        var method = typeof(MainWindowViewModel).GetMethod("ShowToast", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        method?.Invoke(vm, new object[] { "Test Message", UBBNotificationType.Success, "Test Title" });
+        // CopyCommandLine triggers a toast
+        await vm.CopyCommandLineCommand.ExecuteAsync(null);
 
         // Assert
-        Assert.Equal("Test Message", receivedMessage);
-        Assert.Equal(UBBNotificationType.Success, receivedType);
+        Assert.Equal("Command line copied to clipboard!", receivedMessage);
+        Assert.Equal(UBBNotificationType.Info, receivedType);
     }
 
     [Fact]
@@ -152,6 +161,7 @@ public class MainWindowViewModelTests : IDisposable
         
         // Mock UE 4.22
         _ueProvider.Metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false);
+        _gitService.GitInfo = "Branch: master | Hash: 12345";
 
         // Act
         vm.EnginePath = engineRoot;
@@ -159,6 +169,7 @@ public class MainWindowViewModelTests : IDisposable
         // Assert
         Assert.True(vm.SupportWin32);
         Assert.True(vm.SupportHTML5);
+        Assert.Equal("Branch: master | Hash: 12345", vm.GitInfo);
     }
 
     [Fact]
@@ -176,23 +187,15 @@ public class MainWindowViewModelTests : IDisposable
     }
 
     [Fact]
-    public void PrepareCommandline_RespectsVersionDependencies()
+    public void TimerService_UpdatesElapsedTime()
     {
         // Arrange
         var vm = CreateViewModel();
-        string engineRoot = Path.Combine(_testPath, "EngineMock_422");
-        Directory.CreateDirectory(engineRoot); // Ensure directory exists
         
-        // UE 4.22
-        _ueProvider.Metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false);
-        vm.EnginePath = engineRoot;
-        
-        _engineBuildService.PrepareEngineCommandlineResult = "-set:WithWin32=true";
-
         // Act
-        string cmd = vm.PrepareCommandline();
+        _timerService.TriggerElapsedChanged("00:01:23");
 
         // Assert
-        Assert.Contains("-set:WithWin32=true", cmd);
+        Assert.Equal("00:01:23", vm.ElapsedTime);
     }
 }

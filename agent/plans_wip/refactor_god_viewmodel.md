@@ -19,7 +19,7 @@ Decompose `MainWindowViewModel.cs` from a 500+ line "God Object" into specialize
 - [x] [Step 1: UI Service Extraction](refactor_god_viewmodel_step1_ui.md)
 - [x] [Step 2: Engine Setup Service Extraction](refactor_god_viewmodel_step2_setup.md)
 - [x] [Step 3: Build Orchestration Service Extraction](refactor_god_viewmodel_step3_build.md)
-- [ ] [Step 4: Integration & ViewModel Cleanup](refactor_god_viewmodel_step4_integration.md)
+- [x] [Step 4: Integration & ViewModel Cleanup](refactor_god_viewmodel_step4_integration.md)
 
 ## Validation Strategy
 - **Unit Testing**: All extracted services must have unit tests. `MainWindowViewModel` must have its dependencies mocked.
