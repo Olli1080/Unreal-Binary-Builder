@@ -7,11 +7,15 @@ def install_deps():
     subprocess.check_call([sys.executable, "-m", "pip", "install", "cairosvg", "pillow"])
 
 def generate():
+    need_install = False
     try:
         import cairosvg
         from PIL import Image
         from io import BytesIO
     except ImportError:
+        need_install = True
+
+    if need_install:
         install_deps()
         import cairosvg
         from PIL import Image
