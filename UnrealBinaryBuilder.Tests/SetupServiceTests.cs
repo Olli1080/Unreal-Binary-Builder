@@ -97,14 +97,16 @@ public class SetupServiceTests : IDisposable
         // Arrange
         var settings = SettingsService.GetDefaultSettings(_testPath);
         settings.GitDependencyEnableCache = true;
-        settings.GitDependencyCache = "C:\\Cache";
+        string cachePath = Path.Combine(_testPath, "Cache");
+        settings.GitDependencyCache = cachePath;
         settings.GitDependencyCacheMultiplier = 2.5;
 
         // Act
         string args = _setupService.PrepareSetupArgs(settings);
 
         // Assert
-        Assert.Contains("--cache=C:/Cache", args);
+        string expectedCacheArg = "--cache=" + PathHelpers.ToUnixPath(cachePath);
+        Assert.Contains(expectedCacheArg, args);
         Assert.Contains("--cache-size-multiplier=2.5", args);
     }
 

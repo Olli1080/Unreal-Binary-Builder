@@ -14,12 +14,13 @@ public class BuildArgumentBuilderTests
     public void BuildEngineArguments_GeneratesCorrectString_ForUE4()
     {
         // Arrange
+        string customBuildFile = Path.Combine(Path.GetTempPath(), "Custom.xml");
         var settings = new BuilderSettingsJson
         {
             bWithWin64 = true,
             bWithWin32 = true,
             bWithDDC = true,
-            CustomBuildFile = "C:\\Custom.xml"
+            CustomBuildFile = customBuildFile
         };
         var metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false);
         
@@ -28,7 +29,8 @@ public class BuildArgumentBuilderTests
         string cmd = args.ToString();
 
         // Assert
-        Assert.Contains("-script=\"C:\\Custom.xml\"", cmd);
+        string expectedScriptArg = $"-script=\"{customBuildFile}\"";
+        Assert.Contains(expectedScriptArg, cmd);
         Assert.Contains("-set:WithWin32=true", cmd);
         Assert.Contains("-set:WithWin64=true", cmd);
         Assert.Contains("-set:WithDDC=true", cmd);
@@ -112,7 +114,11 @@ public class BuildArgumentBuilderTests
     {
         // Arrange
         var platformService = new MockPlatformService();
-        var plugin = new PluginCardViewModel("C:/Plugins/MyPlugin.uplugin", "C:/Output", "C:/UE5", "UE5", platformService)
+        string pluginPath = Path.Combine(Path.GetTempPath(), "Plugins", "MyPlugin.uplugin");
+        string outputPath = Path.Combine(Path.GetTempPath(), "Output");
+        string enginePath = Path.Combine(Path.GetTempPath(), "UE5");
+        
+        var plugin = new PluginCardViewModel(pluginPath, outputPath, enginePath, "UE5", platformService)
         {
             TargetPlatforms = new List<string> { "Win64", "Android" }
         };
@@ -122,9 +128,11 @@ public class BuildArgumentBuilderTests
         string cmd = args.ToString();
 
         // Assert
+        string normalizedPluginPath = PathHelpers.NormalizePath(pluginPath);
+        string normalizedOutputPath = PathHelpers.NormalizePath(outputPath);
         Assert.Contains("BuildPlugin", cmd);
-        Assert.Contains("-Plugin=C:/Plugins/MyPlugin.uplugin", cmd);
-        Assert.Contains("-Package=C:/Output", cmd);
+        Assert.Contains($"-Plugin={normalizedPluginPath}", cmd);
+        Assert.Contains($"-Package={normalizedOutputPath}", cmd);
         Assert.Contains("-TargetPlatforms=Win64+Android", cmd);
         Assert.Contains("-Rocket", cmd);
     }

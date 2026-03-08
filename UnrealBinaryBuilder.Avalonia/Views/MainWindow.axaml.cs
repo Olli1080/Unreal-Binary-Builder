@@ -7,6 +7,11 @@ using global::Avalonia.Controls.Notifications;
 using UnrealBinaryBuilder.Avalonia.Classes;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 using UnrealBinaryBuilder.Avalonia.Models;
+using AvaloniaEdit.Highlighting;
+using AvaloniaEdit.Highlighting.Xshd;
+using System.Xml;
+using Avalonia.Platform;
+using Avalonia.Threading;
 
 // Resolve namespace collision between Project and Framework
 using AvaloniaNotificationType = global::Avalonia.Controls.Notifications.NotificationType;
@@ -35,8 +40,19 @@ public partial class MainWindow : Window
             _uiService.ShowNotification += OnShowNotification;
         }
 
+        LoadUnrealHighlighting();
+
         DataContextChanged += OnDataContextChanged;
         Closing += MainWindow_Closing;
+
+        if (Array.Exists(Environment.GetCommandLineArgs(), arg => arg == "--generate-screenshots"))
+        {
+            DispatcherTimer.RunOnce(async () =>
+            {
+                await DocumentationAutomation.GenerateScreenshots(this);
+                Close();
+            }, TimeSpan.FromSeconds(2));
+        }
 
         // Restore window state
         var settingsService = App.Current?.Services?.GetService<ISettingsService>();
@@ -144,6 +160,24 @@ public partial class MainWindow : Window
                     LogViewEditor.Text = vm.LogText;
                 }
             }
+        }
+    }
+
+    private void LoadUnrealHighlighting()
+    {
+        try
+        {
+            var assets = AssetLoader.Open(new Uri("avares://UnrealBinaryBuilder.Avalonia/Resources/UnrealLog.xshd"));
+            using (var reader = XmlReader.Create(assets))
+            {
+                var highlighting = HighlightingLoader.Load(reader, HighlightingManager.Instance);
+                if (Editor != null) Editor.SyntaxHighlighting = highlighting;
+                if (LogViewEditor != null) LogViewEditor.SyntaxHighlighting = highlighting;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load highlighting: {ex.Message}");
         }
     }
 }

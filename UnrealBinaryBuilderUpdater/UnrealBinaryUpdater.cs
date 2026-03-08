@@ -17,7 +17,7 @@ namespace UnrealBinaryBuilderUpdater
 
 	public class UBBUpdater
 	{
-		private static readonly string APP_CAST_XML = "https://github.com/ryanjon2040/Unreal-Binary-Builder/raw/master/UnrealBinaryBuilderUpdater/appcast.xml";
+		private static readonly string APP_CAST_XML = "https://github.com/Olli1080/Unreal-Binary-Builder/raw/master/UnrealBinaryBuilderUpdater/appcast.xml";
 		private static UpdateInfo _updateInfo;
 		private static SparkleUpdater _sparkle = null;
 		private string _downloadPath = null;

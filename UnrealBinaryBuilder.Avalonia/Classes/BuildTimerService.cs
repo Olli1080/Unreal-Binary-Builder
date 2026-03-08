@@ -13,6 +13,7 @@ public class BuildTimerService : IBuildTimerService
     public event EventHandler<string>? ElapsedChanged;
 
     public string CurrentElapsed => _buildStopwatch.Elapsed.ToString(@"hh\:mm\:ss");
+    public TimeSpan RawElapsed => _buildStopwatch.Elapsed;
 
     public BuildTimerService()
     {

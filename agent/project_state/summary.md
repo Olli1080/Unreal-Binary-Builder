@@ -1,31 +1,28 @@
 # Project State
 
 ## Current Architecture
-- **Framework**: Avalonia UI (Cross-platform .NET UI)
+- **Framework**: Avalonia UI (Cross-platform .NET 10.0)
 - **Design Pattern**: Service-Oriented MVVM (Lean ViewModels + Specialized Services)
 - **Dependency Injection**: `Microsoft.Extensions.DependencyInjection`
-- **Core Services**:
-  - `IUIService`: UI notifications, message dialogs, navigation, and file/folder picking.
-  - `ISetupService`: Orchestration of Engine setup (`Setup.bat`, project generation).
-  - `IEngineBuildService`: Engine builds via `BuildGraph`.
-  - `IPluginBuildService`: Plugin build queue management via `UAT`.
-  - `IZipService`: Complex filtering and zipping logic for artifacts.
-  - `IGitService`: Extraction of repository metadata (branches, hashes).
-  - `IBuildTimerService`: High-precision build timing and UI updates.
-  - `ILogFormatterService`: Regex-based compilation progress and log processing.
-  - `IProcessExecutor`: Handles external process execution.
-  - `ISettingsService`: Manages application settings and JSON persistence.
-  - `IPlatformService`: Abstracts OS-specific operations.
-  - `IUBBUpdater`: Handles application updates via NetSparkle.
-  - `IUnrealEngineProvider`: Centralizes UE version detection and path logic.
+- **Build System**: GitHub Actions (Win/Linux/macOS)
+- **Persistence**: JSON-based storage for Settings, Build History, and Orchestration State.
 
-
-## Stability & Quality
-- **Unit Tests**: 56 passing tests in `UnrealBinaryBuilder.Tests`, achieving modular coverage for all core services.
-- **Code Style**: CommunityToolkit.Mvvm for ViewModels; logic isolated in testable, injectable services.
-- **Cross-Platform**: Platform-agnostic core logic and UI (Avalonia).
+## Core Services
+- `IEngineBuildService`: Orchestrates the Unreal BuildGraph.
+- `ISetupService`: Manages Git dependency setup and prerequisites.
+- `IPluginBuildService`: Handles batch plugin compilation.
+- `IBuildHistoryService`: Archives past build metadata and logs.
+- `IBuildOrchestrationService`: Tracks current build progress for resume capabilities.
+- `IProcessExecutor`: Cross-platform shell execution with `.sh`/`.bat` parity.
+- `IUBBLogger`: Unified logging with multiple sinks (UI, File, Telemetry).
 
 ## Recent Improvements
-- **God ViewModel Decomposition**: Successfully refactored `MainWindowViewModel` from a 500+ line "God Object" into specialized services, reducing it to a lean ~230 lines focused on UI state.
-- **Modular Testing Suite**: Implemented 36+ new unit tests for individual services, ensuring robust business logic in isolation.
-- **Logic Parity & Safety**: Verified 100% logic parity during refactor, including improved null-safety and locale-independent string formatting.
+- **CI/CD & Cross-Platform Validation**: Automated verification on all 3 major OS platforms with portable zip artifact generation.
+- **UI Modernization**: Real-time Visual Build Stepper and custom `AvaloniaEdit` syntax highlighting for Unreal logs.
+- **Persistence & History**: Full record of past builds with "One-Click Rebuild" and archived log viewing.
+- **Advanced Orchestration**: Intelligent build resume logic allowing recovery from failed stages (e.g., skip setup if already done).
+- **Quality Assurance**: 56 unit tests ensuring robust business logic across all services.
+
+## Logic Parity & Safety
+- 100% logic parity maintained during WPF to Avalonia migration.
+- Improved null-safety and platform-neutral path handling using `PathHelpers`.

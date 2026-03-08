@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using UnrealBinaryBuilder.Avalonia.Classes.Logging;
@@ -22,6 +24,19 @@ public class ProcessExecutor : IProcessExecutor
 
     public async Task<int> ExecuteAsync(string fileName, string arguments, string workingDirectory = "", LogCategory category = LogCategory.Build)
     {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            if (fileName.EndsWith(".bat", StringComparison.OrdinalIgnoreCase))
+            {
+                fileName = Path.ChangeExtension(fileName, ".sh");
+            }
+
+            if (File.Exists(fileName))
+            {
+                await EnsureExecutablePermissionAsync(fileName);
+            }
+        }
+
         var startInfo = new ProcessStartInfo
         {
             FileName = fileName,
@@ -47,9 +62,17 @@ public class ProcessExecutor : IProcessExecutor
             if (e.Data != null) _logger.Log(e.Data, LogLevel.Error, category);
         };
 
-        if (!process.Start())
+        try
         {
-            throw new Exception($"Failed to start process: {fileName}");
+            if (!process.Start())
+            {
+                throw new Exception($"Failed to start process: {fileName}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Error starting process {fileName}: {ex.Message}", category);
+            return -1;
         }
 
         process.BeginOutputReadLine();
@@ -58,5 +81,28 @@ public class ProcessExecutor : IProcessExecutor
         await process.WaitForExitAsync();
 
         return process.ExitCode;
+    }
+
+    private async Task EnsureExecutablePermissionAsync(string fileName)
+    {
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo
+            {
+                FileName = "chmod",
+                Arguments = $"+x \"{fileName}\"",
+                CreateNoWindow = true,
+                UseShellExecute = false
+            });
+
+            if (process != null)
+            {
+                await process.WaitForExitAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error($"Failed to set executable permission on {fileName}: {ex.Message}", LogCategory.Build);
+        }
     }
 }

@@ -12,6 +12,8 @@
   
     <Application.Resources>
         <conv:StringEqualsConverter x:Key="StringEqualsConverter" />
+        <conv:BuildStageToColorConverter x:Key="BuildStageToColorConverter" />
+        <conv:BuildStageToIconConverter x:Key="BuildStageToIconConverter" />
     </Application.Resources>
 
     <Application.Styles>

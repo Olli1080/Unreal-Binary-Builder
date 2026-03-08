@@ -9,7 +9,7 @@ public partial class DownloadDialog : Window
 {
     private long _currentFileSize;
     public string? VersionText = null;
-    public string? ChangelogUrl = "https://github.com/ryanjon2040/Unreal-Binary-Builder/blob/master/CHANGELOG.md";
+    public string? ChangelogUrl = "https://github.com/Olli1080/Unreal-Binary-Builder/blob/master/CHANGELOG.md";
 
     public DownloadDialog(string InVersion)
     {

@@ -51,6 +51,8 @@ public partial class App : Application
         services.AddSingleton<IPluginBuildService, PluginBuildService>();
         services.AddSingleton<IGitService, GitService>();
         services.AddSingleton<IBuildTimerService, BuildTimerService>();
+        services.AddSingleton<IBuildHistoryService, BuildHistoryService>();
+        services.AddSingleton<IBuildOrchestrationService, BuildOrchestrationService>();
         services.AddSingleton<ILogFormatterService, LogFormatterService>();
 
         // Register ViewModels

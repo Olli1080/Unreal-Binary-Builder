@@ -82,6 +82,8 @@ public class MainWindowViewModelTests : IDisposable
     private readonly MockPluginBuildService _pluginBuildService;
     private readonly MockGitService _gitService;
     private readonly MockBuildTimerService _timerService;
+    private readonly MockBuildHistoryService _historyService;
+    private readonly MockBuildOrchestrationService _orchestrationService;
     private readonly MockLogFormatterService _logFormatter;
 
     public MainWindowViewModelTests()
@@ -101,6 +103,8 @@ public class MainWindowViewModelTests : IDisposable
         _pluginBuildService = new MockPluginBuildService();
         _gitService = new MockGitService();
         _timerService = new MockBuildTimerService();
+        _historyService = new MockBuildHistoryService();
+        _orchestrationService = new MockBuildOrchestrationService();
         _logFormatter = new MockLogFormatterService();
     }
 
@@ -127,6 +131,8 @@ public class MainWindowViewModelTests : IDisposable
         _pluginBuildService,
         _gitService,
         _timerService,
+        _historyService,
+        _orchestrationService,
         _logFormatter);
 
     [Fact]

@@ -13,6 +13,7 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        /* Sentry is disabled for this fork until a new DSN is provided.
         SentrySdk.Init(options =>
         {
             options.Dsn = "https://23f478ac8a004c5782a7f6597c0b0325@o502371.ingest.sentry.io/5584682";
@@ -25,6 +26,7 @@ sealed class Program
             options.Debug = true;
             #endif
         });
+        */
 
         AppDomain.CurrentDomain.UnhandledException += (s, e) => 
             ShowCrashReporter(e.ExceptionObject as Exception);

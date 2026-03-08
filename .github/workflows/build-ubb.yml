@@ -1,8 +1,10 @@
-name: Build Avalonia Port
+name: Build and Release
 
 on:
   push:
     branches: [ master, rework ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ master, rework ]
 
@@ -17,15 +19,19 @@ jobs:
           - os: windows-latest
             rid: win-x64
             name: Windows-x64
+            suffix: .exe
           - os: ubuntu-latest
             rid: linux-x64
             name: Linux-x64
+            suffix: ""
           - os: macos-13
             rid: osx-x64
             name: macOS-x64
+            suffix: ""
           - os: macos-latest
             rid: osx-arm64
             name: macOS-arm64
+            suffix: ""
 
     runs-on: ${{ matrix.os }}
 
@@ -43,8 +49,41 @@ jobs:
     - name: Publish
       run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o publish_output/${{ matrix.rid }}
 
+    - name: Post-Build (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        Compress-Archive -Path publish_output/${{ matrix.rid }}/* -DestinationPath UnrealBinaryBuilder-${{ matrix.name }}.zip
+
+    - name: Post-Build (Linux/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cd publish_output/${{ matrix.rid }}
+        zip -r ../../UnrealBinaryBuilder-${{ matrix.name }}.zip .
+
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: UnrealBinaryBuilder-${{ matrix.name }}
-        path: publish_output/${{ matrix.rid }}
+        path: UnrealBinaryBuilder-${{ matrix.name }}.zip
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

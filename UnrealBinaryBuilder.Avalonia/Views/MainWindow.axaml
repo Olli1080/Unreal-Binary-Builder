@@ -17,12 +17,14 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <ui:NavigationView PaneDisplayMode="Left"
+    <ui:NavigationView x:Name="MainNavigation"
+                       PaneDisplayMode="Left"
                        IsSettingsVisible="True"
                        SelectedItem="{Binding SelectedCategory}">
         <ui:NavigationView.MenuItems>
             <ui:NavigationViewItem Content="Engine Builder" Tag="Engine" IconSource="Build" IsSelected="True" />
             <ui:NavigationViewItem Content="Plugin Builder" Tag="Plugins" IconSource="Library" />
+            <ui:NavigationViewItem Content="History" Tag="History" IconSource="History" />
             <ui:NavigationViewItem Content="Logs" Tag="Logs" IconSource="Document" />
         </ui:NavigationView.MenuItems>
 
@@ -43,8 +45,38 @@
                             <TextBlock Text="Unreal Engine Binary Builder" Theme="{StaticResource TitleTextBlockStyle}" />
                             <TextBlock Grid.Column="1" Text="{Binding GitInfo}" VerticalAlignment="Center" Opacity="0.6" FontSize="12" />
                         </Grid>
+
+                        <!-- Build Stepper -->
+                        <Border IsVisible="{Binding IsBuilding}" Background="{DynamicResource CardBackgroundFillColorDefault}" CornerRadius="4" Padding="15,10" Margin="0,5">
+                            <Grid ColumnDefinitions="*, Auto, *, Auto, *">
+                                <!-- Setup Stage -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="{Binding CurrentStage, Converter={StaticResource BuildStageToIconConverter}, ConverterParameter=Setup}" 
+                                                   Foreground="{Binding CurrentStage, Converter={StaticResource BuildStageToColorConverter}, ConverterParameter=Setup}" />
+                                    <TextBlock Text="Setup" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                </StackPanel>
+
+                                <Separator Grid.Column="1" Width="30" VerticalAlignment="Center" Margin="10,0" />
+
+                                <!-- Build Stage -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="{Binding CurrentStage, Converter={StaticResource BuildStageToIconConverter}, ConverterParameter=Build}" 
+                                                   Foreground="{Binding CurrentStage, Converter={StaticResource BuildStageToColorConverter}, ConverterParameter=Build}" />
+                                    <TextBlock Text="Build" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                </StackPanel>
+
+                                <Separator Grid.Column="3" Width="30" VerticalAlignment="Center" Margin="10,0" />
+
+                                <!-- Zip Stage -->
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="{Binding CurrentStage, Converter={StaticResource BuildStageToIconConverter}, ConverterParameter=Zip}" 
+                                                   Foreground="{Binding CurrentStage, Converter={StaticResource BuildStageToColorConverter}, ConverterParameter=Zip}" />
+                                    <TextBlock Text="Package" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
                         
-                        <TabControl Background="Transparent">
+                        <TabControl x:Name="EngineTabControl" Background="Transparent">
                             <TabItem Header="Setup" ToolTip.Tip="Allows you to configure Setup.bat settings and run it.">
                                 <ScrollViewer Height="450">
                                     <StackPanel Spacing="10" Margin="0,10">
@@ -327,6 +359,57 @@
                         <Button Content="Open Log Folder" Command="{Binding OpenLogFolderCommand}" Theme="{StaticResource TransparentButtonStyle}" />
                     </StackPanel>
                     <ae:TextEditor Grid.Row="1" Name="LogViewEditor" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Visible" FontFamily="Cascadia Code,Consolas,Monospace" FontSize="14" ShowLineNumbers="True" IsReadOnly="True" />
+                </Grid>
+
+                <!-- History View -->
+                <Grid IsVisible="{Binding SelectedCategoryTag, Converter={StaticResource StringEqualsConverter}, ConverterParameter=History}"
+                      RowDefinitions="Auto, *">
+                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,10">
+                        <TextBlock Text="Build History" Theme="{StaticResource TitleTextBlockStyle}" />
+                        <Button Grid.Column="1" Content="Clear All" Command="{Binding ClearHistoryCommand}" />
+                    </Grid>
+                    
+                    <ListBox Grid.Row="1" ItemsSource="{Binding BuildHistory}" Background="Transparent">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource CardBackgroundFillColorDefault}" CornerRadius="4" Padding="12" Margin="0,2">
+                                    <Grid ColumnDefinitions="Auto, *, Auto">
+                                        <!-- Status Icon -->
+                                        <ui:SymbolIcon Grid.Column="0" 
+                                                       Symbol="{Binding IsSuccess, Converter={StaticResource BuildStageToIconConverter}, ConverterParameter=Finished}"
+                                                       Foreground="{Binding IsSuccess, Converter={StaticResource BuildStageToColorConverter}, ConverterParameter=Finished}"
+                                                       FontSize="24" Margin="0,0,15,0" />
+                                        
+                                        <!-- Details -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <TextBlock Text="{Binding BuildType}" FontWeight="Bold" />
+                                                <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:g}'}" Opacity="0.6" FontSize="12" VerticalAlignment="Bottom" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding EnginePath}" Opacity="0.8" FontSize="13" TextWrapping="Wrap" />
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <TextBlock Text="{Binding Status}" FontSize="12" />
+                                                <TextBlock Text="{Binding Duration, StringFormat='{}{0:hh\\:mm\\:ss}'}" FontSize="12" Opacity="0.6" />
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- Actions -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
+                                            <Button Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RunAgainCommand}" CommandParameter="{Binding}" ToolTip.Tip="Run build again with these settings">
+                                                <ui:SymbolIcon Symbol="Play" />
+                                            </Button>
+                                            <Button Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ViewHistoryLogCommand}" CommandParameter="{Binding}" ToolTip.Tip="View Log">
+                                                <ui:SymbolIcon Symbol="Document" />
+                                            </Button>
+                                            <Button Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeleteHistoryEntryCommand}" CommandParameter="{Binding}" ToolTip.Tip="Delete from history">
+                                                <ui:SymbolIcon Symbol="Delete" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </Grid>
 
                 <!-- Settings View -->

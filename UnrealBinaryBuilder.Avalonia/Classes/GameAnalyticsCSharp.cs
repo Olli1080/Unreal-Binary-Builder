@@ -6,8 +6,8 @@ namespace UnrealBinaryBuilder.Avalonia.Classes
 	public static class GameAnalyticsCSharp
 	{
 		// Please DO NOT change this. If you don't want Analytics, set both GAME_KEY and SECRET_KEY to null ///////////////////
-		private static readonly string? GAME_KEY = "33551f8809806eaac2ad5be41c403c8d"; // null
-		private static readonly string? SECRET_KEY = "38986827a8ff55c879424d4bea7cfe8e99b44b03"; // null
+		private static readonly string? GAME_KEY = null;
+		private static readonly string? SECRET_KEY = null;
 		///////////////////////////////////////////////////////////////////////////////////////////////
 
 		private static Action<string>? logCallback = null;

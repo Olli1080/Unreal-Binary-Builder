@@ -2,16 +2,13 @@ Unreal Engine Binary Builder
 ======================
 
 <a href="https://www.buymeacoffee.com/ryanjon2040" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
+*(Support the original author)*
 
 This is a cross-platform desktop application designed to create binary builds (Installed Builds) of [Unreal Engine](https://www.unrealengine.com/) and plugins directly from [GitHub source](https://github.com/EpicGames/UnrealEngine).
 
-[![Discord](https://img.shields.io/discord/591914197219016707.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/zBMrKRdwgw)
-
-[<img src="https://img.shields.io/twitter/follow/ryanjon2040.svg?style=popout">](https://twitter.com/ryanjon2040)
-
-![](https://github.com/ryanjon2040/UE4-Binary-Builder/actions/workflows/build-ubb.yml/badge.svg)
-![](https://img.shields.io/github/last-commit/ryanjon2040/UE4-Binary-Builder.svg?style=popout) 
-![](https://img.shields.io/github/license/ryanjon2040/UE4-Binary-Builder.svg?style=popout) ![](https://img.shields.io/github/downloads/ryanjon2040/UE4-Binary-Builder/total.svg?style=popout) 
+![](https://github.com/Olli1080/Unreal-Binary-Builder/actions/workflows/build-ubb.yml/badge.svg)
+![](https://img.shields.io/github/last-commit/Olli1080/Unreal-Binary-Builder.svg?style=popout) 
+![](https://img.shields.io/github/license/Olli1080/Unreal-Binary-Builder.svg?style=popout) ![](https://img.shields.io/github/downloads/Olli1080/Unreal-Binary-Builder/total.svg?style=popout) 
 
 ### 🚀 v4.0 Avalonia Port Update
 Unreal Binary Builder has been completely rewritten using **Avalonia UI** and **.NET 10.0**. This massive architectural upgrade brings the application natively to **Windows, Linux, and macOS** with a modern Fluent UI, improved asynchronous build orchestration (no more UI freezing during long compilations!), and integrated cross-platform updates.
@@ -40,10 +37,37 @@ Unreal Binary Builder has been completely rewritten using **Avalonia UI** and **
 - Click *Browse* and select the **root folder** of your downloaded Engine (where **_Setup.bat_** exists).
 - Choose your Setup Options and Git Dependency settings, then click **Start Setup Process**.
 
+![Engine Setup](Documentation/screenshot_1.png)
+
 ###### Step IV
 - Navigate to the **Compile** sub-tab.
 - Select your target platforms, build options (like DDC, Clean Build), and Game Configurations.
 - Click **Build Unreal Engine**.
+
+![Engine Compile](Documentation/screenshot_2.png)
+
+# Features in Detail
+
+### Engine Builder
+Manage full Unreal Engine source builds, including setup, compilation, and optional packaging.
+
+#### Zip Build
+You can automatically zip your final engine build for easy distribution.
+![Engine Zip Build](Documentation/screenshot_3.png)
+
+### Plugin Builder
+Batch build and package plugins for multiple Unreal Engine versions and platforms.
+![Plugin Builder](Documentation/screenshot_4.png)
+
+
+# Automation & Documentation
+
+### 📸 Automatic Screenshot Generation
+This project includes a built-in tool to automatically generate documentation screenshots. If you are a developer running from source, you can refresh the screenshots in the `Documentation/` folder by running the application with the following argument:
+
+```bash
+dotnet run --project UnrealBinaryBuilder.Avalonia/UnrealBinaryBuilder.Avalonia.csproj -- --generate-screenshots
+```
 
 # Troubleshoot
 

@@ -10,7 +10,7 @@ namespace UnrealBinaryBuilder.Avalonia.Classes;
 
 public class UBBUpdater : IUBBUpdater
 {
-    private static readonly string APP_CAST_XML = "https://github.com/ryanjon2040/Unreal-Binary-Builder/raw/master/UnrealBinaryBuilderUpdater/appcast.xml";
+    private static readonly string APP_CAST_XML = "https://github.com/Olli1080/Unreal-Binary-Builder/raw/master/UnrealBinaryBuilderUpdater/appcast.xml";
     private UpdateInfo? _updateInfo;
     private SparkleUpdater? _sparkle;
     private string? _downloadPath;
@@ -30,6 +30,7 @@ public class UBBUpdater : IUBBUpdater
     {
         if (_sparkle == null)
         {
+            // FIXME: Replace this public key with your own generated using netsparkle-generate-appcast
             _sparkle = new SparkleUpdater(APP_CAST_XML, new DSAChecker(SecurityMode.UseIfPossible, "+mLdLTe3Mj6OU0Kr6+ZDeVj+TTFRsNUJvUaPhuJ7pUI="));
             // In Avalonia, we should use the Avalonia UIFactory
             _sparkle.UIFactory = new NetSparkleUpdater.UI.Avalonia.UIFactory();

@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="UnrealLog" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+	<Color name="Error" foreground="#FFF44336" fontWeight="bold" />
+	<Color name="Warning" foreground="#FFFFC107" fontWeight="bold" />
+	<Color name="Info" foreground="#FF2196F3" />
+	<Color name="Success" foreground="#FF4CAF50" fontWeight="bold" />
+	<Color name="Progress" foreground="#FF8BC34A" />
+	<Color name="Bracket" foreground="#FF9E9E9E" />
+	
+	<RuleSet>
+		<!-- Errors -->
+		<Rule color="Error">
+			\bERROR\b|(?i)error\b|\[ERROR\]
+		</Rule>
+		
+		<!-- Warnings -->
+		<Rule color="Warning">
+			\bWARNING\b|(?i)warning\b|\[WARNING\]
+		</Rule>
+		
+		<!-- Success / Finished -->
+		<Rule color="Success">
+			(?i)succeeded|(?i)success|(?i)finished|(?i)completed
+		</Rule>
+		
+		<!-- Progress Markers -->
+		<Rule color="Progress">
+			\[\d+/\d+\]|\(\d+%\)
+		</Rule>
+		
+		<!-- Common Brackets/Tags -->
+		<Rule color="Bracket">
+			\[|\]|\(|\)
+		</Rule>
+
+		<!-- Unreal/UAT specific Info -->
+		<Rule color="Info">
+			\b(BUILD|UAT|AutomationTool|UBT|UnrealBuildTool)\b
+		</Rule>
+	</RuleSet>
+</SyntaxDefinition>
