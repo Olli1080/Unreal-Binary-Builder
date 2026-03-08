@@ -13,11 +13,12 @@ Decompose `MainWindowViewModel.cs` from a 500+ line "God Object" into specialize
 2. **ISetupService**: Engine setup (Setup.bat, GenerateProjectFiles.bat).
 3. **IEngineBuildService**: Engine builds (BuildGraph orchestration).
 4. **IPluginBuildService**: Plugin builds (UAT orchestration).
+5. **IZipService**: Zipping logic for Engine and Plugins.
 
 ## Execution Subplans
 - [x] [Step 1: UI Service Extraction](refactor_god_viewmodel_step1_ui.md)
 - [x] [Step 2: Engine Setup Service Extraction](refactor_god_viewmodel_step2_setup.md)
-- [ ] [Step 3: Build Orchestration Service Extraction](refactor_god_viewmodel_step3_build.md)
+- [/] [Step 3: Build Orchestration Service Extraction](refactor_god_viewmodel_step3_build.md) (Engine part done)
 - [ ] [Step 4: Integration & ViewModel Cleanup](refactor_god_viewmodel_step4_integration.md)
 
 ## Validation Strategy

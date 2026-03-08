@@ -46,6 +46,8 @@ public partial class App : Application
         services.AddSingleton<IPluginsService, PluginsService>();
         services.AddSingleton<IUIService, UIService>();
         services.AddSingleton<ISetupService, SetupService>();
+        services.AddSingleton<IZipService, ZipService>();
+        services.AddSingleton<IEngineBuildService, EngineBuildService>();
 
         // Register ViewModels
         services.AddTransient<MainWindowViewModel>();

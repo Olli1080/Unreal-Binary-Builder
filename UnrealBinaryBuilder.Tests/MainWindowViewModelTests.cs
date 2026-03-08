@@ -77,6 +77,8 @@ public class MainWindowViewModelTests : IDisposable
     private readonly UiLogSink _uiLogSink;
     private readonly MockUIService _uiService;
     private readonly MockSetupService _setupService;
+    private readonly MockZipService _zipService;
+    private readonly MockEngineBuildService _engineBuildService;
 
     public MainWindowViewModelTests()
     {
@@ -90,6 +92,8 @@ public class MainWindowViewModelTests : IDisposable
         _uiLogSink = new UiLogSink();
         _uiService = new MockUIService();
         _setupService = new MockSetupService();
+        _zipService = new MockZipService();
+        _engineBuildService = new MockEngineBuildService();
     }
 
     public void Dispose()
@@ -100,7 +104,18 @@ public class MainWindowViewModelTests : IDisposable
         }
     }
 
-    private MainWindowViewModel CreateViewModel() => new MainWindowViewModel(_processExecutor, _updater, _platformService, _settingsService, _ueProvider, _logger, _uiLogSink, _uiService, _setupService);
+    private MainWindowViewModel CreateViewModel() => new MainWindowViewModel(
+        _processExecutor, 
+        _updater, 
+        _platformService, 
+        _settingsService, 
+        _ueProvider, 
+        _logger, 
+        _uiLogSink, 
+        _uiService, 
+        _setupService,
+        _zipService,
+        _engineBuildService);
 
     [Fact]
     public void ShowToast_TriggersUiService()
@@ -148,17 +163,13 @@ public class MainWindowViewModelTests : IDisposable
     {
         // Arrange
         var vm = CreateViewModel();
-        vm.Settings.bWithWin64 = true;
-        vm.Settings.bWithWin32 = false;
-        vm.Settings.bWithDDC = true;
-        vm.Settings.CustomBuildFile = "C:\\CustomBuild.xml";
+        _engineBuildService.PrepareEngineCommandlineResult = "-mock-args";
 
         // Act
         string cmd = vm.PrepareCommandline();
 
         // Assert
-        Assert.Contains("-script=\"C:\\CustomBuild.xml\"", cmd);
-        Assert.Contains("-set:WithDDC=true", cmd);
+        Assert.Equal("-mock-args", cmd);
     }
 
     [Fact]
@@ -172,22 +183,13 @@ public class MainWindowViewModelTests : IDisposable
         // UE 4.22
         _ueProvider.Metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false);
         vm.EnginePath = engineRoot;
-        vm.Settings.bWithWin32 = true;
+        
+        _engineBuildService.PrepareEngineCommandlineResult = "-set:WithWin32=true";
 
         // Act
         string cmd = vm.PrepareCommandline();
 
         // Assert
         Assert.Contains("-set:WithWin32=true", cmd);
-
-        // Switch to UE 5.0
-        _ueProvider.Metadata = new UnrealEngineMetadata(5, 0, 0, "5.0", "5.0.0", false, false, false, true, true, false, true, true);
-        vm.EnginePath = engineRoot; // Trigger update
-
-        // Act
-        cmd = vm.PrepareCommandline();
-
-        // Assert
-        Assert.DoesNotContain("-set:WithWin32", cmd);
     }
 }

@@ -52,8 +52,8 @@
 - [x] Implement Strong-Typed Build Configurations (Builder pattern)
 - [ ] Refactor God ViewModel (`MainWindowViewModel`) into services
   - [x] Step 1: UI & Dialog Service Extraction
-  - [ ] Step 2: Engine Setup Service Extraction
-  - [ ] Step 3: Build Orchestration Service Extraction
+  - [x] Step 2: Engine Setup Service Extraction
+  - [/] Step 3: Build Orchestration Service Extraction (Engine part done)
   - [ ] Step 4: Integration & ViewModel Cleanup
 - [x] Implement Unified Logging Strategy
 - [x] Centralize platform-specific shell execution logic

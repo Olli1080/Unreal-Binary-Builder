@@ -63,7 +63,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IUBBLogger _logger;
     private readonly IUIService _uiService;
     private readonly ISetupService _setupService;
-    private readonly PostBuildSettings _postBuildSettings = new();
+    private readonly IZipService _zipService;
+    private readonly IEngineBuildService _engineBuildService;
     private UnrealEngineMetadata? _engineMetadata;
 
     [ObservableProperty] private object? _selectedCategory;
@@ -124,10 +125,23 @@ public partial class MainWindowViewModel : ViewModelBase
         App.Current?.Services?.GetRequiredService<IUBBLogger>() ?? throw new InvalidOperationException("Logger not found"),
         App.Current?.Services?.GetRequiredService<UiLogSink>() ?? throw new InvalidOperationException("UiLogSink not found"),
         App.Current?.Services?.GetRequiredService<IUIService>() ?? throw new InvalidOperationException("UIService not found"),
-        App.Current?.Services?.GetRequiredService<ISetupService>() ?? throw new InvalidOperationException("SetupService not found")
+        App.Current?.Services?.GetRequiredService<ISetupService>() ?? throw new InvalidOperationException("SetupService not found"),
+        App.Current?.Services?.GetRequiredService<IZipService>() ?? throw new InvalidOperationException("ZipService not found"),
+        App.Current?.Services?.GetRequiredService<IEngineBuildService>() ?? throw new InvalidOperationException("EngineBuildService not found")
     ) { }
 
-    public MainWindowViewModel(IProcessExecutor processExecutor, IUBBUpdater updater, IPlatformService platformService, ISettingsService settingsService, IUnrealEngineProvider ueProvider, IUBBLogger logger, UiLogSink uiLogSink, IUIService uiService, ISetupService setupService)
+    public MainWindowViewModel(
+        IProcessExecutor processExecutor, 
+        IUBBUpdater updater, 
+        IPlatformService platformService, 
+        ISettingsService settingsService, 
+        IUnrealEngineProvider ueProvider, 
+        IUBBLogger logger, 
+        UiLogSink uiLogSink, 
+        IUIService uiService, 
+        ISetupService setupService,
+        IZipService zipService,
+        IEngineBuildService engineBuildService)
     {
         _processExecutor = processExecutor;
         _updater = updater;
@@ -137,6 +151,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _logger = logger;
         _uiService = uiService;
         _setupService = setupService;
+        _zipService = zipService;
+        _engineBuildService = engineBuildService;
 
         Settings = _settingsService.GetSettings();
         _updater.SilentUpdateFinishedEventHandler += OnUpdateFinished;
@@ -392,29 +408,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task Internal_BuildEngine()
     {
-        StatusText = "Building Engine..."; GameAnalyticsCSharp.AddDesignEvent("Build:Started"); GameAnalyticsCSharp.AddProgressStart("Build", "Engine");
-
-        var metadata = _ueProvider.GetEngineMetadata(EnginePath);
-        string automationPath = _ueProvider.GetAutomationPath(EnginePath, metadata?.IsUE5 ?? false);
-
-        int ec = await _processExecutor.ExecuteAsync(automationPath, PrepareCommandline(), EnginePath, LogCategory.Build);
-        bool success = ec == 0; GameAnalyticsCSharp.AddProgressEnd("Build", "Engine", !success);
-        if (success && Settings.bZipEngineBuild && !string.IsNullOrEmpty(Settings.ZipEnginePath)) { 
-            StatusText = "Zipping build..."; 
-            GameAnalyticsCSharp.AddDesignEvent("Zip:Started");
-            await _postBuildSettings.SaveToZip(Path.Combine(EnginePath, "LocalBuilds", "Engine"), Settings.ZipEnginePath, Settings); 
-            GameAnalyticsCSharp.AddDesignEvent("Zip:Finished");
-        }
-        IsBuilding = false; StopTiming(); StatusText = success ? "Build Finished Successfully." : "Build Failed."; if (success) ShowToast("Engine Build Finished Successfully.", UBBNotificationType.Success); else { ShowToast("Engine Build Failed.", UBBNotificationType.Error); _logger.Error("Engine Build Failed.", LogCategory.Build); }
-        if (success && Settings.bShutdownIfBuildSuccess && Settings.bShutdownPC) Internal_ShutdownPC();
-    }
-
-    private void Internal_ShutdownPC() 
-    { 
-        _logger.Info("Shutting down PC in 5 seconds...", LogCategory.General); 
-        GameAnalyticsCSharp.AddDesignEvent("Shutdown:Started"); 
-        _platformService.ShutdownPC(5);
-        Environment.Exit(0); 
+        StatusText = "Building Engine..."; 
+        bool success = await _engineBuildService.BuildEngineAsync(EnginePath, Settings, SelectedVsVersion, _engineMetadata);
+        
+        IsBuilding = false; StopTiming(); 
+        StatusText = success ? "Build Finished Successfully." : "Build Failed."; 
+        if (success) ShowToast("Engine Build Finished Successfully.", UBBNotificationType.Success); 
+        else { ShowToast("Engine Build Failed.", UBBNotificationType.Error); }
     }
 
     [RelayCommand]
@@ -432,7 +432,8 @@ public partial class MainWindowViewModel : ViewModelBase
             bool success = ec == 0;
             if (success && plugin.bCanZip) {
                 GameAnalyticsCSharp.AddDesignEvent($"ZipPlugin:Started:{plugin.PluginName}");
-                await _postBuildSettings.SavePluginToZip(plugin.PluginPath, plugin.TargetZipPath, plugin.bZipForMarketplaceZip, true);
+                // Note: Zip logic for plugins will be moved to PluginBuildService in next step
+                await _zipService.SavePluginToZip(plugin.PluginPath, plugin.TargetZipPath, plugin.bZipForMarketplaceZip, true);
                 GameAnalyticsCSharp.AddDesignEvent($"ZipPlugin:Finished:{plugin.PluginName}");
             }
             plugin.FinishBuild(success); GameAnalyticsCSharp.AddProgressEnd("Build", "Plugin", !success);
@@ -453,7 +454,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     internal string PrepareCommandline()
     {
-        return BuildArgumentBuilder.BuildEngineArguments(Settings, _engineMetadata, SelectedVsVersion).ToString();
+        return _engineBuildService.PrepareEngineCommandline(Settings, _engineMetadata, SelectedVsVersion);
     }
 
     [Obsolete("Use IUBBLogger instead")]

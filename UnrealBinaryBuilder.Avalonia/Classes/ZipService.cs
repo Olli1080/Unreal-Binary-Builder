@@ -5,14 +5,20 @@ using System.IO.Compression;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 using UnrealBinaryBuilder.Avalonia.Models;
 
 namespace UnrealBinaryBuilder.Avalonia.Classes;
 
-public class PostBuildSettings
+public class ZipService : IZipService
 {
-    private static CancellationTokenSource _zipCancelTokenSource = new();
-    private CancellationToken _zipCancelToken = _zipCancelTokenSource.Token;
+    private CancellationTokenSource _zipCancelTokenSource = new();
+    private CancellationToken _zipCancelToken;
+
+    public ZipService()
+    {
+        _zipCancelToken = _zipCancelTokenSource.Token;
+    }
 
     public bool CanSaveToZip(string zipPath)
     {
@@ -201,7 +207,7 @@ public class PostBuildSettings
         _zipCancelTokenSource.Cancel();
     }
 
-    public static string BytesToString(long byteCount)
+    private static string BytesToString(long byteCount)
     {
         string[] suf = ["B", "KB", "MB", "GB", "TB"];
         if (byteCount == 0) return "0" + suf[0];
