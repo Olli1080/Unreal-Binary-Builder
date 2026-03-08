@@ -14,6 +14,7 @@
     <RepositoryUrl>https://github.com/Olli1080/Unreal-Binary-Builder</RepositoryUrl>
     <PackageProjectUrl>https://github.com/Olli1080/Unreal-Binary-Builder</PackageProjectUrl>
     <Version>4.0.0</Version>
+    <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +23,22 @@
     <AvaloniaResource Include="Resources\**" />
   </ItemGroup>
 
+  <!-- Automated Icon Generation -->
+  <Target Name="GenerateAppIcon" BeforeTargets="BeforeBuild">
+    <PropertyGroup>
+      <VenvDir>$(MSBuildThisFileDirectory)..\.venv</VenvDir>
+      <PythonExe Condition="'$(OS)' == 'Windows_NT'">$(VenvDir)\Scripts\python.exe</PythonExe>
+      <PythonExe Condition="'$(OS)' != 'Windows_NT'">$(VenvDir)/bin/python</PythonExe>
+    </PropertyGroup>
+
+    <Message Importance="high" Text="Checking app icon..." />
+
+    <!-- Create venv if it doesn't exist -->
+    <Exec Command="python -m venv $(VenvDir)" Condition="!Exists('$(PythonExe)')" ContinueOnError="true" />
+
+    <!-- Run generation script -->
+    <Exec Command="$(PythonExe) $(MSBuildThisFileDirectory)..\Scripts/generate_ico.py" Condition="Exists('$(PythonExe)')" ContinueOnError="true" />
+  </Target>
   <ItemGroup>
     <InternalsVisibleTo Include="UnrealBinaryBuilder.Tests" />
   </ItemGroup>
@@ -44,7 +61,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Sentry" Version="5.0.0" />
-    <PackageReference Include="NetSparkleUpdater.UI.Avalonia" Version="3.0.0" />
-    <PackageReference Include="NetSparkleUpdater.SparkleUpdater" Version="3.0.0" />
+    <PackageReference Include="Velopack" Version="0.0.1053" />
   </ItemGroup>
 </Project>

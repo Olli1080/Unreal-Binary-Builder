@@ -9,6 +9,7 @@ Automate the creation of production-ready distribution packages for Windows, Lin
   - [x] Create automated `.zip` archiving for each build variant.
 - [x] **CI/CD Integration**:
   - [x] Update GitHub Actions (`build-ubb.yml`) to trigger on version tags (`v*`).
+  - [x] Create manual Publish workflow (`publish.yml`) with version input and Velopack integration.
   - [x] Implement automated artifact upload to GitHub Releases using `softprops/action-gh-release`.
 - [x] **Multi-Platform Support**:
   - [x] Automated builds for `win-x64`, `linux-x64`, `osx-x64`, and `osx-arm64`.

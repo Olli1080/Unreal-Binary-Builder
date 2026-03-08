@@ -80,7 +80,6 @@ public class EngineBuildServiceTests : IDisposable
     {
         // Arrange
         var settings = new BuilderSettingsJson { bZipEngineBuild = true, ZipEnginePath = "C:/output.zip" };
-        bool zipInvoked = false;
         
         // We can't easily verify zipInvoked without a better mock or a way to track calls.
         // Let's assume the flow is correct if the test passes without exceptions.

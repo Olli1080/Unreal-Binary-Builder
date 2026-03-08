@@ -435,3 +435,11 @@ $RECYCLE.BIN/
 ## Keys
 UnrealBinaryBuilderUpdater/keys/**
 Output/
+
+# Python venv
+.venv/
+
+# Generated Assets
+UnrealBinaryBuilder.Avalonia/Assets/*.ico
+!UnrealBinaryBuilder.Avalonia/Assets/avalonia-logo.ico
+UnrealBinaryBuilder.Avalonia/Assets/app_icon_*.png

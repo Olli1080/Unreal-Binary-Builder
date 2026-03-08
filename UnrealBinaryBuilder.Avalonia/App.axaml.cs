@@ -35,7 +35,7 @@ public partial class App : Application
         services.AddSingleton<IUBBLogger, AggregateLogger>();
 
         services.AddSingleton<IProcessExecutor, ProcessExecutor>();
-        services.AddSingleton<IUBBUpdater, UBBUpdater>();
+        services.AddSingleton<IVelopackUpdaterService, VelopackUpdaterService>();
         
         if (OperatingSystem.IsWindows()) services.AddSingleton<IPlatformService, WindowsPlatformService>();
         else if (OperatingSystem.IsLinux()) services.AddSingleton<IPlatformService, LinuxPlatformService>();

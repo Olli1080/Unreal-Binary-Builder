@@ -5,18 +5,32 @@
         mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="300"
         x:Class="UnrealBinaryBuilder.Avalonia.Views.AboutDialog"
         Title="About"
-        Icon="/Assets/compiler.ico"
-        Width="650" Height="300"
+        Icon="/Assets/app_icon.ico"
+        Width="650" Height="500"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
         SystemDecorations="Full">
     <Panel Margin="20">
         <StackPanel Spacing="10" VerticalAlignment="Center">
+            <!-- Vector Logo (Abstract Binary </>) -->
+            <Viewbox Width="120" Height="120" HorizontalAlignment="Center" Margin="0,0,0,10">
+                <Canvas Width="512" Height="512">
+                    <Rectangle Width="512" Height="512" RadiusX="120" RadiusY="120" Fill="#1E1E1E"/>
+                    <!-- < Bracket -->
+                    <Path Data="M180 150L80 256L180 362" Stroke="#0078D4" StrokeThickness="45" StrokeLineCap="Round" StrokeJoin="Round"/>
+                    <!-- / Slash -->
+                    <Path Data="M300 100L212 412" Stroke="#FFFFFF" StrokeThickness="45" StrokeLineCap="Round"/>
+                    <!-- > Bracket -->
+                    <Path Data="M332 150L432 256L332 362" Stroke="#FDFC00" StrokeThickness="45" StrokeLineCap="Round" StrokeJoin="Round"/>
+                    <Ellipse Width="30" Height="30" Canvas.Left="417" Canvas.Top="241" Fill="#FDFC00"/>
+                </Canvas>
+            </Viewbox>
+
             <TextBlock Text="Unreal Binary Builder" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,10"/>
             <TextBlock TextWrapping="Wrap" TextAlignment="Center"
-                       Text="A helper application designed to create binary version of Unreal Engine 4 from source and package plugins as well as projects too."/>
+                       Text="A helper application designed to create binary version of Unreal Engine from source and package plugins."/>
             
-            <TextBlock TextAlignment="Center" Margin="0,10,0,0">
+            <TextBlock TextAlignment="Center" Margin="0,5,0,0">
                 Created by Satheesh (ryanjon2040)
                 Maintained by Olli1080
             </TextBlock>
@@ -26,6 +40,14 @@
                 Updated for 4.21 and Lumin support by KarstenMaxim (AlphaSoftLLC)&#x0a;
                 Step counter added by Ben Vaccaro (freaksed)&#x0a;
                 Some small updates for 4.24 by Christian Walde (wchristian)
+            </TextBlock>
+
+            <Separator Margin="0,5" />
+            
+            <TextBlock Text="Third-Party Software" FontWeight="SemiBold" HorizontalAlignment="Center" />
+            <TextBlock TextWrapping="Wrap" TextAlignment="Center" FontSize="11" Opacity="0.7">
+                Avalonia UI, FluentAvalonia, Velopack, LibGit2Sharp, Newtonsoft.Json,&#x0a;
+                AvaloniaEdit, Microsoft.Extensions.DependencyInjection
             </TextBlock>
         </StackPanel>
         

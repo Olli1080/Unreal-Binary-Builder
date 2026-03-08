@@ -30,23 +30,20 @@ public class MockLogger : IUBBLogger
     public void Error(Exception exception, string? message = null, LogCategory category = LogCategory.General) { }
 }
 
-public class MockUBBUpdater : IUBBUpdater
+public class MockVelopackUpdaterService : IVelopackUpdaterService
 {
-    public event EventHandler<UpdateProgressFinishedEventArgs>? SilentUpdateFinishedEventHandler;
-    public event EventHandler<UpdateProgressDownloadEventArgs>? UpdateProgressEventHandler;
-    public event EventHandler<UpdateProgressDownloadErrorEventArgs>? UpdateProgressDownloadErrorEventHandler;
-    public event EventHandler<UpdateProgressDownloadStartEventArgs>? UpdateDownloadStartedEventHandler;
-    public event EventHandler<UpdateProgressDownloadFinishEventArgs>? UpdateDownloadFinishedEventHandler;
-
-    public void CheckForUpdates() { }
-    public void CheckForUpdatesSilently() { }
-    public void DownloadUpdate() { }
+    public bool IsUpdateAvailable { get; set; } = false;
+    public Task CheckForUpdatesAsync(bool silent = false) => Task.CompletedTask;
+    public Task DownloadUpdatesAsync() => Task.CompletedTask;
+    public void ApplyUpdatesAndRestart() { }
 }
 
 public class MockSettingsService : ISettingsService
 {
     public BuilderSettingsJson Settings { get; set; } = SettingsService.GetDefaultSettings(Path.Combine(Path.GetTempPath(), "UBB_Mock"));
+#pragma warning disable CS0067
     public event Action<string, LogMessageType>? OnLog;
+#pragma warning restore CS0067
 
     public BuilderSettingsJson GetSettings() => Settings;
     public void SaveSettings(BuilderSettingsJson settings) => Settings = settings;
@@ -69,7 +66,7 @@ public class MainWindowViewModelTests : IDisposable
 {
     private readonly string _testPath;
     private readonly MockProcessExecutor _processExecutor;
-    private readonly MockUBBUpdater _updater;
+    private readonly MockVelopackUpdaterService _updater;
     private readonly MockPlatformService _platformService;
     private readonly MockSettingsService _settingsService;
     private readonly MockUnrealEngineProvider _ueProvider;
@@ -90,7 +87,7 @@ public class MainWindowViewModelTests : IDisposable
     {
         _testPath = Path.Combine(Path.GetTempPath(), "UBB_VM_Tests_" + Guid.NewGuid().ToString());
         _processExecutor = new MockProcessExecutor();
-        _updater = new MockUBBUpdater();
+        _updater = new MockVelopackUpdaterService();
         _platformService = new MockPlatformService();
         _settingsService = new MockSettingsService();
         _ueProvider = new MockUnrealEngineProvider();

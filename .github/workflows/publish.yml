@@ -1,12 +1,16 @@
-name: Build and Release
+name: Publish Release
 
 on:
-  push:
-    branches: [ master, rework ]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [ master, rework ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v4.0.0)'
+        required: true
+        default: 'v4.0.0'
+      is_prerelease:
+        description: 'Mark as pre-release'
+        type: boolean
+        default: false
 
 env:
   PROJECT_PATH: UnrealBinaryBuilder.Avalonia/UnrealBinaryBuilder.Avalonia.csproj
@@ -37,6 +41,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Necessary for some versioning tools if used
     
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -55,13 +61,11 @@ jobs:
       run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o publish_output/${{ matrix.rid }}
 
     - name: Setup Velopack
-      if: startsWith(github.ref, 'refs/tags/v')
       run: dotnet tool install -g vpk
 
     - name: Velopack Pack
-      if: startsWith(github.ref, 'refs/tags/v')
       run: |
-        vpk pack --packId UnrealBinaryBuilder --packVersion ${{ github.ref_name }} --packDir publish_output/${{ matrix.rid }} --mainExe UnrealBinaryBuilder.Avalonia${{ matrix.suffix }} --rid ${{ matrix.rid }} --outputDir vpk_out
+        vpk pack --packId UnrealBinaryBuilder --packVersion ${{ github.event.inputs.version }} --packDir publish_output/${{ matrix.rid }} --mainExe UnrealBinaryBuilder.Avalonia${{ matrix.suffix }} --rid ${{ matrix.rid }} --outputDir vpk_out
 
     - name: Post-Build (Windows)
       if: matrix.os == 'windows-latest'
@@ -85,18 +89,52 @@ jobs:
 
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
 
+      - name: Generate Release Body
+        id: release_body
+        run: |
+          NEW_TAG="${{ github.event.inputs.version }}"
+          # Get the previous tag, fallback to first commit if none found
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          
+          REPO_URL="https://github.com/${{ github.repository }}"
+          CHANGELOG_URL="${REPO_URL}/blob/master/changelogs/${NEW_TAG}.md"
+          COMPARE_URL="${REPO_URL}/compare/${PREV_TAG}...${NEW_TAG}"
+          
+          echo "BODY=## 📝 Release Notes" >> $GITHUB_OUTPUT
+          echo "Full changelog for this version can be found here: [${NEW_TAG}.md](${CHANGELOG_URL})" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### 🔍 Changes" >> $GITHUB_OUTPUT
+          echo "View the full list of changes since ${PREV_TAG}: [Compare](${COMPARE_URL})" >> $GITHUB_OUTPUT
+          
+          # Multiline output handling for GitHub Actions
+          {
+            echo 'RELEASE_MSG<<EOF'
+            echo "## 📝 Release Notes"
+            echo "Full changelog for this version: [${NEW_TAG}.md](${CHANGELOG_URL})"
+            echo ""
+            echo "### 🔍 Changes"
+            echo "View the full diff since ${PREV_TAG}: [Compare](${COMPARE_URL})"
+            echo 'EOF'
+          } >> $GITHUB_ENV
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.version }}
+          body: ${{ env.RELEASE_MSG }}
           files: |
             artifacts/*.zip
             artifacts/RELEASES
@@ -105,6 +143,6 @@ jobs:
             artifacts/*.pkg
           generate_release_notes: true
           draft: false
-          prerelease: false
+          prerelease: ${{ github.event.inputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

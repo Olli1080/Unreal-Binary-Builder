@@ -20,8 +20,22 @@ Unreal Binary Builder has been completely rewritten using **Avalonia UI** and **
 * **Plugin Builder**: Build and package Unreal Engine plugins for the Marketplace across multiple platforms.
 * **Visual Studio Integration**: Dynamically detects your VS installation, edition, and architecture.
 * **Integrated Code Editor**: Edit `.Target.cs` files directly within the app using AvaloniaEdit.
+* **Build History**: Keep track of all your past builds, their durations, and configurations.
+* **Smart Resume**: Intelligent orchestration allows you to resume a failed build from the last successful stage.
 * **Advanced Options**: Configure DDC, signing, custom XML build scripts, Git dependency caching, and more.
 * **Real-time Logging**: Monitor build progress, view compiled file counts, and export logs.
+
+# Getting Started
+
+### 📥 Installation
+1.  Download the latest release from the [Releases](https://github.com/Olli1080/Unreal-Binary-Builder/releases) page.
+    *   **Windows**: Download `UnrealBinaryBuilder-Windows-x64.zip`. Extract and run `UnrealBinaryBuilder.exe`.
+    *   **Linux**: Download the `.AppImage` file, make it executable (`chmod +x`), and run it.
+    *   **macOS**: Download the `.pkg` or zip for your architecture (Intel or Apple Silicon).
+2.  Follow the steps below to build your engine or plugins.
+
+### ✨ Automatic Updates
+Unreal Binary Builder now features **native GitHub updates** via Velopack. When a new version is released on GitHub, the application will notify you and offer to download and install it automatically in the background.
 
 # How to use (Compiling Engine)
 
@@ -73,7 +87,7 @@ dotnet run --project UnrealBinaryBuilder.Avalonia/UnrealBinaryBuilder.Avalonia.c
 
 **Access Denied on some files?**</br>
 On Windows, just change the ownership to Users then try again. To change ownership on Windows, follow these steps
- - Right click on the UE4 folder, choose Properties
+ - Right click on the Unreal Engine folder, choose Properties
  - Switch to Security tab
  - Click on Advanced
  - Near the top, click on Change User
@@ -89,5 +103,5 @@ On Windows, just change the ownership to Users then try again. To change ownersh
 * [GameAnalytics](https://github.com/GameAnalytics/GA-SDK-C-SHARP) by [Game Analytics](https://gameanalytics.com/)
 * [Newtonsoft.Json](https://www.newtonsoft.com/json)
 * [Sentry.NET](https://github.com/getsentry/sentry-dotnet) by [Sentry](https://sentry.io/)
-* [NetSparkle](https://github.com/NetSparkleUpdater/NetSparkle) by [NetSparkleUpdater](https://github.com/NetSparkleUpdater)
+* [Velopack](https://velopack.io/) - Native GitHub-powered update management.
 * CommunityToolkit.Mvvm

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using UnrealBinaryBuilder.Avalonia.Views.UserControls;
 using Avalonia.Controls.ApplicationLifetimes;
 using UnrealBinaryBuilder.Avalonia.Classes;
+using Velopack;
 
 namespace UnrealBinaryBuilder.Avalonia;
 
@@ -13,6 +14,8 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        VelopackApp.Build().Run();
+
         /* Sentry is disabled for this fork until a new DSN is provided.
         SentrySdk.Init(options =>
         {

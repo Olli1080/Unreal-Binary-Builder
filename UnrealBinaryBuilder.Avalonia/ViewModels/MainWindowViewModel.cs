@@ -19,7 +19,7 @@ namespace UnrealBinaryBuilder.Avalonia.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IProcessExecutor _processExecutor;
-    private readonly IUBBUpdater _updater;
+    private readonly IVelopackUpdaterService _updater;
     private readonly IPlatformService _platformService;
     private readonly ISettingsService _settingsService;
     private readonly IUnrealEngineProvider _ueProvider;
@@ -84,7 +84,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel() : this(
         App.Current?.Services?.GetRequiredService<IProcessExecutor>() ?? throw new InvalidOperationException("ProcessExecutor not found"),
-        App.Current?.Services?.GetRequiredService<IUBBUpdater>() ?? throw new InvalidOperationException("UBBUpdater not found"),
+        App.Current?.Services?.GetRequiredService<IVelopackUpdaterService>() ?? throw new InvalidOperationException("VelopackUpdater not found"),
         App.Current?.Services?.GetRequiredService<IPlatformService>() ?? throw new InvalidOperationException("PlatformService not found"),
         App.Current?.Services?.GetRequiredService<ISettingsService>() ?? throw new InvalidOperationException("SettingsService not found"),
         App.Current?.Services?.GetRequiredService<IUnrealEngineProvider>() ?? throw new InvalidOperationException("UnrealEngineProvider not found"),
@@ -103,7 +103,7 @@ public partial class MainWindowViewModel : ViewModelBase
     ) { }
 
     public MainWindowViewModel(
-        IProcessExecutor processExecutor, IUBBUpdater updater, IPlatformService platformService, ISettingsService settingsService, 
+        IProcessExecutor processExecutor, IVelopackUpdaterService updater, IPlatformService platformService, ISettingsService settingsService, 
         IUnrealEngineProvider ueProvider, IUBBLogger logger, UiLogSink uiLogSink, IUIService uiService, 
         ISetupService setupService, IZipService zipService, IEngineBuildService engineBuildService, 
         IPluginBuildService pluginBuildService, IGitService gitService, IBuildTimerService timerService, 
@@ -117,7 +117,6 @@ public partial class MainWindowViewModel : ViewModelBase
         _orchestrationService = orchestrationService; _logFormatter = logFormatter;
 
         Settings = _settingsService.GetSettings();
-        _updater.SilentUpdateFinishedEventHandler += OnUpdateFinished;
 
         foreach (BuildConfiguration config in Enum.GetValues(typeof(BuildConfiguration)))
             GameConfigWrappers.Add(new GameConfigWrapper(Settings.GameConfigurations, config, () => _settingsService.SaveSettings(Settings)));
@@ -125,7 +124,7 @@ public partial class MainWindowViewModel : ViewModelBase
         string[] p = { "Win64", "Win32", "Mac", "Linux", "LinuxAArch64", "Android", "IOS", "HTML5", "TVOS", "Switch", "PS4", "XboxOne", "Lumin", "HoleLens" };
         foreach (var name in p) PluginPlatforms.Add(new PluginPlatformWrapper(name, name == "Win64"));
 
-        if (Settings.bCheckForUpdatesAtStartup) _updater.CheckForUpdatesSilently();
+        if (Settings.bCheckForUpdatesAtStartup) _updater.CheckForUpdatesAsync(true);
 
         _timerService.ElapsedChanged += (s, e) => ElapsedTime = e;
         uiLogSink.OnLog += OnLogReceived;
@@ -156,13 +155,33 @@ public partial class MainWindowViewModel : ViewModelBase
         GitInfo = _gitService.GetGitInfo(EnginePath);
     }
 
-    [RelayCommand] private void CheckForUpdates() { GameAnalyticsCSharp.AddDesignEvent("Update:Check"); _updater.CheckForUpdates(); }
+    [ObservableProperty] private bool _isUpdateAvailable = false;
+
+    [RelayCommand] private async Task CheckForUpdates() { 
+        GameAnalyticsCSharp.AddDesignEvent("Update:Check"); 
+        await _updater.CheckForUpdatesAsync();
+        IsUpdateAvailable = _updater.IsUpdateAvailable;
+        if (IsUpdateAvailable) {
+            if (await _uiService.ShowMessageDialog("Update Available", "A new version is available. Would you like to download it now?", "Yes", null, "No") == UBBDialogResult.Primary) {
+                await DownloadUpdate();
+            }
+        }
+    }
+
+    [RelayCommand] private async Task DownloadUpdate() {
+        StatusText = "Downloading update...";
+        await _updater.DownloadUpdatesAsync();
+        StatusText = "Update ready to install.";
+        if (await _uiService.ShowMessageDialog("Update Ready", "The update has been downloaded. Restart the application to apply it?", "Restart Now", null, "Later") == UBBDialogResult.Primary) {
+            _updater.ApplyUpdatesAndRestart();
+        }
+    }
     public string SelectedCategoryTag => (SelectedCategory as FluentAvalonia.UI.Controls.NavigationViewItem)?.Tag?.ToString() ?? string.Empty;
     public string EnginePath { get => Settings.SetupBatFile ?? string.Empty; set { Settings.SetupBatFile = PathHelpers.NormalizePath(value); OnPropertyChanged(); UpdateVersionDependencies(); } }
 
     partial void OnSelectedCategoryChanged(object? value) {
         OnPropertyChanged(nameof(SelectedCategoryTag)); GameAnalyticsCSharp.AddDesignEvent($"Navigation:{SelectedCategoryTag}");
-        switch (SelectedCategoryTag) { case "SourceCode": GetSourceCode(); break; case "Support": OpenSupport(); break; case "Changelog": OpenChangelog(); break; case "About": OpenAbout(); break; }
+        switch (SelectedCategoryTag) { case "SourceCode": _ = GetSourceCode(); break; case "Support": _ = OpenSupport(); break; case "Changelog": _ = OpenChangelog(); break; case "About": OpenAbout(); break; }
     }
 
     [RelayCommand] private async Task BrowseEnginePath() { var path = await _uiService.BrowseFolderAsync("Select Unreal Engine Root Folder"); if (path != null) { EnginePath = path; _settingsService.SaveSettings(Settings); } }
@@ -361,12 +380,19 @@ public partial class MainWindowViewModel : ViewModelBase
         if (File.Exists(path)) _uiService.OpenCodeEditor(path); else _uiService.ShowToast($"{path} does not exist.", UBBNotificationType.Error);
     }
     [RelayCommand] private void OpenBuildFolder() { if (string.IsNullOrEmpty(EnginePath)) return; string path = Path.Combine(EnginePath, "LocalBuilds", "Engine"); if (Directory.Exists(path)) _uiService.OpenFolder(path); else _uiService.ShowToast("Build folder does not exist yet.", UBBNotificationType.Info); }
-    [RelayCommand] private void GetSourceCode() => _uiService.OpenUrl("https://github.com/EpicGames/UnrealEngine");
     [RelayCommand] private void OpenLogFolder() => _settingsService.OpenLogFolder();
     [RelayCommand] private void RemovePlugin(PluginCardViewModel p) => PluginQueue.Remove(p);
-    [RelayCommand] private void OpenSupport() => _uiService.OpenUrl("https://github.com/Olli1080/Unreal-Binary-Builder");
-    [RelayCommand] private void OpenChangelog() => _uiService.OpenUrl("https://github.com/Olli1080/Unreal-Binary-Builder/blob/master/CHANGELOG.md");
+
+    private async Task OpenUrlAsync(string url) {
+        if (await _uiService.ShowMessageDialog("External Link", $"This will open your browser to:\n\n{url}\n\nDo you want to continue?", "Open", null, "Cancel") == UBBDialogResult.Primary) {
+            _uiService.OpenUrl(url);
+        }
+    }
+
+    [RelayCommand] private async Task GetSourceCode() => await OpenUrlAsync("https://github.com/EpicGames/UnrealEngine");
+    [RelayCommand] private async Task OpenSupport() => await OpenUrlAsync("https://github.com/Olli1080/Unreal-Binary-Builder");
+    [RelayCommand] private async Task OpenChangelog() => await OpenUrlAsync("https://github.com/Olli1080/Unreal-Binary-Builder/blob/master/CHANGELOG.md");
+    
     [RelayCommand] private void OpenAbout() => _uiService.ShowAboutDialog();
     [RelayCommand] private void OpenSettings() => _settingsService.OpenSettings();
-    private void OnUpdateFinished(object? sender, UpdateProgressFinishedEventArgs e) { if (e.AppUpdateCheckStatus == AppUpdateCheckStatus.UpdateAvailable) { StatusText = $"Update available: {e.CastItem?.Version}"; _uiService.ShowToast($"Update {e.CastItem?.Version} is available.", UBBNotificationType.Info); } }
 }

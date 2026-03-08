@@ -1,14 +1,13 @@
 # Plans WIP
 
-All planned modernization and CI/CD phases have been successfully completed.
+All currently planned modernization and modernization phases have been successfully completed.
 
 ## Recently Completed
-- [x] **Phase 5: Modernization, CI/CD & Persistence**:
-  - Full cross-platform validation.
-  - UI feedback improvements (Stepper, Highlighting).
-  - Persistence & History system.
-  - Stateful build orchestration (Resume logic).
-  - Automated deployment pipeline.
+- [x] **Step 6: Velopack Migration**:
+  - Replaced NetSparkle with Velopack.
+  - Native GitHub update integration.
+  - Automated installer generation in CI/CD.
+  - **100% warning-free build**.
 
 ## Future Roadmap (Uncharted)
 

@@ -10,8 +10,8 @@
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
         x:Class="UnrealBinaryBuilder.Avalonia.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/compiler.ico"
-        Title="Unreal Binary Builder (Avalonia Port)">
+        Icon="/Assets/app_icon.ico"
+        Title="Unreal Binary Builder">
 
     <Design.DataContext>
         <vm:MainWindowViewModel/>
@@ -20,6 +20,7 @@
     <ui:NavigationView x:Name="MainNavigation"
                        PaneDisplayMode="Left"
                        IsSettingsVisible="True"
+                       SettingsItemToolTip="Application Settings"
                        SelectedItem="{Binding SelectedCategory}">
         <ui:NavigationView.MenuItems>
             <ui:NavigationViewItem Content="Engine Builder" Tag="Engine" IconSource="Build" IsSelected="True" />
@@ -29,10 +30,10 @@
         </ui:NavigationView.MenuItems>
 
         <ui:NavigationView.FooterMenuItems>
-            <ui:NavigationViewItem Content="Get UE Source" Tag="SourceCode" IconSource="Link" />
-            <ui:NavigationViewItem Content="Changelog" Tag="Changelog" IconSource="Calendar" />
-            <ui:NavigationViewItem Content="About" Tag="About" IconSource="Info" />
-            <ui:NavigationViewItem Content="Support" Tag="Support" IconSource="Help" />
+            <ui:NavigationViewItem Content="Get UE Source" Tag="SourceCode" IconSource="Link" ToolTip.Tip="Open Epic Games Unreal Engine GitHub repository." />
+            <ui:NavigationViewItem Content="Changelog" Tag="Changelog" IconSource="Calendar" ToolTip.Tip="View recent changes and version history." />
+            <ui:NavigationViewItem Content="About" Tag="About" IconSource="Info" ToolTip.Tip="Application information and credits." />
+            <ui:NavigationViewItem Content="Support" Tag="Support" IconSource="Help" ToolTip.Tip="Get help or report issues on GitHub." />
         </ui:NavigationView.FooterMenuItems>
 
         <ui:NavigationView.Content>

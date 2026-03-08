@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.3.11520.95
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnrealBinaryBuilderUpdater", "UnrealBinaryBuilderUpdater\UnrealBinaryBuilderUpdater.csproj", "{AB93DC86-D5D9-4C35-AAE4-78997B084053}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnrealBinaryBuilder.Avalonia", "UnrealBinaryBuilder.Avalonia\UnrealBinaryBuilder.Avalonia.csproj", "{6BA87A0E-398A-E031-E159-6A81A4E1ABF5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnrealBinaryBuilder.Tests", "UnrealBinaryBuilder.Tests\UnrealBinaryBuilder.Tests.csproj", "{AD3AB02B-7023-457E-BA70-83DF588A23A7}"
@@ -19,18 +17,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Debug|x64.Build.0 = Debug|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Debug|x86.Build.0 = Debug|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Release|x64.ActiveCfg = Release|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Release|x64.Build.0 = Release|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Release|x86.ActiveCfg = Release|Any CPU
-		{AB93DC86-D5D9-4C35-AAE4-78997B084053}.Release|x86.Build.0 = Release|Any CPU
 		{6BA87A0E-398A-E031-E159-6A81A4E1ABF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6BA87A0E-398A-E031-E159-6A81A4E1ABF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6BA87A0E-398A-E031-E159-6A81A4E1ABF5}.Debug|x64.ActiveCfg = Debug|Any CPU

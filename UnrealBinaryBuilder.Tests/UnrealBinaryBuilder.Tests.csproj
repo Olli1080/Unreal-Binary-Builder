@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
+    <Authors>Olli1080</Authors>
+    <Company>Olli1080</Company>
+    <Copyright>Copyright (c) 2023-2026 Olli1080</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
