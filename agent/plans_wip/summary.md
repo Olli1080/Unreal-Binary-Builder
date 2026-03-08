@@ -4,7 +4,6 @@ The following architectural blueprints are ready for execution:
 
 - [refactor_god_viewmodel.md](refactor_god_viewmodel.md): Plan to decompose `MainWindowViewModel` into specialized services.
 - [unified_logging_strategy.md](unified_logging_strategy.md): Plan to implement a centralized logging service with UI and file sinks.
-- [strong_typed_build_config.md](strong_typed_build_config.md): Plan to use a builder pattern for command-line arguments.
 
 ## Future Roadmap (Uncharted)
 

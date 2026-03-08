@@ -45,3 +45,11 @@
 - [x] Port `UnrealBinaryBuilderUpdater` to the new stack
 - [x] Migrate Appcast/Sparkle integration
 - [x] Setup cross-platform deployment pipeline
+
+# Phase 4: Architectural Refactoring
+
+## 1. Clean Code & Decoupling
+- [x] Implement Strong-Typed Build Configurations (Builder pattern)
+- [ ] Refactor God ViewModel (`MainWindowViewModel`) into services
+- [ ] Implement Unified Logging Strategy
+- [ ] Centralize platform-specific shell execution logic

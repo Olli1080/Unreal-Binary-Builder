@@ -22,3 +22,4 @@
 - Migrated from static `BuilderSettings` to injectable `ISettingsService`.
 - Centralized UE knowledge into `IUnrealEngineProvider`.
 - Decoupled ViewModels from platform APIs using `IPlatformService`.
+- **Strong-Typed Build Configurations**: Replaced manual string concatenation with a robust builder pattern and automated path quoting.

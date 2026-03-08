@@ -69,6 +69,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ISettingsService _settingsService;
     private readonly IUnrealEngineProvider _ueProvider;
     private readonly PostBuildSettings _postBuildSettings = new();
+    private UnrealEngineMetadata? _engineMetadata;
 
     [ObservableProperty] private object? _selectedCategory;
     [ObservableProperty] private string _statusText = "Idle.";
@@ -206,15 +207,15 @@ public partial class MainWindowViewModel : ViewModelBase
     private void UpdateVersionDependencies()
     {
         if (string.IsNullOrEmpty(EnginePath) || !Directory.Exists(EnginePath)) return;
-        var metadata = _ueProvider.GetEngineMetadata(EnginePath);
-        if (metadata != null) {
-            SupportWin32 = metadata.SupportWin32;
-            SupportHTML5 = metadata.SupportHTML5;
-            SupportConsoles = metadata.SupportConsoles;
-            IsEngineSelection425OrAbove = metadata.IsEngineSelection425OrAbove;
-            SupportServerClientTargets = metadata.SupportServerClientTargets;
-            SupportLinuxAArch64 = metadata.SupportLinuxAArch64;
-            SupportLinuxArm64 = metadata.SupportLinuxArm64;
+        _engineMetadata = _ueProvider.GetEngineMetadata(EnginePath);
+        if (_engineMetadata != null) {
+            SupportWin32 = _engineMetadata.SupportWin32;
+            SupportHTML5 = _engineMetadata.SupportHTML5;
+            SupportConsoles = _engineMetadata.SupportConsoles;
+            IsEngineSelection425OrAbove = _engineMetadata.IsEngineSelection425OrAbove;
+            SupportServerClientTargets = _engineMetadata.SupportServerClientTargets;
+            SupportLinuxAArch64 = _engineMetadata.SupportLinuxAArch64;
+            SupportLinuxArm64 = _engineMetadata.SupportLinuxArm64;
         }
         UpdateGitInfo();
     }
@@ -486,8 +487,7 @@ public partial class MainWindowViewModel : ViewModelBase
         foreach (var plugin in PluginQueue.ToList()) {
             StatusText = $"Building {plugin.PluginName}..."; GameAnalyticsCSharp.AddProgressStart("Build", "Plugin");
             plugin.StartBuild();
-            string pArgs = string.Join("+", plugin.TargetPlatforms ?? new List<string> { "Win64" });
-            string args = $"BuildPlugin -Plugin=\"{plugin.PluginPath}\" -Package=\"{plugin.DestinationPath}\" -Rocket -TargetPlatforms={pArgs}";
+            string args = BuildArgumentBuilder.BuildPluginArguments(plugin).ToString();
             int ec = await _processExecutor.ExecuteAsync(plugin.RunUATFile, args, Path.GetDirectoryName(plugin.RunUATFile)!, msg => AddLogEntry(msg), msg => AddLogEntry(msg, true));
             bool success = ec == 0;
             if (success && plugin.bCanZip) {
@@ -522,37 +522,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     internal string PrepareCommandline()
     {
-        string xml = Settings.CustomBuildFile ?? UnrealBinaryBuilderHelpers.DEFAULT_BUILD_XML_FILE;
-        string configs = string.Join(";", Settings.GameConfigurations);
-        string args = $"BuildGraph -target=\"Make Installed Build Win64\" -script=\"{xml}\" " +
-                     $"-set:WithDDC={GetBoolStr(Settings.bWithDDC)} " +
-                     $"-set:SignExecutables={GetBoolStr(Settings.bSignExecutables)} " +
-                     $"-set:EmbedSrcSrvInfo={GetBoolStr(Settings.bEnableSymStore)} " +
-                     $"-set:GameConfigurations={configs} " +
-                     $"-set:WithFullDebugInfo={GetBoolStr(Settings.bWithFullDebugInfo)} " +
-                     $"-set:HostPlatformOnly={GetBoolStr(Settings.bHostPlatformOnly)} " +
-                     $"-set:HostPlatformEditorOnly={GetBoolStr(Settings.bHostPlatformEditorOnly)} ";
-        if (Settings.bWithDDC && Settings.bHostPlatformDDCOnly) args += "-set:HostPlatformDDCOnly=true ";
-        if (Settings.bHostPlatformOnly) args += "-set:HostPlatformOnly=true ";
-        else {
-            if (SupportWin32) args += $"-set:WithWin32={GetBoolStr(Settings.bWithWin32)} ";
-            args += $"-set:WithWin64={GetBoolStr(Settings.bWithWin64)} -set:WithMac={GetBoolStr(Settings.bWithMac)} -set:WithAndroid={GetBoolStr(Settings.bWithAndroid)} -set:WithIOS={GetBoolStr(Settings.bWithIOS)} -set:WithTVOS={GetBoolStr(Settings.bWithTVOS)} -set:WithLinux={GetBoolStr(Settings.bWithLinux)} -set:WithLumin={GetBoolStr(Settings.bWithLumin)} ";
-            if (SupportHTML5) args += $"-set:WithHTML5={GetBoolStr(Settings.bWithHTML5)} ";
-            if (SupportConsoles) args += $"-set:WithSwitch={GetBoolStr(Settings.bWithSwitch)} -set:WithPS4={GetBoolStr(Settings.bWithPS4)} -set:WithXboxOne={GetBoolStr(Settings.bWithXboxOne)} ";
-            if (SupportLinuxArm64) args += $"-set:WithLinuxArm64={GetBoolStr(Settings.bWithLinuxAArch64)} ";
-            else if (SupportLinuxAArch64) args += $"-set:WithLinuxAArch64={GetBoolStr(Settings.bWithLinuxAArch64)} ";
-        }
-        if (!string.IsNullOrEmpty(Settings.AnalyticsOverride)) args += $"-set:AnalyticsTypeOverride={Settings.AnalyticsOverride} ";
-        if (SupportServerClientTargets) args += $"-set:WithServer={GetBoolStr(Settings.bWithServer)} -set:WithClient={GetBoolStr(Settings.bWithClient)} -set:WithHoloLens={GetBoolStr(Settings.bWithHoloLens)} ";
-        if (IsEngineSelection425OrAbove) args += $"-set:CompileDatasmithPlugins={GetBoolStr(Settings.bCompileDatasmithPlugins)} ";
-        if (Settings.bWithWin64NoPCH) args += "-set:WithWin64=true -set:BuildWithPrecompiledHeader=false ";
-        if (SelectedVsVersion != null) args += $"-set:VS{SelectedVsVersion.Version}=true ";
-        if (Settings.bCleanBuild) args += "-Clean ";
-        if (!string.IsNullOrEmpty(Settings.CustomOptions)) args += $"{Settings.CustomOptions} ";
-        return args;
+        return BuildArgumentBuilder.BuildEngineArguments(Settings, _engineMetadata, SelectedVsVersion).ToString();
     }
-
-    private string GetBoolStr(bool b) => b.ToString().ToLower();
 
     public void AddLogEntry(string message, bool isError = false)
     {
