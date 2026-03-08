@@ -51,5 +51,5 @@
 ## 1. Clean Code & Decoupling
 - [x] Implement Strong-Typed Build Configurations (Builder pattern)
 - [ ] Refactor God ViewModel (`MainWindowViewModel`) into services
-- [ ] Implement Unified Logging Strategy
-- [ ] Centralize platform-specific shell execution logic
+- [x] Implement Unified Logging Strategy
+- [x] Centralize platform-specific shell execution logic

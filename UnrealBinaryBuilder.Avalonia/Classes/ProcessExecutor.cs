@@ -2,17 +2,25 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
+using UnrealBinaryBuilder.Avalonia.Classes.Logging;
 
 namespace UnrealBinaryBuilder.Avalonia.Classes;
 
 public interface IProcessExecutor
 {
-    Task<int> ExecuteAsync(string fileName, string arguments, string workingDirectory = "", Action<string>? onOutput = null, Action<string>? onError = null);
+    Task<int> ExecuteAsync(string fileName, string arguments, string workingDirectory = "", LogCategory category = LogCategory.Build);
 }
 
 public class ProcessExecutor : IProcessExecutor
 {
-    public async Task<int> ExecuteAsync(string fileName, string arguments, string workingDirectory = "", Action<string>? onOutput = null, Action<string>? onError = null)
+    private readonly IUBBLogger _logger;
+
+    public ProcessExecutor(IUBBLogger logger)
+    {
+        _logger = logger;
+    }
+
+    public async Task<int> ExecuteAsync(string fileName, string arguments, string workingDirectory = "", LogCategory category = LogCategory.Build)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -31,12 +39,12 @@ public class ProcessExecutor : IProcessExecutor
 
         process.OutputDataReceived += (s, e) =>
         {
-            if (e.Data != null) onOutput?.Invoke(e.Data);
+            if (e.Data != null) _logger.Log(e.Data, LogLevel.Info, category);
         };
 
         process.ErrorDataReceived += (s, e) =>
         {
-            if (e.Data != null) onError?.Invoke(e.Data);
+            if (e.Data != null) _logger.Log(e.Data, LogLevel.Error, category);
         };
 
         if (!process.Start())

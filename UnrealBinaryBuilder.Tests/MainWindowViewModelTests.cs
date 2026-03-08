@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using UnrealBinaryBuilder.Avalonia.Classes;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
+using UnrealBinaryBuilder.Avalonia.Classes.Logging;
 using UnrealBinaryBuilder.Avalonia.Models;
 using UnrealBinaryBuilder.Avalonia.ViewModels;
 using Xunit;
@@ -12,10 +13,21 @@ namespace UnrealBinaryBuilder.Tests;
 public class MockProcessExecutor : IProcessExecutor
 {
     public int ExitCode { get; set; } = 0;
-    public Task<int> ExecuteAsync(string fileName, string arguments, string workingDirectory = "", Action<string>? onOutput = null, Action<string>? onError = null)
+    public Task<int> ExecuteAsync(string fileName, string arguments, string workingDirectory = "", LogCategory category = LogCategory.Build)
     {
         return Task.FromResult(ExitCode);
     }
+}
+
+public class MockLogger : IUBBLogger
+{
+    public void Log(string message, LogLevel level = LogLevel.Info, LogCategory category = LogCategory.General) { }
+    public void Debug(string message, LogCategory category = LogCategory.General) { }
+    public void Info(string message, LogCategory category = LogCategory.General) { }
+    public void Success(string message, LogCategory category = LogCategory.General) { }
+    public void Warning(string message, LogCategory category = LogCategory.General) { }
+    public void Error(string message, LogCategory category = LogCategory.General) { }
+    public void Error(Exception exception, string? message = null, LogCategory category = LogCategory.General) { }
 }
 
 public class MockUBBUpdater : IUBBUpdater
@@ -61,6 +73,8 @@ public class MainWindowViewModelTests : IDisposable
     private readonly MockPlatformService _platformService;
     private readonly MockSettingsService _settingsService;
     private readonly MockUnrealEngineProvider _ueProvider;
+    private readonly MockLogger _logger;
+    private readonly UiLogSink _uiLogSink;
 
     public MainWindowViewModelTests()
     {
@@ -70,6 +84,8 @@ public class MainWindowViewModelTests : IDisposable
         _platformService = new MockPlatformService();
         _settingsService = new MockSettingsService();
         _ueProvider = new MockUnrealEngineProvider();
+        _logger = new MockLogger();
+        _uiLogSink = new UiLogSink();
     }
 
     public void Dispose()
@@ -80,7 +96,7 @@ public class MainWindowViewModelTests : IDisposable
         }
     }
 
-    private MainWindowViewModel CreateViewModel() => new MainWindowViewModel(_processExecutor, _updater, _platformService, _settingsService, _ueProvider);
+    private MainWindowViewModel CreateViewModel() => new MainWindowViewModel(_processExecutor, _updater, _platformService, _settingsService, _ueProvider, _logger, _uiLogSink);
 
     [Fact]
     public void EnginePath_UpdatesVersionDependencies()

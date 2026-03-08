@@ -23,3 +23,4 @@
 - Centralized UE knowledge into `IUnrealEngineProvider`.
 - Decoupled ViewModels from platform APIs using `IPlatformService`.
 - **Strong-Typed Build Configurations**: Replaced manual string concatenation with a robust builder pattern and automated path quoting.
+- **Unified Logging Strategy**: Implemented an injectable `IUBBLogger` with sinks for UI, File, and Telemetry (GameAnalytics), and modernized `IProcessExecutor` to automatically log process output.

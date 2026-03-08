@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 using UnrealBinaryBuilder.Avalonia.Classes;
+using UnrealBinaryBuilder.Avalonia.Classes.Logging;
 
 namespace UnrealBinaryBuilder.Avalonia;
 
@@ -27,6 +28,12 @@ public partial class App : Application
         var services = new ServiceCollection();
 
         // Register Services
+        services.AddSingleton<UiLogSink>();
+        services.AddSingleton<ILogSink>(sp => sp.GetRequiredService<UiLogSink>());
+        services.AddSingleton<ILogSink, FileLogSink>();
+        services.AddSingleton<ILogSink, TelemetryLogSink>();
+        services.AddSingleton<IUBBLogger, AggregateLogger>();
+
         services.AddSingleton<IProcessExecutor, ProcessExecutor>();
         services.AddSingleton<IUBBUpdater, UBBUpdater>();
         

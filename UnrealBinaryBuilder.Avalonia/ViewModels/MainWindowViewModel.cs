@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnrealBinaryBuilder.Avalonia.Classes;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
+using UnrealBinaryBuilder.Avalonia.Classes.Logging;
 using UnrealBinaryBuilder.Avalonia.Models;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -68,6 +69,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IPlatformService _platformService;
     private readonly ISettingsService _settingsService;
     private readonly IUnrealEngineProvider _ueProvider;
+    private readonly IUBBLogger _logger;
     private readonly PostBuildSettings _postBuildSettings = new();
     private UnrealEngineMetadata? _engineMetadata;
 
@@ -121,27 +123,29 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private int _compiledFiles = 0;
     private int _compiledFilesTotal = 0;
-    private string? _logMessageErrors = null;
 
     public MainWindowViewModel() : this(
-        App.Current?.Services?.GetRequiredService<IProcessExecutor>() ?? new ProcessExecutor(),
-        App.Current?.Services?.GetRequiredService<IUBBUpdater>() ?? new UBBUpdater(),
-        App.Current?.Services?.GetRequiredService<IPlatformService>() ?? (OperatingSystem.IsWindows() ? new WindowsPlatformService() : new LinuxPlatformService()),
-        App.Current?.Services?.GetRequiredService<ISettingsService>() ?? new SettingsService(new WindowsPlatformService()),
-        App.Current?.Services?.GetRequiredService<IUnrealEngineProvider>() ?? new UnrealEngineProvider()
+        App.Current?.Services?.GetRequiredService<IProcessExecutor>() ?? throw new InvalidOperationException("ProcessExecutor not found"),
+        App.Current?.Services?.GetRequiredService<IUBBUpdater>() ?? throw new InvalidOperationException("UBBUpdater not found"),
+        App.Current?.Services?.GetRequiredService<IPlatformService>() ?? throw new InvalidOperationException("PlatformService not found"),
+        App.Current?.Services?.GetRequiredService<ISettingsService>() ?? throw new InvalidOperationException("SettingsService not found"),
+        App.Current?.Services?.GetRequiredService<IUnrealEngineProvider>() ?? throw new InvalidOperationException("UnrealEngineProvider not found"),
+        App.Current?.Services?.GetRequiredService<IUBBLogger>() ?? throw new InvalidOperationException("Logger not found"),
+        App.Current?.Services?.GetRequiredService<UiLogSink>() ?? throw new InvalidOperationException("UiLogSink not found")
     ) { }
 
-    public MainWindowViewModel(IProcessExecutor processExecutor, IUBBUpdater updater, IPlatformService platformService, ISettingsService settingsService, IUnrealEngineProvider ueProvider)
+    public MainWindowViewModel(IProcessExecutor processExecutor, IUBBUpdater updater, IPlatformService platformService, ISettingsService settingsService, IUnrealEngineProvider ueProvider, IUBBLogger logger, UiLogSink uiLogSink)
     {
         _processExecutor = processExecutor;
         _updater = updater;
         _platformService = platformService;
         _settingsService = settingsService;
         _ueProvider = ueProvider;
+        _logger = logger;
 
         Settings = _settingsService.GetSettings();
         _updater.SilentUpdateFinishedEventHandler += OnUpdateFinished;
-        
+
         foreach (BuildConfiguration config in Enum.GetValues(typeof(BuildConfiguration)))
         {
             GameConfigWrappers.Add(new GameConfigWrapper(Settings.GameConfigurations, config, () => _settingsService.SaveSettings(Settings)));
@@ -159,7 +163,9 @@ public partial class MainWindowViewModel : ViewModelBase
         _buildTimer.Interval = TimeSpan.FromSeconds(1);
         _buildTimer.Tick += (s, e) => ElapsedTime = _buildStopwatch.Elapsed.ToString(@"hh\:mm\:ss");
 
-        GameAnalyticsCSharp.InitializeGameAnalytics(UnrealBinaryBuilderHelpers.GetProductVersionString(), msg => AddLogEntry(msg));
+        uiLogSink.OnLog += OnLogReceived;
+
+        GameAnalyticsCSharp.InitializeGameAnalytics(UnrealBinaryBuilderHelpers.GetProductVersionString(), msg => _logger.Info(msg, LogCategory.Telemetry));
 
         ApplyTheme();
         LoadVisualStudio();
@@ -349,28 +355,44 @@ public partial class MainWindowViewModel : ViewModelBase
         PluginPath = string.Empty; PluginDestinationPath = string.Empty;
     }
 
+    private void OnLogReceived(LogEvent logEvent)
+    {
+        Dispatcher.UIThread.Post(() => {
+            AddLogEntryToUI(logEvent.Message, logEvent.Level == LogLevel.Error);
+        });
+    }
+
+    private void AddLogEntryToUI(string message, bool isError = false)
+    {
+        if (string.IsNullOrEmpty(message)) return;
+        const string sp = @"\*{6} \[(\d+)\/(\d+)\]", pp = @"\w.+\.(cpp|cc|c|h|ispc)";
+        if (Regex.IsMatch(message, sp)) { var m = Regex.Match(message, sp); _compiledFiles = 0; if (int.TryParse(m.Groups[2].Value, out int t)) _compiledFilesTotal = t; }
+        if (Regex.IsMatch(message, pp)) { _compiledFiles++; CompiledFilesText = $"[Compiled: {_compiledFiles}/{_compiledFilesTotal}]"; }
+        LogText += (isError ? "[ERROR] " : "") + message + "\n";
+    }
+
     [RelayCommand]
     private async Task StartSetup()
     {
         if (IsBuilding || string.IsNullOrEmpty(EnginePath)) return;
-        
+
         if (!File.Exists(Path.Combine(EnginePath, "Setup.bat")))
         {
             await ShowMessageDialog("Incorrect folder", $"This is not the Unreal Engine root folder.\n\nPlease select the root folder where {UnrealBinaryBuilderHelpers.SetupBatFileName} and {UnrealBinaryBuilderHelpers.GenerateProjectBatFileName} exists.");
             return;
         }
 
-        IsBuilding = true; StartTiming(); LogText = string.Empty; _logMessageErrors = null;
-        AddLogEntry($"Starting Build Chain in: {EnginePath}");
+        IsBuilding = true; StartTiming(); LogText = string.Empty;
+        _logger.Info($"Starting Build Chain in: {EnginePath}", LogCategory.Build);
         bool chainSuccess = true;
         if (Settings.bBuildSetupBatFile) {
             StatusText = "Running Setup.bat..."; GameAnalyticsCSharp.AddProgressStart("Build", "Setup");
-            int ec = await _processExecutor.ExecuteAsync(Path.Combine(EnginePath, "Setup.bat"), SetupBatCommandLineArgs(), EnginePath, msg => AddLogEntry(msg), msg => AddLogEntry(msg, true));
+            int ec = await _processExecutor.ExecuteAsync(Path.Combine(EnginePath, "Setup.bat"), SetupBatCommandLineArgs(), EnginePath, LogCategory.Build);
             chainSuccess = ec == 0; GameAnalyticsCSharp.AddProgressEnd("Build", "Setup", !chainSuccess);
         }
         if (chainSuccess && Settings.bGenerateProjectFiles) {
             StatusText = "Generating Project Files..."; GameAnalyticsCSharp.AddProgressStart("Build", "ProjectFiles");
-            int ec = await _processExecutor.ExecuteAsync(Path.Combine(EnginePath, "GenerateProjectFiles.bat"), string.Empty, EnginePath, msg => AddLogEntry(msg), msg => AddLogEntry(msg, true));
+            int ec = await _processExecutor.ExecuteAsync(Path.Combine(EnginePath, "GenerateProjectFiles.bat"), string.Empty, EnginePath, LogCategory.Build);
             chainSuccess = ec == 0; GameAnalyticsCSharp.AddProgressEnd("Build", "ProjectFiles", !chainSuccess);
         }
         if (chainSuccess && Settings.bBuildAutomationTool) {
@@ -379,7 +401,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 string msbuildPath = SelectedArchitecture == "x64" ? SelectedMsBuild.X64Path : SelectedMsBuild.X32Path;
                 string slnPath = Path.Combine(EnginePath, "Engine", "Source", "Programs", "AutomationTool", "AutomationTool.sln");
                 if (File.Exists(slnPath)) {
-                    int ec = await _processExecutor.ExecuteAsync(msbuildPath, $"\"{slnPath}\" /p:Configuration=Development /p:Platform=AnyCPU", EnginePath, msg => AddLogEntry(msg), msg => AddLogEntry(msg, true));
+                    int ec = await _processExecutor.ExecuteAsync(msbuildPath, $"\"{slnPath}\" /p:Configuration=Development /p:Platform=AnyCPU", EnginePath, LogCategory.Build);
                     chainSuccess = ec == 0;
                 }
             }
@@ -389,8 +411,7 @@ public partial class MainWindowViewModel : ViewModelBase
         else { 
             IsBuilding = false; StopTiming(); StatusText = chainSuccess ? "Setup Chain Finished." : "Setup Chain Failed."; 
             if (chainSuccess) ShowToast("Setup Process Finished.", UBBNotificationType.Success); 
-            else ShowToast("Setup Process Failed.", UBBNotificationType.Error);
-            if (!string.IsNullOrEmpty(_logMessageErrors)) _settingsService.WriteErrorsToLogFile(_logMessageErrors);
+            else { ShowToast("Setup Process Failed.", UBBNotificationType.Error); _logger.Error("Setup Chain Failed.", LogCategory.Build); }
         }
     }
 
@@ -446,17 +467,17 @@ public partial class MainWindowViewModel : ViewModelBase
             else return; // Cancel
         }
 
-        IsBuilding = true; StartTiming(); LogText = string.Empty; _logMessageErrors = null; await Internal_BuildEngine(); 
+        IsBuilding = true; StartTiming(); LogText = string.Empty; await Internal_BuildEngine(); 
     }
 
     private async Task Internal_BuildEngine()
     {
         StatusText = "Building Engine..."; GameAnalyticsCSharp.AddDesignEvent("Build:Started"); GameAnalyticsCSharp.AddProgressStart("Build", "Engine");
-        
+
         var metadata = _ueProvider.GetEngineMetadata(EnginePath);
         string automationPath = _ueProvider.GetAutomationPath(EnginePath, metadata?.IsUE5 ?? false);
 
-        int ec = await _processExecutor.ExecuteAsync(automationPath, PrepareCommandline(), EnginePath, msg => AddLogEntry(msg), msg => AddLogEntry(msg, true));
+        int ec = await _processExecutor.ExecuteAsync(automationPath, PrepareCommandline(), EnginePath, LogCategory.Build);
         bool success = ec == 0; GameAnalyticsCSharp.AddProgressEnd("Build", "Engine", !success);
         if (success && Settings.bZipEngineBuild && !string.IsNullOrEmpty(Settings.ZipEnginePath)) { 
             StatusText = "Zipping build..."; 
@@ -464,14 +485,13 @@ public partial class MainWindowViewModel : ViewModelBase
             await _postBuildSettings.SaveToZip(Path.Combine(EnginePath, "LocalBuilds", "Engine"), Settings.ZipEnginePath, Settings); 
             GameAnalyticsCSharp.AddDesignEvent("Zip:Finished");
         }
-        IsBuilding = false; StopTiming(); StatusText = success ? "Build Finished Successfully." : "Build Failed."; if (success) ShowToast("Engine Build Finished Successfully.", UBBNotificationType.Success); else ShowToast("Engine Build Failed.", UBBNotificationType.Error);
-        if (!string.IsNullOrEmpty(_logMessageErrors)) _settingsService.WriteErrorsToLogFile(_logMessageErrors);
+        IsBuilding = false; StopTiming(); StatusText = success ? "Build Finished Successfully." : "Build Failed."; if (success) ShowToast("Engine Build Finished Successfully.", UBBNotificationType.Success); else { ShowToast("Engine Build Failed.", UBBNotificationType.Error); _logger.Error("Engine Build Failed.", LogCategory.Build); }
         if (success && Settings.bShutdownIfBuildSuccess && Settings.bShutdownPC) Internal_ShutdownPC();
     }
 
     private void Internal_ShutdownPC() 
     { 
-        AddLogEntry("Shutting down PC in 5 seconds..."); 
+        _logger.Info("Shutting down PC in 5 seconds...", LogCategory.General); 
         GameAnalyticsCSharp.AddDesignEvent("Shutdown:Started"); 
         _platformService.ShutdownPC(5);
         Environment.Exit(0); 
@@ -483,12 +503,12 @@ public partial class MainWindowViewModel : ViewModelBase
         if (IsBuilding) return;
         if (PluginQueue.Count == 0) { await ShowMessageDialog("Queue Empty", "Queue is empty. Add one or more plugin to queue and build."); return; }
 
-        IsBuilding = true; StartTiming(); _logMessageErrors = null; ShowToast($"Building {PluginQueue.Count} plugins.", UBBNotificationType.Info);
+        IsBuilding = true; StartTiming(); ShowToast($"Building {PluginQueue.Count} plugins.", UBBNotificationType.Info);
         foreach (var plugin in PluginQueue.ToList()) {
             StatusText = $"Building {plugin.PluginName}..."; GameAnalyticsCSharp.AddProgressStart("Build", "Plugin");
             plugin.StartBuild();
             string args = BuildArgumentBuilder.BuildPluginArguments(plugin).ToString();
-            int ec = await _processExecutor.ExecuteAsync(plugin.RunUATFile, args, Path.GetDirectoryName(plugin.RunUATFile)!, msg => AddLogEntry(msg), msg => AddLogEntry(msg, true));
+            int ec = await _processExecutor.ExecuteAsync(plugin.RunUATFile, args, Path.GetDirectoryName(plugin.RunUATFile)!, LogCategory.Build);
             bool success = ec == 0;
             if (success && plugin.bCanZip) {
                 GameAnalyticsCSharp.AddDesignEvent($"ZipPlugin:Started:{plugin.PluginName}");
@@ -496,10 +516,9 @@ public partial class MainWindowViewModel : ViewModelBase
                 GameAnalyticsCSharp.AddDesignEvent($"ZipPlugin:Finished:{plugin.PluginName}");
             }
             plugin.FinishBuild(success); GameAnalyticsCSharp.AddProgressEnd("Build", "Plugin", !success);
-            if (!success) break;
+            if (!success) { _logger.Error($"Plugin Build Failed: {plugin.PluginName}", LogCategory.Build); break; }
         }
         IsBuilding = false; StopTiming(); StatusText = "Plugin builds finished."; ShowToast("Plugin builds finished.", UBBNotificationType.Success);
-        if (!string.IsNullOrEmpty(_logMessageErrors)) _settingsService.WriteErrorsToLogFile(_logMessageErrors);
     }
 
     [RelayCommand]
@@ -514,7 +533,7 @@ public partial class MainWindowViewModel : ViewModelBase
             DefaultExtension = ".log",
             FileTypeChoices = new[] { new FilePickerFileType("Log File") { Patterns = new[] { "*.log", "*.txt" } } }
         });
-        if (res != null) { await File.WriteAllTextAsync(res.Path.LocalPath, LogText); ShowToast("Log exported successfully."); }
+        if (res != null) { await File.WriteAllTextAsync(res.Path.LocalPath, LogText); ShowToast("Log exported successfully."); _logger.Info($"Log exported to: {res.Path.LocalPath}", LogCategory.General); }
     }
 
     [RelayCommand]
@@ -525,14 +544,11 @@ public partial class MainWindowViewModel : ViewModelBase
         return BuildArgumentBuilder.BuildEngineArguments(Settings, _engineMetadata, SelectedVsVersion).ToString();
     }
 
+    [Obsolete("Use IUBBLogger instead")]
     public void AddLogEntry(string message, bool isError = false)
     {
-        if (string.IsNullOrEmpty(message)) return;
-        const string sp = @"\*{6} \[(\d+)\/(\d+)\]", pp = @"\w.+\.(cpp|cc|c|h|ispc)";
-        if (Regex.IsMatch(message, sp)) { var m = Regex.Match(message, sp); _compiledFiles = 0; if (int.TryParse(m.Groups[2].Value, out int t)) _compiledFilesTotal = t; }
-        if (Regex.IsMatch(message, pp)) { _compiledFiles++; CompiledFilesText = $"[Compiled: {_compiledFiles}/{_compiledFilesTotal}]"; }
-        if (isError) _logMessageErrors += message + "\n";
-        LogText += (isError ? "[ERROR] " : "") + message + "\n";
+        if (isError) _logger.Error(message, LogCategory.Build);
+        else _logger.Info(message, LogCategory.Build);
     }
 
     [RelayCommand]
@@ -565,5 +581,4 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand] private void OpenChangelog() => _platformService.OpenUrl("https://github.com/ryanjon2040/Unreal-Binary-Builder/blob/master/CHANGELOG.md");
     [RelayCommand] private void OpenAbout() { if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime d) { var dlg = new AboutDialog(); dlg.ShowDialog(d.MainWindow!); } }
     [RelayCommand] private void OpenSettings() => _settingsService.OpenSettings();
-
 }
