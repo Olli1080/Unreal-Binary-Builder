@@ -45,6 +45,7 @@ public partial class App : Application
         services.AddSingleton<IUnrealEngineProvider, UnrealEngineProvider>();
         services.AddSingleton<IPluginsService, PluginsService>();
         services.AddSingleton<IUIService, UIService>();
+        services.AddSingleton<ISetupService, SetupService>();
 
         // Register ViewModels
         services.AddTransient<MainWindowViewModel>();

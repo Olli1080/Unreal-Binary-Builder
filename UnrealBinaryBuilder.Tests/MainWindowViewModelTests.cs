@@ -76,6 +76,7 @@ public class MainWindowViewModelTests : IDisposable
     private readonly MockLogger _logger;
     private readonly UiLogSink _uiLogSink;
     private readonly MockUIService _uiService;
+    private readonly MockSetupService _setupService;
 
     public MainWindowViewModelTests()
     {
@@ -88,6 +89,7 @@ public class MainWindowViewModelTests : IDisposable
         _logger = new MockLogger();
         _uiLogSink = new UiLogSink();
         _uiService = new MockUIService();
+        _setupService = new MockSetupService();
     }
 
     public void Dispose()
@@ -98,7 +100,7 @@ public class MainWindowViewModelTests : IDisposable
         }
     }
 
-    private MainWindowViewModel CreateViewModel() => new MainWindowViewModel(_processExecutor, _updater, _platformService, _settingsService, _ueProvider, _logger, _uiLogSink, _uiService);
+    private MainWindowViewModel CreateViewModel() => new MainWindowViewModel(_processExecutor, _updater, _platformService, _settingsService, _ueProvider, _logger, _uiLogSink, _uiService, _setupService);
 
     [Fact]
     public void ShowToast_TriggersUiService()

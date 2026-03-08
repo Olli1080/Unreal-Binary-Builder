@@ -62,6 +62,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IUnrealEngineProvider _ueProvider;
     private readonly IUBBLogger _logger;
     private readonly IUIService _uiService;
+    private readonly ISetupService _setupService;
     private readonly PostBuildSettings _postBuildSettings = new();
     private UnrealEngineMetadata? _engineMetadata;
 
@@ -122,10 +123,11 @@ public partial class MainWindowViewModel : ViewModelBase
         App.Current?.Services?.GetRequiredService<IUnrealEngineProvider>() ?? throw new InvalidOperationException("UnrealEngineProvider not found"),
         App.Current?.Services?.GetRequiredService<IUBBLogger>() ?? throw new InvalidOperationException("Logger not found"),
         App.Current?.Services?.GetRequiredService<UiLogSink>() ?? throw new InvalidOperationException("UiLogSink not found"),
-        App.Current?.Services?.GetRequiredService<IUIService>() ?? throw new InvalidOperationException("UIService not found")
+        App.Current?.Services?.GetRequiredService<IUIService>() ?? throw new InvalidOperationException("UIService not found"),
+        App.Current?.Services?.GetRequiredService<ISetupService>() ?? throw new InvalidOperationException("SetupService not found")
     ) { }
 
-    public MainWindowViewModel(IProcessExecutor processExecutor, IUBBUpdater updater, IPlatformService platformService, ISettingsService settingsService, IUnrealEngineProvider ueProvider, IUBBLogger logger, UiLogSink uiLogSink, IUIService uiService)
+    public MainWindowViewModel(IProcessExecutor processExecutor, IUBBUpdater updater, IPlatformService platformService, ISettingsService settingsService, IUnrealEngineProvider ueProvider, IUBBLogger logger, UiLogSink uiLogSink, IUIService uiService, ISetupService setupService)
     {
         _processExecutor = processExecutor;
         _updater = updater;
@@ -134,6 +136,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _ueProvider = ueProvider;
         _logger = logger;
         _uiService = uiService;
+        _setupService = setupService;
 
         Settings = _settingsService.GetSettings();
         _updater.SilentUpdateFinishedEventHandler += OnUpdateFinished;
@@ -335,51 +338,16 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         IsBuilding = true; StartTiming(); LogText = string.Empty;
-        _logger.Info($"Starting Build Chain in: {EnginePath}", LogCategory.Build);
-        bool chainSuccess = true;
-        if (Settings.bBuildSetupBatFile) {
-            StatusText = "Running Setup.bat..."; GameAnalyticsCSharp.AddProgressStart("Build", "Setup");
-            int ec = await _processExecutor.ExecuteAsync(Path.Combine(EnginePath, "Setup.bat"), SetupBatCommandLineArgs(), EnginePath, LogCategory.Build);
-            chainSuccess = ec == 0; GameAnalyticsCSharp.AddProgressEnd("Build", "Setup", !chainSuccess);
-        }
-        if (chainSuccess && Settings.bGenerateProjectFiles) {
-            StatusText = "Generating Project Files..."; GameAnalyticsCSharp.AddProgressStart("Build", "ProjectFiles");
-            int ec = await _processExecutor.ExecuteAsync(Path.Combine(EnginePath, "GenerateProjectFiles.bat"), string.Empty, EnginePath, LogCategory.Build);
-            chainSuccess = ec == 0; GameAnalyticsCSharp.AddProgressEnd("Build", "ProjectFiles", !chainSuccess);
-        }
-        if (chainSuccess && Settings.bBuildAutomationTool) {
-            StatusText = "Building AutomationTool..."; GameAnalyticsCSharp.AddProgressStart("Build", "AutomationTool");
-            if (SelectedMsBuild != null) {
-                string msbuildPath = SelectedArchitecture == "x64" ? SelectedMsBuild.X64Path : SelectedMsBuild.X32Path;
-                string slnPath = Path.Combine(EnginePath, "Engine", "Source", "Programs", "AutomationTool", "AutomationTool.sln");
-                if (File.Exists(slnPath)) {
-                    int ec = await _processExecutor.ExecuteAsync(msbuildPath, $"\"{slnPath}\" /p:Configuration=Development /p:Platform=AnyCPU", EnginePath, LogCategory.Build);
-                    chainSuccess = ec == 0;
-                }
-            }
-            GameAnalyticsCSharp.AddProgressEnd("Build", "AutomationTool", !chainSuccess);
-        }
+        StatusText = "Running Setup Process...";
+
+        bool chainSuccess = await _setupService.RunSetupChainAsync(EnginePath, Settings, SelectedMsBuild, SelectedArchitecture);
+
         if (chainSuccess && Settings.bContinueToEngineBuild) await Internal_BuildEngine();
         else { 
             IsBuilding = false; StopTiming(); StatusText = chainSuccess ? "Setup Chain Finished." : "Setup Chain Failed."; 
             if (chainSuccess) ShowToast("Setup Process Finished.", UBBNotificationType.Success); 
-            else { ShowToast("Setup Process Failed.", UBBNotificationType.Error); _logger.Error("Setup Chain Failed.", LogCategory.Build); }
+            else { ShowToast("Setup Process Failed.", UBBNotificationType.Error); }
         }
-    }
-
-    private string SetupBatCommandLineArgs()
-    {
-        string args = "--force";
-        if (Settings.GitDependencyAll) args += " --all";
-        foreach (var gp in Settings.GitDependencyPlatforms) if (!gp.bIsIncluded) args += $" --exclude={gp.Name}";
-        args += $" --threads={Settings.GitDependencyThreads} --max-retries={Settings.GitDependencyMaxRetries}";
-        if (!Settings.GitDependencyEnableCache) args += " --no-cache";
-        else if (!string.IsNullOrEmpty(Settings.GitDependencyCache))
-        {
-            args += $" --cache={PathHelpers.ToUnixPath(Settings.GitDependencyCache)} --cache-size-multiplier={Settings.GitDependencyCacheMultiplier} --cache-days={Settings.GitDependencyCacheDays}";
-        }
-        if (!string.IsNullOrEmpty(Settings.GitDependencyProxy)) args += $" --proxy={Settings.GitDependencyProxy}";
-        return args;
     }
 
     [RelayCommand]
