@@ -32,7 +32,7 @@ public class SetupService : ISetupService
         if (!settings.GitDependencyEnableCache) args += " --no-cache";
         else if (!string.IsNullOrEmpty(settings.GitDependencyCache))
         {
-            args += $" --cache={PathHelpers.ToUnixPath(settings.GitDependencyCache)} --cache-size-multiplier={settings.GitDependencyCacheMultiplier} --cache-days={settings.GitDependencyCacheDays}";
+            args += $" --cache={PathHelpers.ToUnixPath(settings.GitDependencyCache)} --cache-size-multiplier={settings.GitDependencyCacheMultiplier.ToString(System.Globalization.CultureInfo.InvariantCulture)} --cache-days={settings.GitDependencyCacheDays}";
         }
         
         if (!string.IsNullOrEmpty(settings.GitDependencyProxy)) args += $" --proxy={settings.GitDependencyProxy}";

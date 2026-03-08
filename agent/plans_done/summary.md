@@ -2,7 +2,9 @@
 
 The following architectural blueprints have been successfully implemented and verified:
 
-- [exhaustive_testing_plan.md](exhaustive_testing_plan.md): Established a robust testing suite with 20+ unit tests covering core logic.
+- [refactor_god_viewmodel.md](refactor_god_viewmodel.md): Decomposed the 500+ line God ViewModel into specialized services (UI, Setup, Build, Git, Timer, Log) with 100% logic parity.
+- [modular_service_testing.md](modular_service_testing.md): Implemented 56 exhaustive unit tests for all specialized services leveraging the decoupled architecture.
+- [exhaustive_testing_plan.md](exhaustive_testing_plan.md): Established a robust testing suite with 20+ unit tests covering core business logic.
 - [dependency_injection_setup.md](dependency_injection_setup.md): Adopted `Microsoft.Extensions.DependencyInjection` for better decoupling and testability.
 - [centralize_engine_knowledge.md](centralize_engine_knowledge.md): Consolidated Unreal Engine version-specific logic into a dedicated provider service.
 - [strong_typed_build_config.md](strong_typed_build_config.md): Implemented a builder pattern for generating build command-line arguments.

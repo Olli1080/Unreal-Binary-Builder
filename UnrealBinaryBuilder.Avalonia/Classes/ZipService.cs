@@ -132,7 +132,7 @@ public class ZipService : IZipService
             {
                 _zipCancelToken.ThrowIfCancellationRequested();
                 bool bSkipFile = false;
-                string currentFilePath = PathHelpers.ToUnixPath(Path.GetFullPath(file)).ToLower();
+                string currentFilePath = PathHelpers.ToUnixPath(Path.GetRelativePath(inBuildDirectory, file)).ToLower();
                 string extension = Path.GetExtension(file).ToLower();
 
                 if (!settings.bZipEnginePDB && extension == ".pdb") bSkipFile = true;
@@ -149,9 +149,9 @@ public class ZipService : IZipService
                     else if (currentFilePath.Contains("/source/thirdparty/")) bSkipFile = true;
                 }
 
-                if (!settings.bZipEngineFeaturePacks && currentFilePath.Contains("/featurepacks/")) bSkipFile = true;
-                if (!settings.bZipEngineSamples && currentFilePath.Contains("/samples/")) bSkipFile = true;
-                if (!settings.bZipEngineTemplates && !currentFilePath.Contains("/source/") && !currentFilePath.Contains("/content/editor") && currentFilePath.Contains("/templates/")) bSkipFile = true;
+                if (!settings.bZipEngineFeaturePacks && (currentFilePath.Contains("/featurepacks/") || currentFilePath.StartsWith("featurepacks/"))) bSkipFile = true;
+                if (!settings.bZipEngineSamples && (currentFilePath.Contains("/samples/") || currentFilePath.StartsWith("samples/"))) bSkipFile = true;
+                if (!settings.bZipEngineTemplates && !currentFilePath.Contains("/source/") && !currentFilePath.Contains("/content/editor") && (currentFilePath.Contains("/templates/") || currentFilePath.StartsWith("templates/"))) bSkipFile = true;
 
                 long fileSize = new FileInfo(file).Length;
                 totalSize += fileSize;
