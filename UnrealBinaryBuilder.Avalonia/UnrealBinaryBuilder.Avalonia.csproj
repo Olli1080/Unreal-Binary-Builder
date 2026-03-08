@@ -37,7 +37,7 @@
     <Exec Command="python -m venv $(VenvDir)" Condition="!Exists('$(PythonExe)')" ContinueOnError="true" />
 
     <!-- Run generation script -->
-    <Exec Command="$(PythonExe) $(MSBuildThisFileDirectory)..\Scripts/generate_ico.py" Condition="Exists('$(PythonExe)')" ContinueOnError="true" />
+    <Exec Command="$(PythonExe) $(MSBuildThisFileDirectory)..\Scripts/generate_ico.py" Condition="Exists('$(PythonExe)')" />
   </Target>
   <ItemGroup>
     <InternalsVisibleTo Include="UnrealBinaryBuilder.Tests" />
