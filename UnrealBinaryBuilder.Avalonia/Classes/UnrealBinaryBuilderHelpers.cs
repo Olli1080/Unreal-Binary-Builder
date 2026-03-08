@@ -57,29 +57,6 @@ public static class UnrealBinaryBuilderHelpers
         return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
     }
 
-    public static string? GetEngineVersion(string enginePath)
-    {
-        if (string.IsNullOrWhiteSpace(enginePath)) return null;
-        string versionFile = Path.Combine(enginePath, "Engine", "Build", "Build.version");
-        if (!File.Exists(versionFile)) return null;
-
-        try
-        {
-            string content = File.ReadAllText(versionFile);
-            string major = "0", minor = "0", patch = "0";
-            var majorMatch = Regex.Match(content, @"""MajorVersion"":\s*(\d+)");
-            var minorMatch = Regex.Match(content, @"""MinorVersion"":\s*(\d+)");
-            var patchMatch = Regex.Match(content, @"""PatchVersion"":\s*(\d+)");
-
-            if (majorMatch.Success) major = majorMatch.Groups[1].Value;
-            if (minorMatch.Success) minor = minorMatch.Groups[1].Value;
-            if (patchMatch.Success) patch = patchMatch.Groups[1].Value;
-
-            return $"{major}.{minor}.{patch}";
-        }
-        catch { return null; }
-    }
-
     public static string ProgrammsPath(string BaseEnginePath) => Path.Combine(BaseEnginePath, "Engine", "Source", "Programs");
 
     public static string? GetAutomationToolProjectFile(string BaseEnginePath)
@@ -92,12 +69,5 @@ public static class UnrealBinaryBuilderHelpers
     {
         if (string.IsNullOrWhiteSpace(BaseEnginePath)) return null;
         return Path.Combine(ProgrammsPath(BaseEnginePath), AUTOMATION_TOOL_LAUNCHER_NAME, $"{AUTOMATION_TOOL_LAUNCHER_NAME}.csproj");
-    }
-
-    public static string AutomationPath(string BaseEnginePath, bool isUE5)
-    {
-        string dotnet = Path.Combine(BaseEnginePath, "Engine", "Binaries", "DotNET");
-        if (isUE5) return Path.Combine(dotnet, AUTOMATION_TOOL_NAME, $"{AUTOMATION_TOOL_NAME}.exe");
-        return Path.Combine(dotnet, $"{AUTOMATION_TOOL_LAUNCHER_NAME}.exe");
     }
 }

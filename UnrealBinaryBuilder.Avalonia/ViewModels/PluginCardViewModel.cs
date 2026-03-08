@@ -9,11 +9,14 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using UnrealBinaryBuilder.Avalonia.Classes;
+using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 
 namespace UnrealBinaryBuilder.Avalonia.ViewModels;
 
 public partial class PluginCardViewModel : ViewModelBase
 {
+    private readonly IPlatformService _platformService;
+
     [ObservableProperty] private string _pluginName = string.Empty;
     [ObservableProperty] private string _pluginDescription = "No description available.";
     [ObservableProperty] private string _engineVersion = string.Empty;
@@ -35,8 +38,9 @@ public partial class PluginCardViewModel : ViewModelBase
 
     public event EventHandler? RemoveRequested;
 
-    public PluginCardViewModel(string inPluginPath, string inDestination, string inEnginePath, string inEngineName)
+    public PluginCardViewModel(string inPluginPath, string inDestination, string inEnginePath, string inEngineName, IPlatformService platformService)
     {
+        _platformService = platformService;
         PluginPath = PathHelpers.NormalizePath(inPluginPath);
         DestinationPath = PathHelpers.NormalizePath(inDestination);
         RunUATFile = PathHelpers.ToUnixPath(Path.Combine(inEnginePath, "Engine", "Build", "BatchFiles", "RunUAT.bat"));
@@ -64,11 +68,7 @@ public partial class PluginCardViewModel : ViewModelBase
     [RelayCommand]
     private void OpenDestination()
     {
-        if (Directory.Exists(DestinationPath)) {
-            if (OperatingSystem.IsWindows()) Process.Start("explorer.exe", PathHelpers.ToWindowsPath(DestinationPath));
-            else if (OperatingSystem.IsLinux()) Process.Start("xdg-open", DestinationPath);
-            else if (OperatingSystem.IsMacOS()) Process.Start("open", DestinationPath);
-        }
+        _platformService.OpenFolder(DestinationPath);
     }
 
     [RelayCommand] private void Cancel() => RemoveRequested?.Invoke(this, EventArgs.Empty);

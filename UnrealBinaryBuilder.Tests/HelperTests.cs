@@ -26,14 +26,15 @@ public class HelperTests : IDisposable
     }
 
     [Fact]
-    public void GetEngineVersion_ReturnsNull_WhenFileDoesNotExist()
+    public void UnrealEngineProvider_ReturnsNull_WhenFileDoesNotExist()
     {
-        var version = UnrealBinaryBuilderHelpers.GetEngineVersion(_testPath);
-        Assert.Null(version);
+        var provider = new UnrealEngineProvider();
+        var metadata = provider.GetEngineMetadata(_testPath);
+        Assert.Null(metadata);
     }
 
     [Fact]
-    public void GetEngineVersion_ReturnsCorrectVersion_FromValidFile()
+    public void UnrealEngineProvider_ReturnsCorrectMetadata_FromValidFile()
     {
         // Arrange
         string engineBuildDir = Path.Combine(_testPath, "Engine", "Build");
@@ -53,23 +54,28 @@ public class HelperTests : IDisposable
         File.WriteAllText(versionFile, jsonContent);
 
         // Act
-        var version = UnrealBinaryBuilderHelpers.GetEngineVersion(_testPath);
+        var provider = new UnrealEngineProvider();
+        var metadata = provider.GetEngineMetadata(_testPath);
 
         // Assert
-        Assert.Equal("5.3.2", version);
+        Assert.NotNull(metadata);
+        Assert.Equal("5.3", metadata.VersionString);
+        Assert.Equal("5.3.2", metadata.FullVersionString);
+        Assert.True(metadata.IsUE5);
     }
 
     [Fact]
-    public void PathHelpers_ReturnCorrectPaths()
+    public void UnrealEngineProvider_ReturnCorrectAutomationPaths()
     {
-        string enginePath = "C:\\UnrealEngine";
+        string enginePath = "C:/UnrealEngine";
+        var provider = new UnrealEngineProvider();
         
-        var automationPathUE5 = UnrealBinaryBuilderHelpers.AutomationPath(enginePath, true);
-        var automationPathUE4 = UnrealBinaryBuilderHelpers.AutomationPath(enginePath, false);
-        var csprojPath = UnrealBinaryBuilderHelpers.GetAutomationToolProjectFile(enginePath);
+        var automationPathUE5 = provider.GetAutomationPath(enginePath, true);
+        var automationPathUE4 = provider.GetAutomationPath(enginePath, false);
+        var csprojPath = PathHelpers.ToUnixPath(UnrealBinaryBuilderHelpers.GetAutomationToolProjectFile(enginePath) ?? string.Empty);
 
-        Assert.Contains("DotNET\\AutomationTool\\AutomationTool.exe", automationPathUE5);
-        Assert.Contains("DotNET\\AutomationToolLauncher.exe", automationPathUE4);
-        Assert.Contains("Programs\\AutomationTool\\AutomationTool.csproj", csprojPath);
+        Assert.Contains("DotNET/AutomationTool/AutomationTool.exe", automationPathUE5);
+        Assert.Contains("DotNET/AutomationToolLauncher.exe", automationPathUE4);
+        Assert.Contains("Programs/AutomationTool/AutomationTool.csproj", csprojPath);
     }
 }

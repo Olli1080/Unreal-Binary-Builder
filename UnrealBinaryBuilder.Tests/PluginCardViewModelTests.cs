@@ -31,7 +31,7 @@ public class PluginCardViewModelTests : IDisposable
         File.WriteAllText(pluginFile, "{\"Description\": \"A test plugin description.\"}");
 
         // Act
-        var vm = new PluginCardViewModel(pluginFile, "C:\\Out", "C:\\Engine", "5.3");
+        var vm = new PluginCardViewModel(pluginFile, "C:\\Out", "C:\\Engine", "5.3", new MockPlatformService());
 
         // Assert
         Assert.Equal("TestPlugin", vm.PluginName);
@@ -43,7 +43,7 @@ public class PluginCardViewModelTests : IDisposable
     public void PluginCard_StateTransitions()
     {
         // Arrange
-        var vm = new PluginCardViewModel(Path.Combine(_testPath, "test.uplugin"), "C:\\Out", "C:\\Engine", "5.3");
+        var vm = new PluginCardViewModel(Path.Combine(_testPath, "test.uplugin"), "C:\\Out", "C:\\Engine", "5.3", new MockPlatformService());
 
         // Act & Assert (Start)
         vm.StartBuild();

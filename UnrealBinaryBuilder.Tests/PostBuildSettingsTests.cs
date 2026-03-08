@@ -63,7 +63,7 @@ public class PostBuildSettingsTests : IDisposable
         Directory.CreateDirectory(Path.Combine(sourceDir, "Samples"));
         File.WriteAllText(Path.Combine(sourceDir, "Samples", "sample.txt"), "sample content");
 
-        var settings = BuilderSettings.DefaultSettings;
+        var settings = SettingsService.GetDefaultSettings(_testDir);
         settings.bZipEnginePDB = false; // Skip PDBs
         settings.bZipEngineSamples = false; // Skip Samples
 

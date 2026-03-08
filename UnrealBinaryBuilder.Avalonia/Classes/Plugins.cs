@@ -2,12 +2,27 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 
 namespace UnrealBinaryBuilder.Avalonia.Classes;
 
-public class Plugins
+public interface IPluginsService
 {
-    public static List<EngineBuild>? GetInstalledEpicEngines()
+    List<EngineBuild>? GetInstalledEpicEngines();
+    List<EngineBuild>? GetInstalledCustomEngines();
+    List<EngineBuild> GetInstalledEngines();
+}
+
+public class PluginsService : IPluginsService
+{
+    private readonly IUnrealEngineProvider _ueProvider;
+
+    public PluginsService(IUnrealEngineProvider ueProvider)
+    {
+        _ueProvider = ueProvider;
+    }
+
+    public List<EngineBuild>? GetInstalledEpicEngines()
     {
         List<EngineBuild> returnValue = [];
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -57,12 +72,11 @@ public class Plugins
                 }
             }
         }
-        // Linux doesn't have a standard installation path for the Epic Games Launcher yet.
         
         return returnValue.Count > 0 ? returnValue : null;
     }
 
-    public static List<EngineBuild>? GetInstalledCustomEngines()
+    public List<EngineBuild>? GetInstalledCustomEngines()
     {
         List<EngineBuild> returnValue = [];
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -79,27 +93,25 @@ public class Plugins
                     if (o is not string baseEnginePath) continue;
                     if (!Directory.Exists(baseEnginePath)) continue;
 
-                    string? engineBuildName = UnrealBinaryBuilderHelpers.GetEngineVersion(baseEnginePath);
-                    if (engineBuildName == null) continue;
+                    var metadata = _ueProvider.GetEngineMetadata(baseEnginePath);
+                    if (metadata == null) continue;
 
                     EngineBuild engineBuild = new EngineBuild
                     {
                         bIsCustomEngine = true,
                         EngineAssociation = s,
-                        EngineName = $"{engineBuildName} (Custom) {s}",
+                        EngineName = $"{metadata.FullVersionString} (Custom) {s}",
                         EnginePath = baseEnginePath
                     };
                     returnValue.Add(engineBuild);
                 }
             }
         }
-        // On non-Windows, custom engines are usually just folders added manually.
-        // We could potentially check some config file if Unreal stores them elsewhere on Unix.
         
         return returnValue.Count > 0 ? returnValue : null;
     }
 
-    public static List<EngineBuild> GetInstalledEngines()
+    public List<EngineBuild> GetInstalledEngines()
     {
         return [.. GetInstalledEpicEngines() ?? [], .. GetInstalledCustomEngines() ?? []];
     }

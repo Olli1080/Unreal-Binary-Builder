@@ -5,10 +5,13 @@ using FluentAvalonia.UI.Controls;
 using System;
 using global::Avalonia.Controls.Notifications;
 using UnrealBinaryBuilder.Avalonia.Classes;
+using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 using UnrealBinaryBuilder.Avalonia.Models;
 
 // Resolve namespace collision between Project and Framework
 using AvaloniaNotificationType = global::Avalonia.Controls.Notifications.NotificationType;
+
+using Microsoft.Extensions.DependencyInjection;
 
 namespace UnrealBinaryBuilder.Avalonia.Views;
 
@@ -29,7 +32,8 @@ public partial class MainWindow : Window
         Closing += MainWindow_Closing;
         
         // Restore window state
-        var settings = BuilderSettings.GetSettingsFile();
+        var settingsService = App.Current?.Services?.GetService<ISettingsService>();
+        var settings = settingsService?.GetSettings();
         if (settings != null)
         {
             if (settings.WindowWidth > 0) Width = settings.WindowWidth;
@@ -82,7 +86,8 @@ public partial class MainWindow : Window
         vm.Settings.WindowTop = Position.Y;
         vm.Settings.bWindowMaximized = WindowState == WindowState.Maximized;
         
-        BuilderSettings.SaveSettings(vm.Settings);
+        var settingsService = App.Current?.Services?.GetService<ISettingsService>();
+        settingsService?.SaveSettings(vm.Settings);
         GameAnalyticsCSharp.EndSession();
         
         Closing -= MainWindow_Closing;

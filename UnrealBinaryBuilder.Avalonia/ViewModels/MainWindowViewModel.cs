@@ -6,6 +6,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnrealBinaryBuilder.Avalonia.Classes;
+using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 using UnrealBinaryBuilder.Avalonia.Models;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -17,6 +18,7 @@ using Avalonia.Styling;
 using UnrealBinaryBuilder.Avalonia.Views;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace UnrealBinaryBuilder.Avalonia.ViewModels;
 
@@ -62,7 +64,10 @@ public record NotificationEventArgs(string Title, string Message, UBBNotificatio
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IProcessExecutor _processExecutor;
-    private readonly UBBUpdater _updater;
+    private readonly IUBBUpdater _updater;
+    private readonly IPlatformService _platformService;
+    private readonly ISettingsService _settingsService;
+    private readonly IUnrealEngineProvider _ueProvider;
     private readonly PostBuildSettings _postBuildSettings = new();
 
     [ObservableProperty] private object? _selectedCategory;
@@ -117,16 +122,28 @@ public partial class MainWindowViewModel : ViewModelBase
     private int _compiledFilesTotal = 0;
     private string? _logMessageErrors = null;
 
-    public MainWindowViewModel(IProcessExecutor? processExecutor = null)
+    public MainWindowViewModel() : this(
+        App.Current?.Services?.GetRequiredService<IProcessExecutor>() ?? new ProcessExecutor(),
+        App.Current?.Services?.GetRequiredService<IUBBUpdater>() ?? new UBBUpdater(),
+        App.Current?.Services?.GetRequiredService<IPlatformService>() ?? (OperatingSystem.IsWindows() ? new WindowsPlatformService() : new LinuxPlatformService()),
+        App.Current?.Services?.GetRequiredService<ISettingsService>() ?? new SettingsService(new WindowsPlatformService()),
+        App.Current?.Services?.GetRequiredService<IUnrealEngineProvider>() ?? new UnrealEngineProvider()
+    ) { }
+
+    public MainWindowViewModel(IProcessExecutor processExecutor, IUBBUpdater updater, IPlatformService platformService, ISettingsService settingsService, IUnrealEngineProvider ueProvider)
     {
-        _processExecutor = processExecutor ?? new ProcessExecutor();
-        Settings = BuilderSettings.GetSettingsFile(true);
-        _updater = new UBBUpdater();
+        _processExecutor = processExecutor;
+        _updater = updater;
+        _platformService = platformService;
+        _settingsService = settingsService;
+        _ueProvider = ueProvider;
+
+        Settings = _settingsService.GetSettings();
         _updater.SilentUpdateFinishedEventHandler += OnUpdateFinished;
         
         foreach (BuildConfiguration config in Enum.GetValues(typeof(BuildConfiguration)))
         {
-            GameConfigWrappers.Add(new GameConfigWrapper(Settings.GameConfigurations, config, () => BuilderSettings.SaveSettings(Settings)));
+            GameConfigWrappers.Add(new GameConfigWrapper(Settings.GameConfigurations, config, () => _settingsService.SaveSettings(Settings)));
         }
 
         // Initialize plugin platforms
@@ -151,7 +168,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public string SelectedTheme
     {
         get => Settings.Theme;
-        set { if (Settings.Theme != value) { Settings.Theme = value; OnPropertyChanged(); ApplyTheme(); BuilderSettings.SaveSettings(Settings); } }
+        set { if (Settings.Theme != value) { Settings.Theme = value; OnPropertyChanged(); ApplyTheme(); _settingsService.SaveSettings(Settings); } }
     }
 
     private void ApplyTheme()
@@ -189,23 +206,15 @@ public partial class MainWindowViewModel : ViewModelBase
     private void UpdateVersionDependencies()
     {
         if (string.IsNullOrEmpty(EnginePath) || !Directory.Exists(EnginePath)) return;
-        string? versionStr = UnrealBinaryBuilderHelpers.GetEngineVersion(EnginePath);
-        if (versionStr != null) {
-            var match = Regex.Match(versionStr, @"^(\d+)\.(\d+)");
-            if (match.Success) {
-                int major = int.Parse(match.Groups[1].Value);
-                int minor = int.Parse(match.Groups[2].Value);
-                double version = double.Parse($"{major}.{minor}");
-
-                bool isUE4 = major == 4;
-                SupportWin32 = major < 5 && minor < 23;
-                SupportHTML5 = major < 5 && minor < 24;
-                SupportConsoles = major < 5 && minor < 25;
-                IsEngineSelection425OrAbove = major >= 5 || minor >= 25;
-                SupportServerClientTargets = major >= 5 || minor >= 21;
-                SupportLinuxAArch64 = isUE4 && minor >= 4.24;
-                SupportLinuxArm64 = major >= 5;
-            }
+        var metadata = _ueProvider.GetEngineMetadata(EnginePath);
+        if (metadata != null) {
+            SupportWin32 = metadata.SupportWin32;
+            SupportHTML5 = metadata.SupportHTML5;
+            SupportConsoles = metadata.SupportConsoles;
+            IsEngineSelection425OrAbove = metadata.IsEngineSelection425OrAbove;
+            SupportServerClientTargets = metadata.SupportServerClientTargets;
+            SupportLinuxAArch64 = metadata.SupportLinuxAArch64;
+            SupportLinuxArm64 = metadata.SupportLinuxArm64;
         }
         UpdateGitInfo();
     }
@@ -270,7 +279,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var sp = GetStorageProvider();
         if (sp == null) return;
         var res = await sp.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = "Select Unreal Engine Root Folder", AllowMultiple = false });
-        if (res.Count > 0) { EnginePath = res[0].Path.LocalPath; BuilderSettings.SaveSettings(Settings); }
+        if (res.Count > 0) { EnginePath = res[0].Path.LocalPath; _settingsService.SaveSettings(Settings); }
     }
 
     [RelayCommand]
@@ -279,10 +288,10 @@ public partial class MainWindowViewModel : ViewModelBase
         var sp = GetStorageProvider();
         if (sp == null) return;
         var res = await sp.OpenFilePickerAsync(new FilePickerOpenOptions { Title = "Select Custom Build XML File", FileTypeFilter = new[] { new FilePickerFileType("XML Files") { Patterns = new[] { "*.xml" } } }, AllowMultiple = false });
-        if (res.Count > 0) { Settings.CustomBuildFile = res[0].Path.LocalPath; BuilderSettings.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); GameAnalyticsCSharp.AddDesignEvent($"BuildXML:Custom:{Path.GetFileName(Settings.CustomBuildFile)}"); }
+        if (res.Count > 0) { Settings.CustomBuildFile = res[0].Path.LocalPath; _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); GameAnalyticsCSharp.AddDesignEvent($"BuildXML:Custom:{Path.GetFileName(Settings.CustomBuildFile)}"); }
     }
 
-    [RelayCommand] private void ResetDefaultBuildXML() { Settings.CustomBuildFile = null; BuilderSettings.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); GameAnalyticsCSharp.AddDesignEvent("BuildXML:ResetToDefault"); }
+    [RelayCommand] private void ResetDefaultBuildXML() { Settings.CustomBuildFile = null; _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); GameAnalyticsCSharp.AddDesignEvent("BuildXML:ResetToDefault"); }
 
     [RelayCommand]
     private async Task BrowsePluginPath()
@@ -323,7 +332,7 @@ public partial class MainWindowViewModel : ViewModelBase
             FileTypeChoices = new[] { new FilePickerFileType("Zip File") { Patterns = new[] { "*.zip" } } },
             DefaultExtension = ".zip"
         });
-        if (res != null) { Settings.ZipEnginePath = PathHelpers.NormalizePath(res.Path.LocalPath); BuilderSettings.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); }
+        if (res != null) { Settings.ZipEnginePath = PathHelpers.NormalizePath(res.Path.LocalPath); _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); }
     }
 
     [RelayCommand]
@@ -331,7 +340,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (string.IsNullOrEmpty(PluginPath) || string.IsNullOrEmpty(PluginDestinationPath)) return;
         List<string>? platforms = PluginOverridePlatforms ? PluginPlatforms.Where(p => p.IsChecked).Select(p => p.Name).ToList() : null;
-        var vm = new PluginCardViewModel(PluginPath, PluginDestinationPath, EnginePath, "Current") {
+        var vm = new PluginCardViewModel(PluginPath, PluginDestinationPath, EnginePath, "Current", _platformService) {
             TargetPlatforms = platforms, bCanZip = PluginZip, TargetZipPath = PluginZipPath, bZipForMarketplaceZip = PluginZipForMarketplace
         };
         vm.RemoveRequested += (s, e) => PluginQueue.Remove(vm);
@@ -380,7 +389,7 @@ public partial class MainWindowViewModel : ViewModelBase
             IsBuilding = false; StopTiming(); StatusText = chainSuccess ? "Setup Chain Finished." : "Setup Chain Failed."; 
             if (chainSuccess) ShowToast("Setup Process Finished.", UBBNotificationType.Success); 
             else ShowToast("Setup Process Failed.", UBBNotificationType.Error);
-            if (!string.IsNullOrEmpty(_logMessageErrors)) BuilderSettings.WriteErrorsToLogFile(_logMessageErrors);
+            if (!string.IsNullOrEmpty(_logMessageErrors)) _settingsService.WriteErrorsToLogFile(_logMessageErrors);
         }
     }
 
@@ -416,6 +425,12 @@ public partial class MainWindowViewModel : ViewModelBase
             Settings.bWithSwitch = false; Settings.bWithPS4 = false; Settings.bWithXboxOne = false;
         }
 
+        if (Settings.bWithWin64NoPCH)
+        {
+            var res = await ShowMessageDialog("Warning", "Building with Precompiled Headers disabled will take a long time. Are you sure you want to continue?", "Yes", null, "No");
+            if (res != ContentDialogResult.Primary) return;
+        }
+
         if (Settings.bEnableEngineBuildConfirmationMessage)
         {
             var res = await ShowMessageDialog("Build Binary Version", "You are going to build a binary version of Unreal Engine. This is a long process and might take time to finish. Are you sure you want to continue?", "Yes", null, "No");
@@ -437,8 +452,8 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         StatusText = "Building Engine..."; GameAnalyticsCSharp.AddDesignEvent("Build:Started"); GameAnalyticsCSharp.AddProgressStart("Build", "Engine");
         
-        bool isUE5 = IsEngineSelection425OrAbove && UnrealBinaryBuilderHelpers.GetEngineVersion(EnginePath)?.StartsWith("5") == true;
-        string automationPath = UnrealBinaryBuilderHelpers.AutomationPath(EnginePath, isUE5);
+        var metadata = _ueProvider.GetEngineMetadata(EnginePath);
+        string automationPath = _ueProvider.GetAutomationPath(EnginePath, metadata?.IsUE5 ?? false);
 
         int ec = await _processExecutor.ExecuteAsync(automationPath, PrepareCommandline(), EnginePath, msg => AddLogEntry(msg), msg => AddLogEntry(msg, true));
         bool success = ec == 0; GameAnalyticsCSharp.AddProgressEnd("Build", "Engine", !success);
@@ -449,11 +464,17 @@ public partial class MainWindowViewModel : ViewModelBase
             GameAnalyticsCSharp.AddDesignEvent("Zip:Finished");
         }
         IsBuilding = false; StopTiming(); StatusText = success ? "Build Finished Successfully." : "Build Failed."; if (success) ShowToast("Engine Build Finished Successfully.", UBBNotificationType.Success); else ShowToast("Engine Build Failed.", UBBNotificationType.Error);
-        if (!string.IsNullOrEmpty(_logMessageErrors)) BuilderSettings.WriteErrorsToLogFile(_logMessageErrors);
+        if (!string.IsNullOrEmpty(_logMessageErrors)) _settingsService.WriteErrorsToLogFile(_logMessageErrors);
         if (success && Settings.bShutdownIfBuildSuccess && Settings.bShutdownPC) Internal_ShutdownPC();
     }
 
-    private void Internal_ShutdownPC() { AddLogEntry("Shutting down PC in 5 seconds..."); GameAnalyticsCSharp.AddDesignEvent("Shutdown:Started"); if (OperatingSystem.IsWindows()) Process.Start("shutdown", "/s /t 5"); else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) Process.Start("shutdown", "-h +1"); Environment.Exit(0); }
+    private void Internal_ShutdownPC() 
+    { 
+        AddLogEntry("Shutting down PC in 5 seconds..."); 
+        GameAnalyticsCSharp.AddDesignEvent("Shutdown:Started"); 
+        _platformService.ShutdownPC(5);
+        Environment.Exit(0); 
+    }
 
     [RelayCommand]
     private async Task BuildPlugins()
@@ -478,7 +499,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (!success) break;
         }
         IsBuilding = false; StopTiming(); StatusText = "Plugin builds finished."; ShowToast("Plugin builds finished.", UBBNotificationType.Success);
-        if (!string.IsNullOrEmpty(_logMessageErrors)) BuilderSettings.WriteErrorsToLogFile(_logMessageErrors);
+        if (!string.IsNullOrEmpty(_logMessageErrors)) _settingsService.WriteErrorsToLogFile(_logMessageErrors);
     }
 
     [RelayCommand]
@@ -524,6 +545,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!string.IsNullOrEmpty(Settings.AnalyticsOverride)) args += $"-set:AnalyticsTypeOverride={Settings.AnalyticsOverride} ";
         if (SupportServerClientTargets) args += $"-set:WithServer={GetBoolStr(Settings.bWithServer)} -set:WithClient={GetBoolStr(Settings.bWithClient)} -set:WithHoloLens={GetBoolStr(Settings.bWithHoloLens)} ";
         if (IsEngineSelection425OrAbove) args += $"-set:CompileDatasmithPlugins={GetBoolStr(Settings.bCompileDatasmithPlugins)} ";
+        if (Settings.bWithWin64NoPCH) args += "-set:WithWin64=true -set:BuildWithPrecompiledHeader=false ";
         if (SelectedVsVersion != null) args += $"-set:VS{SelectedVsVersion.Version}=true ";
         if (Settings.bCleanBuild) args += "-Clean ";
         if (!string.IsNullOrEmpty(Settings.CustomOptions)) args += $"{Settings.CustomOptions} ";
@@ -561,15 +583,16 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         if (string.IsNullOrEmpty(EnginePath)) return;
         string path = Path.Combine(EnginePath, "LocalBuilds", "Engine");
-        if (Directory.Exists(path)) Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+        if (Directory.Exists(path)) _platformService.OpenFolder(path);
         else ShowToast("Build folder does not exist yet.", UBBNotificationType.Info);
     }
 
-    [RelayCommand] private void GetSourceCode() => Process.Start(new ProcessStartInfo("https://github.com/EpicGames/UnrealEngine") { UseShellExecute = true });
-    [RelayCommand] private void OpenLogFolder() => BuilderSettings.OpenLogFolder();
+    [RelayCommand] private void GetSourceCode() => _platformService.OpenUrl("https://github.com/EpicGames/UnrealEngine");
+    [RelayCommand] private void OpenLogFolder() => _settingsService.OpenLogFolder();
     [RelayCommand] private void RemovePlugin(PluginCardViewModel p) => PluginQueue.Remove(p);
-    [RelayCommand] private void OpenSupport() => Process.Start(new ProcessStartInfo("https://github.com/ryanjon2040/Unreal-Binary-Builder") { UseShellExecute = true });
-    [RelayCommand] private void OpenChangelog() => Process.Start(new ProcessStartInfo("https://github.com/ryanjon2040/Unreal-Binary-Builder/blob/master/CHANGELOG.md") { UseShellExecute = true });
+    [RelayCommand] private void OpenSupport() => _platformService.OpenUrl("https://github.com/ryanjon2040/Unreal-Binary-Builder");
+    [RelayCommand] private void OpenChangelog() => _platformService.OpenUrl("https://github.com/ryanjon2040/Unreal-Binary-Builder/blob/master/CHANGELOG.md");
     [RelayCommand] private void OpenAbout() { if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime d) { var dlg = new AboutDialog(); dlg.ShowDialog(d.MainWindow!); } }
-    [RelayCommand] private void OpenSettings() => BuilderSettings.OpenSettings();
+    [RelayCommand] private void OpenSettings() => _settingsService.OpenSettings();
+
 }

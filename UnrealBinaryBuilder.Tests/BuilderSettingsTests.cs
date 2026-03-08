@@ -9,11 +9,12 @@ namespace UnrealBinaryBuilder.Tests;
 public class BuilderSettingsTests : IDisposable
 {
     private readonly string _testPath;
+    private readonly SettingsService _settingsService;
 
     public BuilderSettingsTests()
     {
         _testPath = Path.Combine(Path.GetTempPath(), "UBB_Tests_" + Guid.NewGuid().ToString());
-        BuilderSettings.SetProgramSavedPath(_testPath);
+        _settingsService = new SettingsService(new MockPlatformService(), _testPath);
     }
 
     public void Dispose()
@@ -25,10 +26,10 @@ public class BuilderSettingsTests : IDisposable
     }
 
     [Fact]
-    public void GetSettingsFile_ReturnsDefaultSettings_WhenNoFileExists()
+    public void GetSettings_ReturnsDefaultSettings_WhenNoFileExists()
     {
         // Act
-        var settings = BuilderSettings.GetSettingsFile();
+        var settings = _settingsService.GetSettings();
 
         // Assert
         Assert.NotNull(settings);
@@ -41,13 +42,13 @@ public class BuilderSettingsTests : IDisposable
     public void SaveSettings_PersistsChanges()
     {
         // Arrange
-        var settings = BuilderSettings.GetSettingsFile();
+        var settings = _settingsService.GetSettings();
         settings.Theme = "Light";
         settings.bCheckForUpdatesAtStartup = false;
 
         // Act
-        BuilderSettings.SaveSettings(settings);
-        var reloadedSettings = BuilderSettings.GetSettingsFile();
+        _settingsService.SaveSettings(settings);
+        var reloadedSettings = _settingsService.GetSettings();
 
         // Assert
         Assert.Equal("Light", reloadedSettings.Theme);
@@ -58,11 +59,9 @@ public class BuilderSettingsTests : IDisposable
     public void GitDependencyCache_UsesNewPath_WhenPathIsChanged()
     {
         // Act
-        var settings = BuilderSettings.GetSettingsFile();
+        var settings = _settingsService.GetSettings();
 
         // Assert
-        // The default settings in the file might have the hardcoded path from the static initializer if not careful,
-        // but our refactor should ensure it uses the current PROGRAM_SAVED_PATH during Generation if we use the property.
         Assert.Contains(PathHelpers.NormalizePath(_testPath), settings.GitDependencyCache);
     }
 }
