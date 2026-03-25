@@ -82,6 +82,7 @@ public class MainWindowViewModelTests : IDisposable
     private readonly MockBuildHistoryService _historyService;
     private readonly MockBuildOrchestrationService _orchestrationService;
     private readonly MockLogFormatterService _logFormatter;
+    private readonly MockTelemetryService _telemetryService;
 
     public MainWindowViewModelTests()
     {
@@ -103,6 +104,7 @@ public class MainWindowViewModelTests : IDisposable
         _historyService = new MockBuildHistoryService();
         _orchestrationService = new MockBuildOrchestrationService();
         _logFormatter = new MockLogFormatterService();
+        _telemetryService = new MockTelemetryService();
     }
 
     public void Dispose()
@@ -130,7 +132,8 @@ public class MainWindowViewModelTests : IDisposable
         _timerService,
         _historyService,
         _orchestrationService,
-        _logFormatter);
+        _logFormatter,
+        _telemetryService);
 
     [Fact]
     public async Task ShowToast_TriggersUiService()

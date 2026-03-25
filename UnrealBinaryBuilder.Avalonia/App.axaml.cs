@@ -27,14 +27,17 @@ public partial class App : Application
 
         var services = new ServiceCollection();
 
-        // Register Services
+        // Register Infrastructure
+        services.AddSingleton<ITelemetryService, GameAnalyticsTelemetryService>();
+        services.AddSingleton<IProcessExecutor, ProcessExecutor>();
+
+        // Register Log Sinks
         services.AddSingleton<UiLogSink>();
         services.AddSingleton<ILogSink>(sp => sp.GetRequiredService<UiLogSink>());
         services.AddSingleton<ILogSink, FileLogSink>();
-        services.AddSingleton<ILogSink, TelemetryLogSink>();
+        services.AddSingleton<ILogSink>(sp => new TelemetryLogSink(sp.GetRequiredService<ITelemetryService>()));
         services.AddSingleton<IUBBLogger, AggregateLogger>();
 
-        services.AddSingleton<IProcessExecutor, ProcessExecutor>();
         services.AddSingleton<IVelopackUpdaterService, VelopackUpdaterService>();
         
         if (OperatingSystem.IsWindows()) services.AddSingleton<IPlatformService, WindowsPlatformService>();

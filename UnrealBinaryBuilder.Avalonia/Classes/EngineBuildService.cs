@@ -14,19 +14,22 @@ public class EngineBuildService : IEngineBuildService
     private readonly IZipService _zipService;
     private readonly IPlatformService _platformService;
     private readonly IUnrealEngineProvider _ueProvider;
+    private readonly ITelemetryService _telemetry;
 
     public EngineBuildService(
         IProcessExecutor processExecutor, 
         IUBBLogger logger, 
         IZipService zipService,
         IPlatformService platformService,
-        IUnrealEngineProvider ueProvider)
+        IUnrealEngineProvider ueProvider,
+        ITelemetryService telemetry)
     {
         _processExecutor = processExecutor;
         _logger = logger;
         _zipService = zipService;
         _platformService = platformService;
         _ueProvider = ueProvider;
+        _telemetry = telemetry;
     }
 
     public string PrepareEngineCommandline(BuilderSettingsJson settings, UnrealEngineMetadata? metadata, VisualStudioVersion? vsVersion)
@@ -37,8 +40,8 @@ public class EngineBuildService : IEngineBuildService
     public async Task<bool> BuildEngineAsync(string enginePath, BuilderSettingsJson settings, VisualStudioVersion? vsVersion, UnrealEngineMetadata? metadata)
     {
         _logger.Info("Starting Engine Build...", LogCategory.Build);
-        GameAnalyticsCSharp.AddDesignEvent("Build:Started");
-        GameAnalyticsCSharp.AddProgressStart("Build", "Engine");
+        _telemetry.TrackEvent(TelemetryConstants.EVENT_BUILD_STARTED);
+        _telemetry.TrackProgressStart(TelemetryConstants.CAT_BUILD, TelemetryConstants.STEP_ENGINE);
 
         string automationPath = _ueProvider.GetAutomationPath(enginePath, metadata?.IsUE5 ?? false);
         string args = PrepareEngineCommandline(settings, metadata, vsVersion);
@@ -46,18 +49,18 @@ public class EngineBuildService : IEngineBuildService
         int ec = await _processExecutor.ExecuteAsync(automationPath, args, enginePath, LogCategory.Build);
         bool success = ec == 0;
         
-        GameAnalyticsCSharp.AddProgressEnd("Build", "Engine", !success);
+        _telemetry.TrackProgressEnd(TelemetryConstants.CAT_BUILD, TelemetryConstants.STEP_ENGINE, !success);
 
         if (success)
         {
             if (settings.bZipEngineBuild && !string.IsNullOrEmpty(settings.ZipEnginePath))
             {
                 _logger.Info("Zipping build...", LogCategory.Build);
-                GameAnalyticsCSharp.AddDesignEvent("Zip:Started");
+                _telemetry.TrackEvent(TelemetryConstants.EVENT_ZIP_STARTED);
                 try
                 {
                     await _zipService.SaveToZip(Path.Combine(enginePath, "LocalBuilds", "Engine"), settings.ZipEnginePath, settings);
-                    GameAnalyticsCSharp.AddDesignEvent("Zip:Finished");
+                    _telemetry.TrackEvent(TelemetryConstants.EVENT_ZIP_FINISHED);
                 }
                 catch (Exception ex)
                 {
@@ -81,7 +84,7 @@ public class EngineBuildService : IEngineBuildService
     private void Internal_ShutdownPC() 
     { 
         _logger.Info("Shutting down PC in 5 seconds...", LogCategory.General); 
-        GameAnalyticsCSharp.AddDesignEvent("Shutdown:Started"); 
+        _telemetry.TrackEvent(TelemetryConstants.EVENT_SHUTDOWN_STARTED); 
         _platformService.ShutdownPC(5);
         Environment.Exit(0); 
     }

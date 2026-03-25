@@ -16,6 +16,7 @@ public class EngineBuildServiceTests : IDisposable
     private readonly MockZipService _zipService;
     private readonly MockPlatformService _platformService;
     private readonly MockUnrealEngineProvider _ueProvider;
+    private readonly MockTelemetryService _telemetryService;
     private readonly EngineBuildService _buildService;
 
     public EngineBuildServiceTests()
@@ -27,13 +28,15 @@ public class EngineBuildServiceTests : IDisposable
         _zipService = new MockZipService();
         _platformService = new MockPlatformService();
         _ueProvider = new MockUnrealEngineProvider();
+        _telemetryService = new MockTelemetryService();
         
         _buildService = new EngineBuildService(
             _processExecutor,
             _logger,
             _zipService,
             _platformService,
-            _ueProvider);
+            _ueProvider,
+            _telemetryService);
     }
 
     public void Dispose()

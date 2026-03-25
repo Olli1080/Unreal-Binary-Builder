@@ -15,6 +15,7 @@ public class PluginBuildServiceTests : IDisposable
     private readonly MockProcessExecutor _processExecutor;
     private readonly MockLogger _logger;
     private readonly MockZipService _zipService;
+    private readonly MockTelemetryService _telemetryService;
     private readonly PluginBuildService _buildService;
 
     public PluginBuildServiceTests()
@@ -24,11 +25,13 @@ public class PluginBuildServiceTests : IDisposable
         _processExecutor = new MockProcessExecutor();
         _logger = new MockLogger();
         _zipService = new MockZipService();
+        _telemetryService = new MockTelemetryService();
         
         _buildService = new PluginBuildService(
             _processExecutor,
             _logger,
-            _zipService);
+            _zipService,
+            _telemetryService);
     }
 
     public void Dispose()

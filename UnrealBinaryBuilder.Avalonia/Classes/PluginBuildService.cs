@@ -14,12 +14,14 @@ public class PluginBuildService : IPluginBuildService
     private readonly IProcessExecutor _processExecutor;
     private readonly IUBBLogger _logger;
     private readonly IZipService _zipService;
+    private readonly ITelemetryService _telemetry;
 
-    public PluginBuildService(IProcessExecutor processExecutor, IUBBLogger logger, IZipService zipService)
+    public PluginBuildService(IProcessExecutor processExecutor, IUBBLogger logger, IZipService zipService, ITelemetryService telemetry)
     {
         _processExecutor = processExecutor;
         _logger = logger;
         _zipService = zipService;
+        _telemetry = telemetry;
     }
 
     public async Task<bool> BuildPluginsAsync(IEnumerable<PluginCardViewModel> pluginQueue)
@@ -29,7 +31,7 @@ public class PluginBuildService : IPluginBuildService
 
         foreach (var plugin in plugins)
         {
-            GameAnalyticsCSharp.AddProgressStart("Build", "Plugin");
+            _telemetry.TrackProgressStart(TelemetryConstants.CAT_BUILD, TelemetryConstants.STEP_PLUGIN);
             plugin.StartBuild();
             
             string args = BuildArgumentBuilder.BuildPluginArguments(plugin).ToString();
@@ -38,11 +40,11 @@ public class PluginBuildService : IPluginBuildService
             
             if (success && plugin.bCanZip)
             {
-                GameAnalyticsCSharp.AddDesignEvent($"ZipPlugin:Started:{plugin.PluginName}");
+                _telemetry.TrackEvent($"{TelemetryConstants.EVENT_ZIP_STARTED}:{plugin.PluginName}");
                 try
                 {
                     await _zipService.SavePluginToZip(plugin.PluginPath, plugin.TargetZipPath, plugin.bZipForMarketplaceZip, true);
-                    GameAnalyticsCSharp.AddDesignEvent($"ZipPlugin:Finished:{plugin.PluginName}");
+                    _telemetry.TrackEvent($"{TelemetryConstants.EVENT_ZIP_FINISHED}:{plugin.PluginName}");
                 }
                 catch (Exception ex)
                 {
@@ -51,7 +53,7 @@ public class PluginBuildService : IPluginBuildService
             }
 
             plugin.FinishBuild(success);
-            GameAnalyticsCSharp.AddProgressEnd("Build", "Plugin", !success);
+            _telemetry.TrackProgressEnd(TelemetryConstants.CAT_BUILD, TelemetryConstants.STEP_PLUGIN, !success);
 
             if (!success)
             {

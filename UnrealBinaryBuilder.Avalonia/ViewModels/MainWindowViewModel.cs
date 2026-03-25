@@ -34,6 +34,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ILogFormatterService _logFormatter;
     private readonly IBuildHistoryService _historyService;
     private readonly IBuildOrchestrationService _orchestrationService;
+    private readonly ITelemetryService _telemetryService;
     
     private UnrealEngineMetadata? _engineMetadata;
 
@@ -99,7 +100,8 @@ public partial class MainWindowViewModel : ViewModelBase
         App.Current?.Services?.GetRequiredService<IBuildTimerService>() ?? throw new InvalidOperationException("TimerService not found"),
         App.Current?.Services?.GetRequiredService<IBuildHistoryService>() ?? throw new InvalidOperationException("HistoryService not found"),
         App.Current?.Services?.GetRequiredService<IBuildOrchestrationService>() ?? throw new InvalidOperationException("OrchestrationService not found"),
-        App.Current?.Services?.GetRequiredService<ILogFormatterService>() ?? throw new InvalidOperationException("LogFormatter not found")
+        App.Current?.Services?.GetRequiredService<ILogFormatterService>() ?? throw new InvalidOperationException("LogFormatter not found"),
+        App.Current?.Services?.GetRequiredService<ITelemetryService>() ?? throw new InvalidOperationException("TelemetryService not found")
     ) { }
 
     public MainWindowViewModel(
@@ -107,7 +109,8 @@ public partial class MainWindowViewModel : ViewModelBase
         IUnrealEngineProvider ueProvider, IUBBLogger logger, UiLogSink uiLogSink, IUIService uiService, 
         ISetupService setupService, IZipService zipService, IEngineBuildService engineBuildService, 
         IPluginBuildService pluginBuildService, IGitService gitService, IBuildTimerService timerService, 
-        IBuildHistoryService historyService, IBuildOrchestrationService orchestrationService, ILogFormatterService logFormatter)
+        IBuildHistoryService historyService, IBuildOrchestrationService orchestrationService, ILogFormatterService logFormatter,
+        ITelemetryService telemetryService)
     {
         _processExecutor = processExecutor; _updater = updater; _platformService = platformService;
         _settingsService = settingsService; _ueProvider = ueProvider; _logger = logger;
@@ -115,6 +118,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _engineBuildService = engineBuildService; _pluginBuildService = pluginBuildService;
         _gitService = gitService; _timerService = timerService; _historyService = historyService; 
         _orchestrationService = orchestrationService; _logFormatter = logFormatter;
+        _telemetryService = telemetryService;
 
         Settings = _settingsService.GetSettings();
 
@@ -129,7 +133,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _timerService.ElapsedChanged += (s, e) => ElapsedTime = e;
         uiLogSink.OnLog += OnLogReceived;
 
-        GameAnalyticsCSharp.InitializeGameAnalytics(UnrealBinaryBuilderHelpers.GetProductVersionString(), msg => _logger.Info(msg, LogCategory.Telemetry));
+        _telemetryService.Initialize(UnrealBinaryBuilderHelpers.GetProductVersionString());
 
         _uiService.ApplyTheme(Settings.Theme);
         LoadVisualStudio();
@@ -158,7 +162,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _isUpdateAvailable = false;
 
     [RelayCommand] private async Task CheckForUpdates() { 
-        GameAnalyticsCSharp.AddDesignEvent("Update:Check"); 
+        _telemetryService.TrackEvent("Update:Check"); 
         await _updater.CheckForUpdatesAsync();
         IsUpdateAvailable = _updater.IsUpdateAvailable;
         if (IsUpdateAvailable) {
@@ -180,13 +184,13 @@ public partial class MainWindowViewModel : ViewModelBase
     public string EnginePath { get => Settings.SetupBatFile ?? string.Empty; set { Settings.SetupBatFile = PathHelpers.NormalizePath(value); OnPropertyChanged(); UpdateVersionDependencies(); } }
 
     partial void OnSelectedCategoryChanged(object? value) {
-        OnPropertyChanged(nameof(SelectedCategoryTag)); GameAnalyticsCSharp.AddDesignEvent($"Navigation:{SelectedCategoryTag}");
+        OnPropertyChanged(nameof(SelectedCategoryTag)); _telemetryService.TrackEvent($"Navigation:{SelectedCategoryTag}");
         switch (SelectedCategoryTag) { case "SourceCode": _ = GetSourceCode(); break; case "Support": _ = OpenSupport(); break; case "Changelog": _ = OpenChangelog(); break; case "About": OpenAbout(); break; }
     }
 
     [RelayCommand] private async Task BrowseEnginePath() { var path = await _uiService.BrowseFolderAsync("Select Unreal Engine Root Folder"); if (path != null) { EnginePath = path; _settingsService.SaveSettings(Settings); } }
-    [RelayCommand] private async Task BrowseCustomBuildFile() { var path = await _uiService.BrowseFileAsync("Select Custom Build XML File", new[] { "*.xml" }, "XML Files"); if (path != null) { Settings.CustomBuildFile = path; _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); GameAnalyticsCSharp.AddDesignEvent($"BuildXML:Custom:{Path.GetFileName(path)}"); } }
-    [RelayCommand] private void ResetDefaultBuildXML() { Settings.CustomBuildFile = null; _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); GameAnalyticsCSharp.AddDesignEvent("BuildXML:ResetToDefault"); }
+    [RelayCommand] private async Task BrowseCustomBuildFile() { var path = await _uiService.BrowseFileAsync("Select Custom Build XML File", new[] { "*.xml" }, "XML Files"); if (path != null) { Settings.CustomBuildFile = path; _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); _telemetryService.TrackEvent($"BuildXML:Custom:{Path.GetFileName(path)}"); } }
+    [RelayCommand] private void ResetDefaultBuildXML() { Settings.CustomBuildFile = null; _settingsService.SaveSettings(Settings); OnPropertyChanged(nameof(Settings)); _telemetryService.TrackEvent("BuildXML:ResetToDefault"); }
     [RelayCommand] private async Task BrowsePluginPath() { var path = await _uiService.BrowseFileAsync("Select .uplugin file", new[] { "*.uplugin" }, "Unreal Plugin"); if (path != null) PluginPath = path; }
     [RelayCommand] private async Task BrowsePluginDestinationPath() { var path = await _uiService.BrowseFolderAsync("Select Output Folder"); if (path != null) PluginDestinationPath = path; }
     [RelayCommand] private async Task BrowsePluginZipPath() { var path = await _uiService.BrowseFolderAsync("Select Zip Output Folder"); if (path != null) PluginZipPath = path; }
