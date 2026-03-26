@@ -49,7 +49,15 @@ public class AggregateLogger : IUBBLogger
     {
         var msg = string.IsNullOrEmpty(message) ? exception.Message : $"{message}: {exception.Message}";
         Log(msg, LogLevel.Error, category);
-        // We could also log the stack trace if needed
-        Log(exception.StackTrace ?? "No stack trace", LogLevel.Debug, category);
+        
+        if (exception.StackTrace != null)
+        {
+            Log($"Stack Trace: {exception.StackTrace}", LogLevel.Error, category);
+        }
+
+        if (exception.InnerException != null)
+        {
+            Log($"Inner Exception: {exception.InnerException.Message}", LogLevel.Error, category);
+        }
     }
 }

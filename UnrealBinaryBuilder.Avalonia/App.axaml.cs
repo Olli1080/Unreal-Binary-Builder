@@ -24,6 +24,8 @@ public partial class App : Application
         var _ = typeof(AvaloniaEdit.TextEditor).Assembly;
         AvaloniaXamlLoader.Load(this);
 
+        SetupGlobalExceptionHandling();
+
         var services = new ServiceCollection();
 
         // Register Infrastructure
@@ -38,7 +40,12 @@ public partial class App : Application
         services.AddSingleton<IUBBLogger, AggregateLogger>();
 
         services.AddSingleton<IVelopackUpdaterService, VelopackUpdaterService>();
-        services.AddSingleton<IAppInitializer, AppInitializer>();
+        services.AddSingleton<IAppInitializer>(sp => new AppInitializer(
+            sp.GetRequiredService<ITelemetryService>(),
+            sp.GetRequiredService<ISettingsService>(),
+            sp.GetRequiredService<IVelopackUpdaterService>(),
+            sp.GetRequiredService<IUIService>(),
+            sp.GetRequiredService<IUBBLogger>()));
         
         if (OperatingSystem.IsWindows()) services.AddSingleton<IPlatformService, WindowsPlatformService>();
         else if (OperatingSystem.IsLinux()) services.AddSingleton<IPlatformService, LinuxPlatformService>();
@@ -90,6 +97,48 @@ public partial class App : Application
         foreach (var plugin in dataValidationPluginsToRemove)
         {
             BindingPlugins.DataValidators.Remove(plugin);
+        }
+    }
+
+    private void SetupGlobalExceptionHandling()
+    {
+        AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            LogUnhandledException((Exception)e.ExceptionObject, "AppDomain.CurrentDomain.UnhandledException");
+
+        TaskScheduler.UnobservedTaskException += (s, e) =>
+        {
+            LogUnhandledException(e.Exception, "TaskScheduler.UnobservedTaskException");
+            e.SetObserved();
+        };
+    }
+
+    private void LogUnhandledException(Exception ex, string source)
+    {
+        // Try to log it via our services if they are ready
+        try
+        {
+            var logger = Services?.GetService<IUBBLogger>();
+            logger?.Error(ex, $"Unhandled Exception from {source}", LogCategory.General);
+
+            var telemetry = Services?.GetService<ITelemetryService>();
+            telemetry?.TrackError($"Unhandled Exception: {ex.Message} (Source: {source})", TelemetrySeverity.Critical);
+
+            // Show a message to the user if possible
+            Dispatcher.UIThread.Post(async () =>
+            {
+                var uiService = Services?.GetService<IUIService>();
+                if (uiService != null)
+                {
+                    await uiService.ShowMessageDialog("Unexpected Error", 
+                        $"An unexpected error occurred: {ex.Message}\n\nCheck the log for more details.", 
+                        "OK");
+                }
+            });
+        }
+        catch
+        {
+            // Fallback if services are not ready or fail
+            Console.WriteLine($"FATAL: {ex}");
         }
     }
 }

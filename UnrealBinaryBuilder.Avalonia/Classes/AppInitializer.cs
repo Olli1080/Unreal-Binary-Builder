@@ -12,21 +12,30 @@ public class AppInitializer : IAppInitializer
     private readonly ISettingsService _settingsService;
     private readonly IVelopackUpdaterService _updater;
     private readonly IUIService _uiService;
+    private readonly IUBBLogger _logger;
 
     public AppInitializer(
         ITelemetryService telemetryService,
         ISettingsService settingsService,
         IVelopackUpdaterService updater,
-        IUIService uiService)
+        IUIService uiService,
+        IUBBLogger logger)
     {
         _telemetryService = telemetryService;
         _settingsService = settingsService;
         _updater = updater;
         _uiService = uiService;
+        _logger = logger;
     }
 
     public async Task InitializeAsync()
     {
+        // 0. Log System Info
+        _logger.Info($"Application Starting: Unreal Binary Builder {UnrealBinaryBuilderHelpers.GetProductVersionString()}", LogCategory.General);
+        _logger.Info($"OS: {Environment.OSVersion}", LogCategory.General);
+        _logger.Info($".NET Runtime: {Environment.Version}", LogCategory.General);
+        _logger.Info($"CPU Count: {Environment.ProcessorCount}", LogCategory.General);
+
         // 1. Initialize Telemetry
         _telemetryService.Initialize(UnrealBinaryBuilderHelpers.GetProductVersionString());
 
