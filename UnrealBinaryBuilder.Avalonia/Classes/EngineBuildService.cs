@@ -78,41 +78,11 @@ public class EngineBuildService : IEngineBuildService
         
         _telemetry.TrackProgressEnd(TelemetryConstants.CAT_BUILD, TelemetryConstants.STEP_ENGINE, !success);
 
-        if (success)
-        {
-            if (settings.ZipEngineBuild && !string.IsNullOrEmpty(settings.ZipEnginePath))
-            {
-                _logger.Info("Zipping build...", LogCategory.Build);
-                _telemetry.TrackEvent(TelemetryConstants.EVENT_ZIP_STARTED);
-                try
-                {
-                    await _zipService.SaveToZip(Path.Combine(enginePath, "LocalBuilds", "Engine"), settings.ZipEnginePath, settings);
-                    _telemetry.TrackEvent(TelemetryConstants.EVENT_ZIP_FINISHED);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error(ex, "Failed to zip engine build.", LogCategory.Build);
-                }
-            }
-
-            if (settings.ShutdownIfBuildSuccess && settings.ShutdownPC)
-            {
-                Internal_ShutdownPC();
-            }
-        }
-        else
+        if (!success)
         {
             _logger.Error("Engine Build Failed.", LogCategory.Build);
         }
 
         return success;
-    }
-
-    private void Internal_ShutdownPC() 
-    { 
-        _logger.Info("Shutting down PC in 5 seconds...", LogCategory.General); 
-        _telemetry.TrackEvent(TelemetryConstants.EVENT_SHUTDOWN_STARTED); 
-        _platformService.ShutdownPC(5);
-        Environment.Exit(0); 
     }
 }

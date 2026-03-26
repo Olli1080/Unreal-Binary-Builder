@@ -4,9 +4,9 @@ We are currently working on a series of modernization and refinement tasks to fu
 
 ## Current Plans
 
-- [ ] [Telemetry & Analytics Modernization](telemetry_modernization.md)
-- [ ] [Refine Service Responsibilities](refine_service_responsibilities.md)
-- [ ] [Consistency & Standards](consistency_and_standards.md)
+- [x] [Telemetry & Analytics Modernization](telemetry_modernization.md)
+- [x] [Refine Service Responsibilities](refine_service_responsibilities.md)
+- [x] [Consistency & Standards](consistency_and_standards.md)
 - [ ] [Error Handling & Resilience](error_handling_and_resilience.md)
 - [ ] [Feature Roadmap Extensions](feature_roadmap_extensions.md)
 

@@ -35,6 +35,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IBuildHistoryService _historyService;
     private readonly IBuildOrchestrationService _orchestrationService;
     private readonly ITelemetryService _telemetryService;
+    private readonly IBuildPipeline _buildPipeline;
     
     private UnrealEngineMetadata? _engineMetadata;
 
@@ -101,7 +102,8 @@ public partial class MainWindowViewModel : ViewModelBase
         App.Current?.Services?.GetRequiredService<IBuildHistoryService>() ?? throw new InvalidOperationException("HistoryService not found"),
         App.Current?.Services?.GetRequiredService<IBuildOrchestrationService>() ?? throw new InvalidOperationException("OrchestrationService not found"),
         App.Current?.Services?.GetRequiredService<ILogFormatterService>() ?? throw new InvalidOperationException("LogFormatter not found"),
-        App.Current?.Services?.GetRequiredService<ITelemetryService>() ?? throw new InvalidOperationException("TelemetryService not found")
+        App.Current?.Services?.GetRequiredService<ITelemetryService>() ?? throw new InvalidOperationException("TelemetryService not found"),
+        App.Current?.Services?.GetRequiredService<IBuildPipeline>() ?? throw new InvalidOperationException("BuildPipeline not found")
     ) { }
 
     public MainWindowViewModel(
@@ -110,7 +112,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ISetupService setupService, IZipService zipService, IEngineBuildService engineBuildService, 
         IPluginBuildService pluginBuildService, IGitService gitService, IBuildTimerService timerService, 
         IBuildHistoryService historyService, IBuildOrchestrationService orchestrationService, ILogFormatterService logFormatter,
-        ITelemetryService telemetryService)
+        ITelemetryService telemetryService, IBuildPipeline buildPipeline)
     {
         _processExecutor = processExecutor; _updater = updater; _platformService = platformService;
         _settingsService = settingsService; _ueProvider = ueProvider; _logger = logger;
@@ -119,6 +121,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _gitService = gitService; _timerService = timerService; _historyService = historyService; 
         _orchestrationService = orchestrationService; _logFormatter = logFormatter;
         _telemetryService = telemetryService;
+        _buildPipeline = buildPipeline;
 
         Settings = _settingsService.GetSettings();
 
@@ -128,14 +131,9 @@ public partial class MainWindowViewModel : ViewModelBase
         string[] p = { "Win64", "Win32", "Mac", "Linux", "LinuxAArch64", "Android", "IOS", "HTML5", "TVOS", "Switch", "PS4", "XboxOne", "Lumin", "HoleLens" };
         foreach (var name in p) PluginPlatforms.Add(new PluginPlatformWrapper(name, name == "Win64"));
 
-        if (Settings.CheckForUpdatesAtStartup) _updater.CheckForUpdatesAsync(true);
-
         _timerService.ElapsedChanged += (s, e) => ElapsedTime = e;
         uiLogSink.OnLog += OnLogReceived;
 
-        _telemetryService.Initialize(UnrealBinaryBuilderHelpers.GetProductVersionString());
-
-        _uiService.ApplyTheme(Settings.Theme);
         LoadVisualStudio();
         UpdateVersionDependencies();
         LoadHistory();
@@ -217,31 +215,15 @@ public partial class MainWindowViewModel : ViewModelBase
             var state = _orchestrationService.LoadState();
             if (state != null && state.CompletedStages.Contains(BuildStage.Setup)) {
                 if (await _uiService.ShowMessageDialog("Resume Build", "A previous build was partially completed (Setup is done). Resume from Engine Build?", "Yes", null, "No") == UBBDialogResult.Primary) {
-                    IsBuilding = true; _timerService.Restart(); LogText = string.Empty; _logFormatter.Reset();
-                    await Internal_BuildEngine();
+                    await BuildEngine();
                     return;
                 }
             }
         }
 
         if (!File.Exists(Path.Combine(EnginePath, "Setup.bat")) && !File.Exists(Path.Combine(EnginePath, "Setup.sh"))) { await _uiService.ShowMessageDialog("Incorrect folder", "This is not the Unreal Engine root folder."); return; }
-        IsBuilding = true; CurrentStage = BuildStage.Setup; _timerService.Restart(); LogText = string.Empty; _logFormatter.Reset(); StatusText = "Running Setup Process...";
         
-        _orchestrationService.ClearState(); // Starting fresh
-
-        bool success = await _setupService.RunSetupChainAsync(EnginePath, Settings, SelectedMsBuild, SelectedArchitecture);
-        if (success) {
-            _orchestrationService.MarkStageComplete(BuildStage.Setup, EnginePath, gitHash, Settings);
-            if (Settings.ContinueToEngineBuild) await Internal_BuildEngine();
-            else { 
-                IsBuilding = false; CurrentStage = BuildStage.Finished; _timerService.Stop(); StatusText = "Setup Chain Finished."; _uiService.ShowToast("Setup Process Finished.", UBBNotificationType.Success); 
-                await RecordHistoryAsync(true, "Setup Finished", "Setup");
-                _orchestrationService.ClearState();
-            }
-        } else { 
-            IsBuilding = false; CurrentStage = BuildStage.Failed; _timerService.Stop(); StatusText = "Setup Chain Failed."; _uiService.ShowToast("Setup Process Failed.", UBBNotificationType.Error); 
-            await RecordHistoryAsync(false, "Setup Failed", "Setup");
-        }
+        await ExecuteEnginePipelineAsync();
     }
 
     [RelayCommand] private async Task BuildEngine() {
@@ -252,8 +234,7 @@ public partial class MainWindowViewModel : ViewModelBase
             var state = _orchestrationService.LoadState();
             if (state != null && state.CompletedStages.Contains(BuildStage.Build)) {
                  if (await _uiService.ShowMessageDialog("Resume Build", "A previous build was partially completed (Compilation is done). Resume from Packaging (Zip)?", "Yes", null, "No") == UBBDialogResult.Primary) {
-                    IsBuilding = true; _timerService.Restart(); LogText = string.Empty; _logFormatter.Reset();
-                    await FinalizeEngineBuildAsync(true, gitHash);
+                    await ExecuteEnginePipelineAsync();
                     return;
                 }
             }
@@ -263,52 +244,53 @@ public partial class MainWindowViewModel : ViewModelBase
         if (Settings.WithSwitch && Settings.ShowConsoleDeprecatedMessage && !SupportConsoles) { await _uiService.ShowMessageDialog("Deprecated", "Console support was removed."); Settings.WithSwitch = false; }
         if (Settings.WithWin64NoPCH && await _uiService.ShowMessageDialog("Warning", "Building without PCH will take a long time. Continue?", "Yes", null, "No") != UBBDialogResult.Primary) return;
         if (Settings.EnableEngineBuildConfirmationMessage && await _uiService.ShowMessageDialog("Build Binary Version", "This is a long process. Continue?", "Yes", null, "No") != UBBDialogResult.Primary) return;
-        IsBuilding = true; _timerService.Restart(); LogText = string.Empty; _logFormatter.Reset(); 
         
-        _orchestrationService.ClearState(); // Starting fresh build
-        await Internal_BuildEngine();
+        _orchestrationService.ClearState();
+        await ExecuteEnginePipelineAsync();
     }
 
-    private async Task Internal_BuildEngine() {
-        CurrentStage = BuildStage.Build; StatusText = "Building Engine..."; 
-        string? gitHash = _gitService.GetCommitHashShort(EnginePath);
-        bool success = await _engineBuildService.BuildEngineAsync(EnginePath, Settings, SelectedVsVersion, _engineMetadata);
+    private async Task ExecuteEnginePipelineAsync() {
+        IsBuilding = true; _timerService.Restart(); LogText = string.Empty; _logFormatter.Reset();
         
-        if (success) {
-            _orchestrationService.MarkStageComplete(BuildStage.Build, EnginePath, gitHash, Settings);
-        }
+        var progress = new Progress<BuildPipelineProgress>(p => {
+            StatusText = p.Message;
+            CurrentStage = p.Stage switch {
+                BuildPipelineStage.Setup or BuildPipelineStage.ProjectFiles or BuildPipelineStage.AutomationTool => BuildStage.Setup,
+                BuildPipelineStage.EngineBuild => BuildStage.Build,
+                BuildPipelineStage.Zipping => BuildStage.Zip,
+                BuildPipelineStage.Finished => BuildStage.Finished,
+                BuildPipelineStage.Failed => BuildStage.Failed,
+                _ => BuildStage.Idle
+            };
+        });
 
-        await FinalizeEngineBuildAsync(success, gitHash);
-    }
-
-    private async Task FinalizeEngineBuildAsync(bool compileSuccess, string? gitHash) {
-        bool success = compileSuccess;
-        if (success && Settings.ZipEngineBuild && !string.IsNullOrEmpty(Settings.ZipEnginePath)) {
-            CurrentStage = BuildStage.Zip;
-            StatusText = "Zipping Engine Build...";
-            // Note: IZipService implementation would be called here. 
-            // For now, assuming it's part of EngineBuildService or called afterwards.
-            // Mark Zip as complete if it succeeds.
-            // _orchestrationService.MarkStageComplete(BuildStage.Zip, EnginePath, gitHash, Settings);
-        }
-
-        IsBuilding = false; CurrentStage = success ? BuildStage.Finished : BuildStage.Failed; _timerService.Stop(); 
-        StatusText = success ? "Build Finished Successfully." : "Build Failed.";
-        if (success) _uiService.ShowToast("Engine Build Finished Successfully.", UBBNotificationType.Success); else _uiService.ShowToast("Engine Build Failed.", UBBNotificationType.Error);
+        bool success = await _buildPipeline.ExecuteEnginePipelineAsync(EnginePath, Settings, SelectedMsBuild, SelectedArchitecture, SelectedVsVersion, _engineMetadata, progress);
+        
+        IsBuilding = false; _timerService.Stop();
+        if (success) _uiService.ShowToast("Engine Build Pipeline Finished Successfully.", UBBNotificationType.Success); 
+        else _uiService.ShowToast("Engine Build Pipeline Failed.", UBBNotificationType.Error);
+        
         await RecordHistoryAsync(success, StatusText, "Engine");
-        
-        if (success) {
-            _orchestrationService.ClearState();
-        }
+        if (success) _orchestrationService.ClearState();
     }
 
     [RelayCommand] private async Task BuildPlugins() {
         if (IsBuilding) return; if (PluginQueue.Count == 0) { await _uiService.ShowMessageDialog("Queue Empty", "Queue is empty."); return; }
-        IsBuilding = true; CurrentStage = BuildStage.Build; _timerService.Restart(); StatusText = "Building Plugins..."; _uiService.ShowToast($"Building {PluginQueue.Count} plugins.", UBBNotificationType.Info);
-        bool success = await _pluginBuildService.BuildPluginsAsync(PluginQueue);
-        IsBuilding = false; CurrentStage = success ? BuildStage.Finished : BuildStage.Failed; _timerService.Stop(); 
-        StatusText = success ? "Plugin builds finished." : "Plugin builds failed.";
-        if (success) _uiService.ShowToast("Plugin builds finished.", UBBNotificationType.Success); else _uiService.ShowToast("Plugin builds failed.", UBBNotificationType.Error);
+        IsBuilding = true; CurrentStage = BuildStage.Build; _timerService.Restart(); LogText = string.Empty; _logFormatter.Reset();
+        _uiService.ShowToast($"Building {PluginQueue.Count} plugins.", UBBNotificationType.Info);
+        
+        var progress = new Progress<BuildPipelineProgress>(p => {
+            StatusText = p.Message;
+            if (p.Stage == BuildPipelineStage.Finished) CurrentStage = BuildStage.Finished;
+            else if (p.Stage == BuildPipelineStage.Failed) CurrentStage = BuildStage.Failed;
+        });
+
+        bool success = await _buildPipeline.ExecutePluginPipelineAsync(PluginQueue, progress);
+        
+        IsBuilding = false; _timerService.Stop();
+        if (success) _uiService.ShowToast("Plugin builds finished.", UBBNotificationType.Success); 
+        else _uiService.ShowToast("Plugin builds failed.", UBBNotificationType.Error);
+        
         await RecordHistoryAsync(success, StatusText, "Plugins");
     }
 

@@ -38,6 +38,7 @@ public partial class App : Application
         services.AddSingleton<IUBBLogger, AggregateLogger>();
 
         services.AddSingleton<IVelopackUpdaterService, VelopackUpdaterService>();
+        services.AddSingleton<IAppInitializer, AppInitializer>();
         
         if (OperatingSystem.IsWindows()) services.AddSingleton<IPlatformService, WindowsPlatformService>();
         else if (OperatingSystem.IsLinux()) services.AddSingleton<IPlatformService, LinuxPlatformService>();
@@ -51,6 +52,7 @@ public partial class App : Application
         services.AddSingleton<IZipService, ZipService>();
         services.AddSingleton<IEngineBuildService, EngineBuildService>();
         services.AddSingleton<IPluginBuildService, PluginBuildService>();
+        services.AddSingleton<IBuildPipeline, BuildPipeline>();
         services.AddSingleton<IGitService, GitService>();
         services.AddSingleton<IBuildTimerService, BuildTimerService>();
         services.AddSingleton<IBuildHistoryService, BuildHistoryService>();
@@ -67,6 +69,9 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            // Run startup sequence
+            _ = Services?.GetRequiredService<IAppInitializer>().InitializeAsync();
+
             DisableAvaloniaDataAnnotationValidation();
             desktop.MainWindow = new MainWindow
             {
