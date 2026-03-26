@@ -1,5 +1,7 @@
 using System.Threading.Tasks;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
+using UnrealBinaryBuilder.Avalonia.Classes.Logging;
+using System;
 
 namespace UnrealBinaryBuilder.Avalonia.Classes;
 

@@ -7,6 +7,8 @@ using UnrealBinaryBuilder.Avalonia.ViewModels;
 using UnrealBinaryBuilder.Avalonia.Views;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 using UnrealBinaryBuilder.Avalonia.Classes;
 using UnrealBinaryBuilder.Avalonia.Classes.Logging;

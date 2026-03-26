@@ -147,16 +147,17 @@ public class ZipService : IZipService
             {
                 _zipCancelToken.ThrowIfCancellationRequested();
                 bool bSkipFile = false;
+                string relativePath = Path.GetRelativePath(inBuildDirectory, currentFilePath).Replace('\\', '/');
 
-                if (!settings.ZipEngineSource && currentFilePath.Contains("/Source/")) bSkipFile = true;
-                if (!settings.ZipEngineExtras && currentFilePath.Contains("/Extras/")) bSkipFile = true;
-                if (!settings.ZipEngineSamples && currentFilePath.Contains("/Samples/")) bSkipFile = true;
-                if (!settings.ZipEngineTemplates && currentFilePath.Contains("/Templates/")) bSkipFile = true;
-                if (!settings.ZipEngineDocumentation && currentFilePath.Contains("/Documentation/")) bSkipFile = true;
-                if (!settings.ZipEngineFeaturePacks && currentFilePath.Contains("/FeaturePacks/")) bSkipFile = true;
+                if (!settings.ZipEngineSource && relativePath.Contains("Source/")) bSkipFile = true;
+                if (!settings.ZipEngineExtras && relativePath.Contains("Extras/")) bSkipFile = true;
+                if (!settings.ZipEngineSamples && relativePath.Contains("Samples/")) bSkipFile = true;
+                if (!settings.ZipEngineTemplates && relativePath.Contains("Templates/")) bSkipFile = true;
+                if (!settings.ZipEngineDocumentation && relativePath.Contains("Documentation/")) bSkipFile = true;
+                if (!settings.ZipEngineFeaturePacks && relativePath.Contains("FeaturePacks/")) bSkipFile = true;
 
-                if (!settings.ZipEnginePDB && currentFilePath.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase)) bSkipFile = true;
-                if (!settings.ZipEngineDebug && currentFilePath.EndsWith(".debug", StringComparison.OrdinalIgnoreCase)) bSkipFile = true;
+                if (!settings.ZipEnginePDB && relativePath.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase)) bSkipFile = true;
+                if (!settings.ZipEngineDebug && relativePath.EndsWith(".debug", StringComparison.OrdinalIgnoreCase)) bSkipFile = true;
 
                 if (!bSkipFile)
                 {
