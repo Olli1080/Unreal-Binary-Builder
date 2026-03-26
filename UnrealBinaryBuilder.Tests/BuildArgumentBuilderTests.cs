@@ -17,9 +17,9 @@ public class BuildArgumentBuilderTests
         string customBuildFile = Path.Combine(Path.GetTempPath(), "Custom.xml");
         var settings = new BuilderSettingsJson
         {
-            bWithWin64 = true,
-            bWithWin32 = true,
-            bWithDDC = true,
+            WithWin64 = true,
+            WithWin32 = true,
+            WithDDC = true,
             CustomBuildFile = customBuildFile
         };
         var metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false);
@@ -42,8 +42,8 @@ public class BuildArgumentBuilderTests
         // Arrange
         var settings = new BuilderSettingsJson
         {
-            bHostPlatformOnly = true,
-            bWithWin32 = true // Should be ignored
+            HostPlatformOnly = true,
+            WithWin32 = true // Should be ignored
         };
         var metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false);
 
@@ -62,7 +62,7 @@ public class BuildArgumentBuilderTests
         // Arrange
         var settings = new BuilderSettingsJson
         {
-            bWithWin32 = true
+            WithWin32 = true
         };
         var metadata = new UnrealEngineMetadata(5, 0, 0, "5.0", "5.0.0", false, false, false, true, true, false, true, true);
 

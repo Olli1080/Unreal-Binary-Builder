@@ -47,8 +47,8 @@ public partial class App : Application
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IUnrealEngineProvider, UnrealEngineProvider>();
         services.AddSingleton<IPluginsService, PluginsService>();
-        services.AddSingleton<IUIService, UIService>();
-        services.AddSingleton<ISetupService, SetupService>();
+        services.AddSingleton<IUIService>(sp => new UIService(sp.GetRequiredService<IPlatformService>(), sp.GetRequiredService<ITelemetryService>()));
+        services.AddSingleton<ISetupService>(sp => new SetupService(sp.GetRequiredService<IProcessExecutor>(), sp.GetRequiredService<IUBBLogger>(), sp.GetRequiredService<ITelemetryService>()));
         services.AddSingleton<IZipService, ZipService>();
         services.AddSingleton<IEngineBuildService, EngineBuildService>();
         services.AddSingleton<IPluginBuildService, PluginBuildService>();

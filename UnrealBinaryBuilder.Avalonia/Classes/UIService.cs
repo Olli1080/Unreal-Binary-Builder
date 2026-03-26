@@ -14,12 +14,14 @@ namespace UnrealBinaryBuilder.Avalonia.Classes;
 public class UIService : IUIService
 {
     private readonly IPlatformService _platformService;
+    private readonly ITelemetryService _telemetry;
 
     public event EventHandler<NotificationEventArgs>? ShowNotification;
 
-    public UIService(IPlatformService platformService)
+    public UIService(IPlatformService platformService, ITelemetryService telemetry)
     {
         _platformService = platformService;
+        _telemetry = telemetry;
     }
 
     private IStorageProvider? GetStorageProvider() => (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) ? desktop.MainWindow?.StorageProvider : null;
@@ -57,7 +59,7 @@ public class UIService : IUIService
     {
         if (Application.Current == null) return;
         
-        GameAnalyticsCSharp.AddDesignEvent($"Theme:{theme}");
+        _telemetry.TrackEvent($"Theme:{theme}");
         
         switch (theme?.ToLower())
         {

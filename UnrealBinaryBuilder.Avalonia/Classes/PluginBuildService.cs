@@ -38,12 +38,12 @@ public class PluginBuildService : IPluginBuildService
             int ec = await _processExecutor.ExecuteAsync(plugin.RunUATFile, args, Path.GetDirectoryName(plugin.RunUATFile)!, LogCategory.Build);
             bool success = ec == 0;
             
-            if (success && plugin.bCanZip)
+            if (success && plugin.CanZip)
             {
                 _telemetry.TrackEvent($"{TelemetryConstants.EVENT_ZIP_STARTED}:{plugin.PluginName}");
                 try
                 {
-                    await _zipService.SavePluginToZip(plugin.PluginPath, plugin.TargetZipPath, plugin.bZipForMarketplaceZip, true);
+                    await _zipService.SavePluginToZip(plugin.PluginPath, plugin.TargetZipPath, plugin.ZipForMarketplaceZip, true);
                     _telemetry.TrackEvent($"{TelemetryConstants.EVENT_ZIP_FINISHED}:{plugin.PluginName}");
                 }
                 catch (Exception ex)

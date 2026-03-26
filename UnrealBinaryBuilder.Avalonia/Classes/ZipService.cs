@@ -55,56 +55,75 @@ public class ZipService : IZipService
         _zipCancelToken = _zipCancelTokenSource.Token;
     }
 
-    public async Task SavePluginToZip(string sourcePath, string zipLocationToSave, bool bZipForMarketplace, bool bFastCompression, IProgress<ZipProgress>? progress = null)
+    public void CancelTask()
     {
-        CompressionLevel cl = bFastCompression ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
+        _zipCancelTokenSource.Cancel();
+    }
+
+    public async Task SavePluginToZip(string sourcePath, string zipLocationToSave, bool zipForMarketplace, bool fastCompression, IProgress<ZipProgress>? progress = null)
+    {
+        CompressionLevel cl = fastCompression ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
         sourcePath = PathHelpers.NormalizePath(sourcePath);
-        
+
         await Task.Run(() =>
         {
-            using FileStream output = new FileStream(zipLocationToSave, FileMode.Create);
-            using (var zipFile = new ZipArchive(output, ZipArchiveMode.Create))
+            if (File.Exists(zipLocationToSave))
             {
-                IEnumerable<string> files = Directory.EnumerateFiles(sourcePath, "*.*", SearchOption.AllDirectories);
-                List<string> filesToAdd = [];
+                File.Delete(zipLocationToSave);
+            }
 
-                foreach (string file in files)
+            using FileStream output = new FileStream(zipLocationToSave, FileMode.CreateNew);
+            using var zipFile = new ZipArchive(output, ZipArchiveMode.Create);
+
+            progress?.Report(new ZipProgress { State = "Preparing files..." });
+            
+            IEnumerable<string> files = Directory.EnumerateFiles(sourcePath, "*.*", SearchOption.AllDirectories).ToArray();
+            _zipCancelToken.ThrowIfCancellationRequested();
+
+            List<string> filesToAdd = [];
+            foreach (var file in files)
+            {
+                string relativePath = Path.GetRelativePath(sourcePath, file).Replace('\\', '/');
+                if (zipForMarketplace && (relativePath.StartsWith("Binaries/") || relativePath.StartsWith("Intermediate/")))
                 {
-                    string currentFilePath = PathHelpers.ToUnixPath(Path.GetFullPath(file)).ToLower();
-                    if (bZipForMarketplace && (currentFilePath.Contains("/binaries/") || currentFilePath.Contains("/intermediate/")))
-                    {
-                        continue;
-                    }
-                    filesToAdd.Add(file);
+                    continue;
                 }
+                filesToAdd.Add(file);
+            }
 
-                int entriesSaved = 0;
-                int totalFiles = filesToAdd.Count;
+            long totalSize = 0;
+            foreach (var file in filesToAdd)
+            {
+                totalSize += new FileInfo(file).Length;
+            }
 
-                foreach (string file in filesToAdd)
-                {
-                    _zipCancelToken.ThrowIfCancellationRequested();
-
-                    string normalizedFile = PathHelpers.ToUnixPath(file);
-                    string entry = normalizedFile.Replace(sourcePath, string.Empty).TrimStart('/');
-
-                    zipFile.CreateEntryFromFile(file, entry, cl);
-                    ++entriesSaved;
-
-                    progress?.Report(new ZipProgress
-                    {
-                        Progress = (double)entriesSaved / totalFiles * 100,
-                        CurrentFile = Path.GetFileName(file),
-                        Message = $"Saving: {entriesSaved}/{totalFiles}"
-                    });
-                }
+            long currentSize = 0;
+            int fileCount = 0;
+            foreach (var file in filesToAdd)
+            {
+                _zipCancelToken.ThrowIfCancellationRequested();
+                string relativePath = Path.GetRelativePath(sourcePath, file).Replace('\\', '/');
+                
+                FileInfo fileInfo = new FileInfo(file);
+                zipFile.CreateEntryFromFile(file, relativePath, cl);
+                
+                currentSize += fileInfo.Length;
+                fileCount++;
+                
+                progress?.Report(new ZipProgress 
+                { 
+                    State = $"Zipping {fileCount}/{filesToAdd.Count}...",
+                    Progress = (double)currentSize / totalSize * 100,
+                    CurrentFile = relativePath
+                });
             }
         }, _zipCancelToken);
     }
 
     public async Task SaveToZip(string inBuildDirectory, string zipLocationToSave, BuilderSettingsJson settings, IProgress<ZipProgress>? progress = null)
     {
-        CompressionLevel cl = settings.bZipEngineFastCompression ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
+        CompressionLevel cl = settings.ZipEngineFastCompression ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
+        inBuildDirectory = PathHelpers.NormalizePath(inBuildDirectory);
 
         await Task.Run(() =>
         {
@@ -123,97 +142,49 @@ public class ZipService : IZipService
 
             List<string> filesToAdd = [];
             long totalSize = 0;
-            long totalSizeToZip = 0;
-            long skippedSize = 0;
-            int skippedFiles = 0;
-            int addedFiles = 0;
 
-            foreach (string file in files)
+            foreach (string currentFilePath in files)
             {
                 _zipCancelToken.ThrowIfCancellationRequested();
                 bool bSkipFile = false;
-                string currentFilePath = PathHelpers.ToUnixPath(Path.GetRelativePath(inBuildDirectory, file)).ToLower();
-                string extension = Path.GetExtension(file).ToLower();
 
-                if (!settings.bZipEnginePDB && extension == ".pdb") bSkipFile = true;
-                if (!settings.bZipEngineDebug && extension == ".debug") bSkipFile = true;
-                if (!settings.bZipEngineDocumentation && !currentFilePath.Contains("/source/") && currentFilePath.Contains("/documentation/")) bSkipFile = true;
-                if (!settings.bZipEngineExtras && !currentFilePath.Contains("/extras/redist/") && currentFilePath.Contains("/extras/")) bSkipFile = true;
-                
-                if (!settings.bZipEngineSource)
+                if (!settings.ZipEngineSource && currentFilePath.Contains("/Source/")) bSkipFile = true;
+                if (!settings.ZipEngineExtras && currentFilePath.Contains("/Extras/")) bSkipFile = true;
+                if (!settings.ZipEngineSamples && currentFilePath.Contains("/Samples/")) bSkipFile = true;
+                if (!settings.ZipEngineTemplates && currentFilePath.Contains("/Templates/")) bSkipFile = true;
+                if (!settings.ZipEngineDocumentation && currentFilePath.Contains("/Documentation/")) bSkipFile = true;
+                if (!settings.ZipEngineFeaturePacks && currentFilePath.Contains("/FeaturePacks/")) bSkipFile = true;
+
+                if (!settings.ZipEnginePDB && currentFilePath.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase)) bSkipFile = true;
+                if (!settings.ZipEngineDebug && currentFilePath.EndsWith(".debug", StringComparison.OrdinalIgnoreCase)) bSkipFile = true;
+
+                if (!bSkipFile)
                 {
-                    if (currentFilePath.Contains("/source/developer/")) bSkipFile = true;
-                    else if (currentFilePath.Contains("/source/editor/")) bSkipFile = true;
-                    else if (currentFilePath.Contains("/source/programs/")) bSkipFile = true;
-                    else if (currentFilePath.Contains("/source/runtime/")) bSkipFile = true;
-                    else if (currentFilePath.Contains("/source/thirdparty/")) bSkipFile = true;
+                    filesToAdd.Add(currentFilePath);
+                    totalSize += new FileInfo(currentFilePath).Length;
                 }
-
-                if (!settings.bZipEngineFeaturePacks && (currentFilePath.Contains("/featurepacks/") || currentFilePath.StartsWith("featurepacks/"))) bSkipFile = true;
-                if (!settings.bZipEngineSamples && (currentFilePath.Contains("/samples/") || currentFilePath.StartsWith("samples/"))) bSkipFile = true;
-                if (!settings.bZipEngineTemplates && !currentFilePath.Contains("/source/") && !currentFilePath.Contains("/content/editor") && (currentFilePath.Contains("/templates/") || currentFilePath.StartsWith("templates/"))) bSkipFile = true;
-
-                long fileSize = new FileInfo(file).Length;
-                totalSize += fileSize;
-
-                if (bSkipFile)
-                {
-                    skippedFiles++;
-                    skippedSize += fileSize;
-                }
-                else
-                {
-                    filesToAdd.Add(file);
-                    addedFiles++;
-                    totalSizeToZip += fileSize;
-                }
-
-                progress?.Report(new ZipProgress
-                {
-                    Message = $"Total: {files.Count()}. Added: {addedFiles}. Skipped: {skippedFiles}",
-                    TotalResult = $"Total Size: {BytesToString(totalSize)}. To Zip: {BytesToString(totalSizeToZip)}. Skipped: {BytesToString(skippedSize)}"
-                });
             }
 
-            int entriesSaved = 0;
-            long processedSize = 0;
-            int totalFilesToAdd = filesToAdd.Count;
-
-            foreach (string file in filesToAdd)
+            long currentSize = 0;
+            int fileCount = 0;
+            foreach (var file in filesToAdd)
             {
                 _zipCancelToken.ThrowIfCancellationRequested();
-
-                string entryName = Path.GetRelativePath(inBuildDirectory, file);
-                zipFile.CreateEntryFromFile(file, entryName, cl);
+                string relativePath = Path.GetRelativePath(inBuildDirectory, file).Replace('\\', '/');
                 
-                entriesSaved++;
-                processedSize += new FileInfo(file).Length;
-
-                progress?.Report(new ZipProgress
-                {
-                    State = "Saving zip file...",
-                    CurrentFile = Path.GetFileName(file),
-                    Progress = (double)entriesSaved / totalFilesToAdd * 100,
-                    Message = $"Saving: {entriesSaved}/{totalFilesToAdd}",
-                    TotalResult = $"Total Size: {BytesToString(totalSize)}. To Zip: {BytesToString(totalSizeToZip)}. Skipped: {BytesToString(skippedSize)}. Processed: {BytesToString(processedSize)}"
+                FileInfo fileInfo = new FileInfo(file);
+                zipFile.CreateEntryFromFile(file, relativePath, cl);
+                
+                currentSize += fileInfo.Length;
+                fileCount++;
+                
+                progress?.Report(new ZipProgress 
+                { 
+                    State = $"Zipping {fileCount}/{filesToAdd.Count}...",
+                    Progress = (double)currentSize / totalSize * 100,
+                    CurrentFile = relativePath
                 });
             }
-
         }, _zipCancelToken);
-    }
-
-    public void CancelTask()
-    {
-        _zipCancelTokenSource.Cancel();
-    }
-
-    private static string BytesToString(long byteCount)
-    {
-        string[] suf = ["B", "KB", "MB", "GB", "TB"];
-        if (byteCount == 0) return "0" + suf[0];
-        long bytes = Math.Abs(byteCount);
-        int place = Convert.ToInt32(Math.Floor(Math.Log(bytes, 1024)));
-        double num = Math.Round(bytes / Math.Pow(1024, place), 1);
-        return (Math.Sign(byteCount) * num).ToString() + suf[place];
     }
 }

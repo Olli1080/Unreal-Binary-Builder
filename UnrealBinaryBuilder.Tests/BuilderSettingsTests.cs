@@ -34,7 +34,7 @@ public class BuilderSettingsTests : IDisposable
         // Assert
         Assert.NotNull(settings);
         Assert.Equal("Dark", settings.Theme);
-        Assert.True(settings.bCheckForUpdatesAtStartup);
+        Assert.True(settings.CheckForUpdatesAtStartup);
         Assert.True(File.Exists(Path.Combine(_testPath, "Saved", "Settings.json")));
     }
 
@@ -44,7 +44,7 @@ public class BuilderSettingsTests : IDisposable
         // Arrange
         var settings = _settingsService.GetSettings();
         settings.Theme = "Light";
-        settings.bCheckForUpdatesAtStartup = false;
+        settings.CheckForUpdatesAtStartup = false;
 
         // Act
         _settingsService.SaveSettings(settings);
@@ -52,7 +52,7 @@ public class BuilderSettingsTests : IDisposable
 
         // Assert
         Assert.Equal("Light", reloadedSettings.Theme);
-        Assert.False(reloadedSettings.bCheckForUpdatesAtStartup);
+        Assert.False(reloadedSettings.CheckForUpdatesAtStartup);
     }
 
     [Fact]

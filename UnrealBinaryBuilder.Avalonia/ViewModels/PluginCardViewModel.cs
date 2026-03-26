@@ -32,9 +32,9 @@ public partial class PluginCardViewModel : ViewModelBase
 
     // Build configuration
     public List<string>? TargetPlatforms { get; set; }
-    public bool bCanZip { get; set; }
+    public bool CanZip { get; set; }
     public string TargetZipPath { get; set; } = string.Empty;
-    public bool bZipForMarketplaceZip { get; set; }
+    public bool ZipForMarketplaceZip { get; set; }
 
     public event EventHandler? RemoveRequested;
 

@@ -48,7 +48,7 @@ public class ZipServiceTests : IDisposable
         CreateMockFile("Engine/Binaries/Win64/UnrealEditor.exe");
         CreateMockFile("Engine/Binaries/Win64/UnrealEditor.pdb");
         
-        var settings = new BuilderSettingsJson { bZipEnginePDB = false };
+        var settings = new BuilderSettingsJson { ZipEnginePDB = false };
 
         // Act
         await _zipService.SaveToZip(_sourcePath, _zipPath, settings);
@@ -64,7 +64,7 @@ public class ZipServiceTests : IDisposable
     {
         // Arrange
         CreateMockFile("Engine/Binaries/Win64/UnrealEditor.pdb");
-        var settings = new BuilderSettingsJson { bZipEnginePDB = true };
+        var settings = new BuilderSettingsJson { ZipEnginePDB = true };
 
         // Act
         await _zipService.SaveToZip(_sourcePath, _zipPath, settings);
@@ -82,7 +82,7 @@ public class ZipServiceTests : IDisposable
         CreateMockFile("Engine/Source/Developer/TargetPlatform/TargetPlatform.Build.cs");
         CreateMockFile("Engine/Config/Base.ini");
         
-        var settings = new BuilderSettingsJson { bZipEngineSource = false };
+        var settings = new BuilderSettingsJson { ZipEngineSource = false };
 
         // Act
         await _zipService.SaveToZip(_sourcePath, _zipPath, settings);
@@ -98,7 +98,7 @@ public class ZipServiceTests : IDisposable
     {
         // Arrange
         CreateMockFile("Templates/TP_FirstPerson/Template.png");
-        var settings = new BuilderSettingsJson { bZipEngineTemplates = false };
+        var settings = new BuilderSettingsJson { ZipEngineTemplates = false };
 
         // Act
         await _zipService.SaveToZip(_sourcePath, _zipPath, settings);
@@ -118,7 +118,7 @@ public class ZipServiceTests : IDisposable
         CreateMockFile("Source/MyPlugin/MyPlugin.Build.cs");
 
         // Act
-        await _zipService.SavePluginToZip(_sourcePath, _zipPath, bZipForMarketplace: true, bFastCompression: true);
+        await _zipService.SavePluginToZip(_sourcePath, _zipPath, zipForMarketplace: true, fastCompression: true);
 
         // Assert
         using var zip = ZipFile.OpenRead(_zipPath);

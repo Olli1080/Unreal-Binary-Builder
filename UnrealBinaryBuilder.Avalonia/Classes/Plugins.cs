@@ -41,7 +41,7 @@ public class PluginsService : IPluginsService
 
                     EngineBuild engineBuild = new EngineBuild
                     {
-                        bIsCustomEngine = false,
+                        IsCustomEngine = false,
                         EngineAssociation = s,
                         EngineName = s,
                         EnginePath = enginePath
@@ -63,7 +63,7 @@ public class PluginsService : IPluginsService
                     {
                         returnValue.Add(new EngineBuild
                         {
-                            bIsCustomEngine = false,
+                            IsCustomEngine = false,
                             EngineAssociation = folderName,
                             EngineName = folderName,
                             EnginePath = dir
@@ -98,7 +98,7 @@ public class PluginsService : IPluginsService
 
                     EngineBuild engineBuild = new EngineBuild
                     {
-                        bIsCustomEngine = true,
+                        IsCustomEngine = true,
                         EngineAssociation = s,
                         EngineName = $"{metadata.FullVersionString} (Custom) {s}",
                         EnginePath = baseEnginePath
@@ -136,7 +136,7 @@ public class EngineBuild
 {
     public string EngineName { get; set; } = string.Empty;
     public string EnginePath { get; set; } = string.Empty;
-    public bool bIsCustomEngine { get; set; }
+    public bool IsCustomEngine { get; set; }
     public string EngineAssociation { get; set; } = string.Empty;
 
     public override bool Equals(object? obj)

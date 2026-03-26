@@ -9,6 +9,6 @@ public interface IZipService
     bool CanSaveToZip(string zipPath);
     void PrepareToSave();
     void CancelTask();
-    Task SavePluginToZip(string sourcePath, string zipLocationToSave, bool bZipForMarketplace, bool bFastCompression, IProgress<ZipProgress>? progress = null);
+    Task SavePluginToZip(string sourcePath, string zipLocationToSave, bool zipForMarketplace, bool fastCompression, IProgress<ZipProgress>? progress = null);
     Task SaveToZip(string inBuildDirectory, string zipLocationToSave, BuilderSettingsJson settings, IProgress<ZipProgress>? progress = null);
 }

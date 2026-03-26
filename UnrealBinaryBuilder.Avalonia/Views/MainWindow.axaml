@@ -118,10 +118,10 @@
                                         <HeaderedContentControl Header="Setup Options">
                                             <StackPanel Spacing="10">
                                                 <StackPanel Orientation="Horizontal" Spacing="20">
-                                                    <CheckBox Content="Build Setup" IsChecked="{Binding Settings.bBuildSetupBatFile}" ToolTip.Tip="Run Setup.bat to download dependencies." />
-                                                    <CheckBox Content="Generate Project Files" IsChecked="{Binding Settings.bGenerateProjectFiles}" ToolTip.Tip="Run GenerateProjectFiles.bat to create the Visual Studio solution." />
-                                                    <CheckBox Content="Build Automation Tool" IsChecked="{Binding Settings.bBuildAutomationTool}" ToolTip.Tip="Build the AutomationTool needed for the engine build." />
-                                                    <CheckBox Content="Continue to Engine Build" IsChecked="{Binding Settings.bContinueToEngineBuild}" ToolTip.Tip="Automatically start the engine build after setup steps finish." />
+                                                    <CheckBox Content="Build Setup" IsChecked="{Binding Settings.BuildSetupBatFile}" ToolTip.Tip="Run Setup.bat to download dependencies." />
+                                                    <CheckBox Content="Generate Project Files" IsChecked="{Binding Settings.GenerateProjectFiles}" ToolTip.Tip="Run GenerateProjectFiles.bat to create the Visual Studio solution." />
+                                                    <CheckBox Content="Build Automation Tool" IsChecked="{Binding Settings.BuildAutomationTool}" ToolTip.Tip="Build the AutomationTool needed for the engine build." />
+                                                    <CheckBox Content="Continue to Engine Build" IsChecked="{Binding Settings.ContinueToEngineBuild}" ToolTip.Tip="Automatically start the engine build after setup steps finish." />
                                                 </StackPanel>
                                                 <Button Content="Start Setup Process" Command="{Binding StartSetupCommand}" Theme="{StaticResource AccentButtonStyle}" HorizontalAlignment="Stretch" />
                                             </StackPanel>
@@ -137,7 +137,7 @@
                                                     </ItemsControl.ItemsPanel>
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <CheckBox Content="{Binding Name}" IsChecked="{Binding bIsIncluded}" Margin="5" />
+                                                            <CheckBox Content="{Binding Name}" IsChecked="{Binding IsIncluded}" Margin="5" />
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
@@ -169,24 +169,24 @@
                             
                             <TabItem Header="Zip Build" ToolTip.Tip="Choose a location to save compiled Unreal Engine as a zip file.">
                                 <StackPanel Spacing="10" Margin="0,10">
-                                    <CheckBox Content="Zip final build" IsChecked="{Binding Settings.bZipEngineBuild}" />
-                                    <Grid ColumnDefinitions="*, Auto" IsEnabled="{Binding Settings.bZipEngineBuild}">
+                                    <CheckBox Content="Zip final build" IsChecked="{Binding Settings.ZipEngineBuild}" />
+                                    <Grid ColumnDefinitions="*, Auto" IsEnabled="{Binding Settings.ZipEngineBuild}">
                                         <TextBox Grid.Column="0" Text="{Binding Settings.ZipEnginePath}" Watermark="Zip save location" ToolTip.Tip="Browse and select the folder where you want to move the zip file after build." />
                                         <Button Grid.Column="1" Content="Browse" Command="{Binding BrowseZipPathCommand}" Margin="5,0,0,0" />
                                     </Grid>
                                     
-                                    <Expander Header="Contents to Zip" IsExpanded="True" IsEnabled="{Binding Settings.bZipEngineBuild}">
+                                    <Expander Header="Contents to Zip" IsExpanded="True" IsEnabled="{Binding Settings.ZipEngineBuild}">
                                         <WrapPanel Orientation="Horizontal">
                                             <CheckBox Content="Core (Always)" IsChecked="True" IsEnabled="False" Margin="5" ToolTip.Tip="Required files. Cannot edit." />
-                                            <CheckBox Content="Include PDB" IsChecked="{Binding Settings.bZipEnginePDB}" Margin="5" ToolTip.Tip="Include *.pdb in zip (significantly increases size)." />
-                                            <CheckBox Content="Include Debug" IsChecked="{Binding Settings.bZipEngineDebug}" Margin="5" ToolTip.Tip="Include *.debug files in zip (significantly increases size)." />
-                                            <CheckBox Content="Include Documentation" IsChecked="{Binding Settings.bZipEngineDocumentation}" Margin="5" ToolTip.Tip="Include documentation folder." />
-                                            <CheckBox Content="Include Extras" IsChecked="{Binding Settings.bZipEngineExtras}" Margin="5" ToolTip.Tip="Include extras folder." />
-                                            <CheckBox Content="Include Source" IsChecked="{Binding Settings.bZipEngineSource}" Margin="5" ToolTip.Tip="Include source code (significantly increases size)." />
-                                            <CheckBox Content="Include Feature Packs" IsChecked="{Binding Settings.bZipEngineFeaturePacks}" Margin="5" ToolTip.Tip="Include feature packs (First Person, Third Person, etc)." />
-                                            <CheckBox Content="Include Samples" IsChecked="{Binding Settings.bZipEngineSamples}" Margin="5" ToolTip.Tip="Include samples (Starter content)." />
-                                            <CheckBox Content="Include Templates" IsChecked="{Binding Settings.bZipEngineTemplates}" Margin="5" ToolTip.Tip="Include templates folder." />
-                                            <CheckBox Content="Fast Compression" IsChecked="{Binding Settings.bZipEngineFastCompression}" Margin="5" ToolTip.Tip="If false, uses Best Compression (slowest but smallest size)." />
+                                            <CheckBox Content="Include PDB" IsChecked="{Binding Settings.ZipEnginePDB}" Margin="5" ToolTip.Tip="Include *.pdb in zip (significantly increases size)." />
+                                            <CheckBox Content="Include Debug" IsChecked="{Binding Settings.ZipEngineDebug}" Margin="5" ToolTip.Tip="Include *.debug files in zip (significantly increases size)." />
+                                            <CheckBox Content="Include Documentation" IsChecked="{Binding Settings.ZipEngineDocumentation}" Margin="5" ToolTip.Tip="Include documentation folder." />
+                                            <CheckBox Content="Include Extras" IsChecked="{Binding Settings.ZipEngineExtras}" Margin="5" ToolTip.Tip="Include extras folder." />
+                                            <CheckBox Content="Include Source" IsChecked="{Binding Settings.ZipEngineSource}" Margin="5" ToolTip.Tip="Include source code (significantly increases size)." />
+                                            <CheckBox Content="Include Feature Packs" IsChecked="{Binding Settings.ZipEngineFeaturePacks}" Margin="5" ToolTip.Tip="Include feature packs (First Person, Third Person, etc)." />
+                                            <CheckBox Content="Include Samples" IsChecked="{Binding Settings.ZipEngineSamples}" Margin="5" ToolTip.Tip="Include samples (Starter content)." />
+                                            <CheckBox Content="Include Templates" IsChecked="{Binding Settings.ZipEngineTemplates}" Margin="5" ToolTip.Tip="Include templates folder." />
+                                            <CheckBox Content="Fast Compression" IsChecked="{Binding Settings.ZipEngineFastCompression}" Margin="5" ToolTip.Tip="If false, uses Best Compression (slowest but smallest size)." />
                                         </WrapPanel>
                                     </Expander>
                                 </StackPanel>
@@ -204,36 +204,36 @@
                                         <Grid ColumnDefinitions="*, *">
                                             <Expander Grid.Column="0" Header="Platforms" IsExpanded="True" Margin="0,0,5,0">
                                                 <WrapPanel>
-                                                    <CheckBox Content="Host Only" IsChecked="{Binding Settings.bHostPlatformOnly}" Margin="5" ToolTip.Tip="Build for the host platform only." />
-                                                    <CheckBox Content="Win64" IsChecked="{Binding Settings.bWithWin64}" Margin="5"/>
-                                                    <CheckBox Content="Win32" IsChecked="{Binding Settings.bWithWin32}" IsEnabled="{Binding SupportWin32}" Margin="5"/>
-                                                    <CheckBox Content="Mac" IsChecked="{Binding Settings.bWithMac}" Margin="5"/>
-                                                    <CheckBox Content="Linux" IsChecked="{Binding Settings.bWithLinux}" Margin="5"/>
-                                                    <CheckBox Content="Linux 64" IsChecked="{Binding Settings.bWithLinuxAArch64}" IsEnabled="{Binding SupportLinuxAArch64}" Margin="5" ToolTip.Tip="Build for Linux AArch64 (UE4 4.24+)" />
-                                                    <CheckBox Content="Linux Arm64" IsChecked="{Binding Settings.bWithLinuxAArch64}" IsEnabled="{Binding SupportLinuxArm64}" Margin="5" ToolTip.Tip="Build for Linux Arm64 (UE5+)" />
-                                                    <CheckBox Content="Android" IsChecked="{Binding Settings.bWithAndroid}" Margin="5"/>
-                                                    <CheckBox Content="iOS" IsChecked="{Binding Settings.bWithIOS}" Margin="5"/>
-                                                    <CheckBox Content="TVOS" IsChecked="{Binding Settings.bWithTVOS}" Margin="5"/>
-                                                    <CheckBox Content="HTML5" IsChecked="{Binding Settings.bWithHTML5}" IsEnabled="{Binding SupportHTML5}" Margin="5"/>
-                                                    <CheckBox Content="Switch" IsChecked="{Binding Settings.bWithSwitch}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
-                                                    <CheckBox Content="PS4" IsChecked="{Binding Settings.bWithPS4}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
-                                                    <CheckBox Content="XboxOne" IsChecked="{Binding Settings.bWithXboxOne}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
-                                                    <CheckBox Content="Lumin" IsChecked="{Binding Settings.bWithLumin}" Margin="5"/>
+                                                    <CheckBox Content="Host Only" IsChecked="{Binding Settings.HostPlatformOnly}" Margin="5" ToolTip.Tip="Build for the host platform only." />
+                                                    <CheckBox Content="Win64" IsChecked="{Binding Settings.WithWin64}" Margin="5"/>
+                                                    <CheckBox Content="Win32" IsChecked="{Binding Settings.WithWin32}" IsEnabled="{Binding SupportWin32}" Margin="5"/>
+                                                    <CheckBox Content="Mac" IsChecked="{Binding Settings.WithMac}" Margin="5"/>
+                                                    <CheckBox Content="Linux" IsChecked="{Binding Settings.WithLinux}" Margin="5"/>
+                                                    <CheckBox Content="Linux 64" IsChecked="{Binding Settings.WithLinuxAArch64}" IsEnabled="{Binding SupportLinuxAArch64}" Margin="5" ToolTip.Tip="Build for Linux AArch64 (UE4 4.24+)" />
+                                                    <CheckBox Content="Linux Arm64" IsChecked="{Binding Settings.WithLinuxAArch64}" IsEnabled="{Binding SupportLinuxArm64}" Margin="5" ToolTip.Tip="Build for Linux Arm64 (UE5+)" />
+                                                    <CheckBox Content="Android" IsChecked="{Binding Settings.WithAndroid}" Margin="5"/>
+                                                    <CheckBox Content="iOS" IsChecked="{Binding Settings.WithIOS}" Margin="5"/>
+                                                    <CheckBox Content="TVOS" IsChecked="{Binding Settings.WithTVOS}" Margin="5"/>
+                                                    <CheckBox Content="HTML5" IsChecked="{Binding Settings.WithHTML5}" IsEnabled="{Binding SupportHTML5}" Margin="5"/>
+                                                    <CheckBox Content="Switch" IsChecked="{Binding Settings.WithSwitch}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
+                                                    <CheckBox Content="PS4" IsChecked="{Binding Settings.WithPS4}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
+                                                    <CheckBox Content="XboxOne" IsChecked="{Binding Settings.WithXboxOne}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
+                                                    <CheckBox Content="Lumin" IsChecked="{Binding Settings.WithLumin}" Margin="5"/>
                                                 </WrapPanel>
                                             </Expander>
                                             
                                             <Expander Grid.Column="1" Header="Build Options" IsExpanded="True" Margin="5,0,0,0">
                                                 <WrapPanel>
-                                                    <CheckBox Content="Include DDC" IsChecked="{Binding Settings.bWithDDC}" Margin="5" ToolTip.Tip="Build a standalone derived-data cache for engine content and templates (slowest aspect)." />
-                                                    <CheckBox Content="Host DDC Only" IsChecked="{Binding Settings.bHostPlatformDDCOnly}" IsEnabled="{Binding Settings.bWithDDC}" Margin="5" ToolTip.Tip="Whether to include DDC for the host platform only. Requires DDC to be turned on." />
-                                                    <CheckBox Content="Sign Executables" IsChecked="{Binding Settings.bSignExecutables}" Margin="5" ToolTip.Tip="Sign produced executables where signing is available." />
-                                                    <CheckBox Content="Symbol Store" IsChecked="{Binding Settings.bEnableSymStore}" Margin="5" ToolTip.Tip="Add Source indexing to Windows game apps for symbol server." />
-                                                    <CheckBox Content="Full Debug Info" IsChecked="{Binding Settings.bWithFullDebugInfo}" Margin="5" ToolTip.Tip="Generate full debug info for binary editor and applications." />
-                                                    <CheckBox Content="Clean Build" IsChecked="{Binding Settings.bCleanBuild}" Margin="5" ToolTip.Tip="Cleans previous builds before starting." />
-                                                    <CheckBox Content="Include Server" IsChecked="{Binding Settings.bWithServer}" IsEnabled="{Binding SupportServerClientTargets}" Margin="5" ToolTip.Tip="Create dedicated server target." />
-                                                    <CheckBox Content="Include Client" IsChecked="{Binding Settings.bWithClient}" IsEnabled="{Binding SupportServerClientTargets}" Margin="5" ToolTip.Tip="Create client target." />
-                                                    <CheckBox Content="Include HoloLens" IsChecked="{Binding Settings.bWithHoloLens}" IsEnabled="{Binding SupportServerClientTargets}" Margin="5" ToolTip.Tip="Create HoloLens target." />
-                                                    <CheckBox Content="Include Datasmith" IsChecked="{Binding Settings.bCompileDatasmithPlugins}" IsEnabled="{Binding IsEngineSelection425OrAbove}" Margin="5" ToolTip.Tip="If Datasmith plugins should be compiled." />
+                                                    <CheckBox Content="Include DDC" IsChecked="{Binding Settings.WithDDC}" Margin="5" ToolTip.Tip="Build a standalone derived-data cache for engine content and templates (slowest aspect)." />
+                                                    <CheckBox Content="Host DDC Only" IsChecked="{Binding Settings.HostPlatformDDCOnly}" IsEnabled="{Binding Settings.WithDDC}" Margin="5" ToolTip.Tip="Whether to include DDC for the host platform only. Requires DDC to be turned on." />
+                                                    <CheckBox Content="Sign Executables" IsChecked="{Binding Settings.SignExecutables}" Margin="5" ToolTip.Tip="Sign produced executables where signing is available." />
+                                                    <CheckBox Content="Symbol Store" IsChecked="{Binding Settings.EnableSymStore}" Margin="5" ToolTip.Tip="Add Source indexing to Windows game apps for symbol server." />
+                                                    <CheckBox Content="Full Debug Info" IsChecked="{Binding Settings.WithFullDebugInfo}" Margin="5" ToolTip.Tip="Generate full debug info for binary editor and applications." />
+                                                    <CheckBox Content="Clean Build" IsChecked="{Binding Settings.CleanBuild}" Margin="5" ToolTip.Tip="Cleans previous builds before starting." />
+                                                    <CheckBox Content="Include Server" IsChecked="{Binding Settings.WithServer}" IsEnabled="{Binding SupportServerClientTargets}" Margin="5" ToolTip.Tip="Create dedicated server target." />
+                                                    <CheckBox Content="Include Client" IsChecked="{Binding Settings.WithClient}" IsEnabled="{Binding SupportServerClientTargets}" Margin="5" ToolTip.Tip="Create client target." />
+                                                    <CheckBox Content="Include HoloLens" IsChecked="{Binding Settings.WithHoloLens}" IsEnabled="{Binding SupportServerClientTargets}" Margin="5" ToolTip.Tip="Create HoloLens target." />
+                                                    <CheckBox Content="Include Datasmith" IsChecked="{Binding Settings.CompileDatasmithPlugins}" IsEnabled="{Binding IsEngineSelection425OrAbove}" Margin="5" ToolTip.Tip="If Datasmith plugins should be compiled." />
                                                 </WrapPanel>
                                             </Expander>
                                         </Grid>
@@ -419,7 +419,7 @@
                             <TextBlock Text="Application Settings" Theme="{StaticResource TitleTextBlockStyle}" />
                             
                             <Expander Header="Updates" IsExpanded="True">
-                                <CheckBox Content="Check for updates at startup" IsChecked="{Binding Settings.bCheckForUpdatesAtStartup}" />
+                                <CheckBox Content="Check for updates at startup" IsChecked="{Binding Settings.CheckForUpdatesAtStartup}" />
                             </Expander>
                             
                             <Expander Header="UI &amp; Experience" IsExpanded="True">
@@ -431,15 +431,15 @@
                                             <ComboBoxItem Content="Default" />
                                         </ComboBox>
                                     </HeaderedContentControl>
-                                    <CheckBox Content="Enable DDC confirmation messages" IsChecked="{Binding Settings.bEnableDDCMessages}" />
-                                    <CheckBox Content="Enable build confirmation message" IsChecked="{Binding Settings.bEnableEngineBuildConfirmationMessage}" />
+                                    <CheckBox Content="Enable DDC confirmation messages" IsChecked="{Binding Settings.EnableDDCMessages}" />
+                                    <CheckBox Content="Enable build confirmation message" IsChecked="{Binding Settings.EnableEngineBuildConfirmationMessage}" />
                                 </StackPanel>
                             </Expander>
 
                             <Expander Header="Automation" IsExpanded="True">
                                 <StackPanel Spacing="10">
-                                    <CheckBox Content="Shutdown PC if build successful" IsChecked="{Binding Settings.bShutdownIfBuildSuccess}" />
-                                    <CheckBox Content="Shutdown PC (Enable/Disable)" IsChecked="{Binding Settings.bShutdownPC}" />
+                                    <CheckBox Content="Shutdown PC if build successful" IsChecked="{Binding Settings.ShutdownIfBuildSuccess}" />
+                                    <CheckBox Content="Shutdown PC (Enable/Disable)" IsChecked="{Binding Settings.ShutdownPC}" />
                                 </StackPanel>
                             </Expander>
 

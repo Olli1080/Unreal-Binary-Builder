@@ -1,6 +1,14 @@
 # Plans WIP
 
-All currently planned modernization and modernization phases have been successfully completed.
+We are currently working on a series of modernization and refinement tasks to further improve the UBB codebase.
+
+## Current Plans
+
+- [ ] [Telemetry & Analytics Modernization](telemetry_modernization.md)
+- [ ] [Refine Service Responsibilities](refine_service_responsibilities.md)
+- [ ] [Consistency & Standards](consistency_and_standards.md)
+- [ ] [Error Handling & Resilience](error_handling_and_resilience.md)
+- [ ] [Feature Roadmap Extensions](feature_roadmap_extensions.md)
 
 ## Recently Completed
 - [x] **Step 6: Velopack Migration**:
@@ -8,13 +16,3 @@ All currently planned modernization and modernization phases have been successfu
   - Native GitHub update integration.
   - Automated installer generation in CI/CD.
   - **100% warning-free build**.
-
-## Future Roadmap (Uncharted)
-
-- **Automated Testing**: 
-  - Integration tests for actual Unreal Engine builds (requires dedicated runners).
-- **Customization**:
-  - Support for custom plugin templates.
-  - Engine build "Presets" for common configurations (e.g., "Minimal", "Full", "Dedicated Server").
-- **UI Enhancements**:
-  - Dedicated "Dashboard" for aggregate build statistics.

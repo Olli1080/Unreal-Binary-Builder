@@ -53,7 +53,7 @@ public class EngineBuildService : IEngineBuildService
 
         if (success)
         {
-            if (settings.bZipEngineBuild && !string.IsNullOrEmpty(settings.ZipEnginePath))
+            if (settings.ZipEngineBuild && !string.IsNullOrEmpty(settings.ZipEnginePath))
             {
                 _logger.Info("Zipping build...", LogCategory.Build);
                 _telemetry.TrackEvent(TelemetryConstants.EVENT_ZIP_STARTED);
@@ -68,7 +68,7 @@ public class EngineBuildService : IEngineBuildService
                 }
             }
 
-            if (settings.bShutdownIfBuildSuccess && settings.bShutdownPC)
+            if (settings.ShutdownIfBuildSuccess && settings.ShutdownPC)
             {
                 Internal_ShutdownPC();
             }

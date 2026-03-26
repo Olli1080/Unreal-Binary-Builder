@@ -13,26 +13,26 @@ public static class BuildArgumentBuilder
         {
             Target = "Make Installed Build Win64",
             Script = settings.CustomBuildFile ?? UnrealBinaryBuilderHelpers.DEFAULT_BUILD_XML_FILE,
-            Clean = settings.bCleanBuild,
+            Clean = settings.CleanBuild,
             CustomOptions = settings.CustomOptions ?? ""
         };
 
         string configs = string.Join(";", settings.GameConfigurations);
         
-        args.SetFlags["WithDDC"] = GetBoolStr(settings.bWithDDC);
-        args.SetFlags["SignExecutables"] = GetBoolStr(settings.bSignExecutables);
-        args.SetFlags["EmbedSrcSrvInfo"] = GetBoolStr(settings.bEnableSymStore);
+        args.SetFlags["WithDDC"] = GetBoolStr(settings.WithDDC);
+        args.SetFlags["SignExecutables"] = GetBoolStr(settings.SignExecutables);
+        args.SetFlags["EmbedSrcSrvInfo"] = GetBoolStr(settings.EnableSymStore);
         args.SetFlags["GameConfigurations"] = configs;
-        args.SetFlags["WithFullDebugInfo"] = GetBoolStr(settings.bWithFullDebugInfo);
-        args.SetFlags["HostPlatformOnly"] = GetBoolStr(settings.bHostPlatformOnly);
-        args.SetFlags["HostPlatformEditorOnly"] = GetBoolStr(settings.bHostPlatformEditorOnly);
+        args.SetFlags["WithFullDebugInfo"] = GetBoolStr(settings.WithFullDebugInfo);
+        args.SetFlags["HostPlatformOnly"] = GetBoolStr(settings.HostPlatformOnly);
+        args.SetFlags["HostPlatformEditorOnly"] = GetBoolStr(settings.HostPlatformEditorOnly);
 
-        if (settings.bWithDDC && settings.bHostPlatformDDCOnly)
+        if (settings.WithDDC && settings.HostPlatformDDCOnly)
         {
             args.SetFlags["HostPlatformDDCOnly"] = "true";
         }
         
-        if (settings.bHostPlatformOnly)
+        if (settings.HostPlatformOnly)
         {
             args.SetFlags["HostPlatformOnly"] = "true";
         }
@@ -40,36 +40,36 @@ public static class BuildArgumentBuilder
         {
             if (metadata?.SupportWin32 == true)
             {
-                args.SetFlags["WithWin32"] = GetBoolStr(settings.bWithWin32);
+                args.SetFlags["WithWin32"] = GetBoolStr(settings.WithWin32);
             }
             
-            args.SetFlags["WithWin64"] = GetBoolStr(settings.bWithWin64);
-            args.SetFlags["WithMac"] = GetBoolStr(settings.bWithMac);
-            args.SetFlags["WithAndroid"] = GetBoolStr(settings.bWithAndroid);
-            args.SetFlags["WithIOS"] = GetBoolStr(settings.bWithIOS);
-            args.SetFlags["WithTVOS"] = GetBoolStr(settings.bWithTVOS);
-            args.SetFlags["WithLinux"] = GetBoolStr(settings.bWithLinux);
-            args.SetFlags["WithLumin"] = GetBoolStr(settings.bWithLumin);
+            args.SetFlags["WithWin64"] = GetBoolStr(settings.WithWin64);
+            args.SetFlags["WithMac"] = GetBoolStr(settings.WithMac);
+            args.SetFlags["WithAndroid"] = GetBoolStr(settings.WithAndroid);
+            args.SetFlags["WithIOS"] = GetBoolStr(settings.WithIOS);
+            args.SetFlags["WithTVOS"] = GetBoolStr(settings.WithTVOS);
+            args.SetFlags["WithLinux"] = GetBoolStr(settings.WithLinux);
+            args.SetFlags["WithLumin"] = GetBoolStr(settings.WithLumin);
 
             if (metadata?.SupportHTML5 == true)
             {
-                args.SetFlags["WithHTML5"] = GetBoolStr(settings.bWithHTML5);
+                args.SetFlags["WithHTML5"] = GetBoolStr(settings.WithHTML5);
             }
 
             if (metadata?.SupportConsoles == true)
             {
-                args.SetFlags["WithSwitch"] = GetBoolStr(settings.bWithSwitch);
-                args.SetFlags["WithPS4"] = GetBoolStr(settings.bWithPS4);
-                args.SetFlags["WithXboxOne"] = GetBoolStr(settings.bWithXboxOne);
+                args.SetFlags["WithSwitch"] = GetBoolStr(settings.WithSwitch);
+                args.SetFlags["WithPS4"] = GetBoolStr(settings.WithPS4);
+                args.SetFlags["WithXboxOne"] = GetBoolStr(settings.WithXboxOne);
             }
 
             if (metadata?.SupportLinuxArm64 == true)
             {
-                args.SetFlags["WithLinuxArm64"] = GetBoolStr(settings.bWithLinuxAArch64);
+                args.SetFlags["WithLinuxArm64"] = GetBoolStr(settings.WithLinuxAArch64);
             }
             else if (metadata?.SupportLinuxAArch64 == true)
             {
-                args.SetFlags["WithLinuxAArch64"] = GetBoolStr(settings.bWithLinuxAArch64);
+                args.SetFlags["WithLinuxAArch64"] = GetBoolStr(settings.WithLinuxAArch64);
             }
         }
 
@@ -80,17 +80,17 @@ public static class BuildArgumentBuilder
         
         if (metadata?.SupportServerClientTargets == true)
         {
-            args.SetFlags["WithServer"] = GetBoolStr(settings.bWithServer);
-            args.SetFlags["WithClient"] = GetBoolStr(settings.bWithClient);
-            args.SetFlags["WithHoloLens"] = GetBoolStr(settings.bWithHoloLens);
+            args.SetFlags["WithServer"] = GetBoolStr(settings.WithServer);
+            args.SetFlags["WithClient"] = GetBoolStr(settings.WithClient);
+            args.SetFlags["WithHoloLens"] = GetBoolStr(settings.WithHoloLens);
         }
 
         if (metadata?.IsEngineSelection425OrAbove == true)
         {
-            args.SetFlags["CompileDatasmithPlugins"] = GetBoolStr(settings.bCompileDatasmithPlugins);
+            args.SetFlags["CompileDatasmithPlugins"] = GetBoolStr(settings.CompileDatasmithPlugins);
         }
         
-        if (settings.bWithWin64NoPCH)
+        if (settings.WithWin64NoPCH)
         {
             args.SetFlags["WithWin64"] = "true";
             args.SetFlags["BuildWithPrecompiledHeader"] = "false";

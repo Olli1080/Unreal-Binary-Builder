@@ -14,6 +14,7 @@ public class SetupServiceTests : IDisposable
     private readonly string _testPath;
     private readonly MockProcessExecutor _processExecutor;
     private readonly MockLogger _logger;
+    private readonly MockTelemetryService _telemetryService;
     private readonly SetupService _setupService;
 
     public SetupServiceTests()
@@ -22,7 +23,8 @@ public class SetupServiceTests : IDisposable
         Directory.CreateDirectory(_testPath);
         _processExecutor = new MockProcessExecutor();
         _logger = new MockLogger();
-        _setupService = new SetupService(_processExecutor, _logger);
+        _telemetryService = new MockTelemetryService();
+        _setupService = new SetupService(_processExecutor, _logger, _telemetryService);
     }
 
     public void Dispose()
@@ -129,9 +131,9 @@ public class SetupServiceTests : IDisposable
     {
         // Arrange
         var settings = SettingsService.GetDefaultSettings(_testPath);
-        settings.bBuildSetupBatFile = true;
-        settings.bGenerateProjectFiles = true;
-        settings.bBuildAutomationTool = true;
+        settings.BuildSetupBatFile = true;
+        settings.GenerateProjectFiles = true;
+        settings.BuildAutomationTool = true;
         
         var msBuild = CreateMsBuild("Mock", "path/x64", "path/x32");
         
@@ -152,8 +154,8 @@ public class SetupServiceTests : IDisposable
     {
         // Arrange
         var settings = SettingsService.GetDefaultSettings(_testPath);
-        settings.bBuildSetupBatFile = true;
-        settings.bGenerateProjectFiles = true;
+        settings.BuildSetupBatFile = true;
+        settings.GenerateProjectFiles = true;
         
         _processExecutor.ExitCode = 1; // Simulate failure
 
@@ -169,7 +171,7 @@ public class SetupServiceTests : IDisposable
     {
         // Arrange
         var settings = SettingsService.GetDefaultSettings(_testPath);
-        settings.bBuildAutomationTool = true;
+        settings.BuildAutomationTool = true;
         var msBuild = CreateMsBuild("Mock", "path/x64", "path/x32");
         
         // Don't create the .sln file

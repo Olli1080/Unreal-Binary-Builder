@@ -82,7 +82,7 @@ public class EngineBuildServiceTests : IDisposable
     public async Task BuildEngineAsync_WithZip_InvokesZipService()
     {
         // Arrange
-        var settings = new BuilderSettingsJson { bZipEngineBuild = true, ZipEnginePath = "C:/output.zip" };
+        var settings = new BuilderSettingsJson { ZipEngineBuild = true, ZipEnginePath = "C:/output.zip" };
         
         // We can't easily verify zipInvoked without a better mock or a way to track calls.
         // Let's assume the flow is correct if the test passes without exceptions.

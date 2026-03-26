@@ -65,7 +65,7 @@ public partial class MainWindow : Window
             {
                 Position = new global::Avalonia.PixelPoint((int)settings.WindowLeft.Value, (int)settings.WindowTop.Value);
             }
-            if (settings.bWindowMaximized) WindowState = WindowState.Maximized;
+            if (settings.WindowMaximized) WindowState = WindowState.Maximized;
         }
     }
 
@@ -107,11 +107,13 @@ public partial class MainWindow : Window
         vm.Settings.WindowHeight = Height;
         vm.Settings.WindowLeft = Position.X;
         vm.Settings.WindowTop = Position.Y;
-        vm.Settings.bWindowMaximized = WindowState == WindowState.Maximized;
+        vm.Settings.WindowMaximized = WindowState == WindowState.Maximized;
 
         var settingsService = App.Current?.Services?.GetService<ISettingsService>();
         settingsService?.SaveSettings(vm.Settings);
-        GameAnalyticsCSharp.EndSession();
+        
+        var telemetry = App.Current?.Services?.GetService<ITelemetryService>();
+        telemetry?.Shutdown();
 
         if (_uiService != null)
         {

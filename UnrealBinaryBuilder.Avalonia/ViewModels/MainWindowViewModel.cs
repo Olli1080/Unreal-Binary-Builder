@@ -128,7 +128,7 @@ public partial class MainWindowViewModel : ViewModelBase
         string[] p = { "Win64", "Win32", "Mac", "Linux", "LinuxAArch64", "Android", "IOS", "HTML5", "TVOS", "Switch", "PS4", "XboxOne", "Lumin", "HoleLens" };
         foreach (var name in p) PluginPlatforms.Add(new PluginPlatformWrapper(name, name == "Win64"));
 
-        if (Settings.bCheckForUpdatesAtStartup) _updater.CheckForUpdatesAsync(true);
+        if (Settings.CheckForUpdatesAtStartup) _updater.CheckForUpdatesAsync(true);
 
         _timerService.ElapsedChanged += (s, e) => ElapsedTime = e;
         uiLogSink.OnLog += OnLogReceived;
@@ -199,7 +199,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand] private void AddPlugin() {
         if (string.IsNullOrEmpty(PluginPath) || string.IsNullOrEmpty(PluginDestinationPath)) return;
         List<string>? platforms = PluginOverridePlatforms ? PluginPlatforms.Where(p => p.IsChecked).Select(p => p.Name).ToList() : null;
-        var vm = new PluginCardViewModel(PluginPath, PluginDestinationPath, EnginePath, "Current", _platformService) { TargetPlatforms = platforms, bCanZip = PluginZip, TargetZipPath = PluginZipPath, bZipForMarketplaceZip = PluginZipForMarketplace };
+        var vm = new PluginCardViewModel(PluginPath, PluginDestinationPath, EnginePath, "Current", _platformService) { TargetPlatforms = platforms, CanZip = PluginZip, TargetZipPath = PluginZipPath, ZipForMarketplaceZip = PluginZipForMarketplace };
         vm.RemoveRequested += (s, e) => PluginQueue.Remove(vm); PluginQueue.Add(vm); PluginPath = string.Empty; PluginDestinationPath = string.Empty;
     }
 
@@ -232,7 +232,7 @@ public partial class MainWindowViewModel : ViewModelBase
         bool success = await _setupService.RunSetupChainAsync(EnginePath, Settings, SelectedMsBuild, SelectedArchitecture);
         if (success) {
             _orchestrationService.MarkStageComplete(BuildStage.Setup, EnginePath, gitHash, Settings);
-            if (Settings.bContinueToEngineBuild) await Internal_BuildEngine();
+            if (Settings.ContinueToEngineBuild) await Internal_BuildEngine();
             else { 
                 IsBuilding = false; CurrentStage = BuildStage.Finished; _timerService.Stop(); StatusText = "Setup Chain Finished."; _uiService.ShowToast("Setup Process Finished.", UBBNotificationType.Success); 
                 await RecordHistoryAsync(true, "Setup Finished", "Setup");
@@ -259,10 +259,10 @@ public partial class MainWindowViewModel : ViewModelBase
             }
         }
 
-        if (Settings.bWithHTML5 && Settings.bShowHTML5DeprecatedMessage && !SupportHTML5) { await _uiService.ShowMessageDialog("Deprecated", "HTML5 support was removed."); Settings.bWithHTML5 = false; }
-        if (Settings.bWithSwitch && Settings.bShowConsoleDeprecatedMessage && !SupportConsoles) { await _uiService.ShowMessageDialog("Deprecated", "Console support was removed."); Settings.bWithSwitch = false; }
-        if (Settings.bWithWin64NoPCH && await _uiService.ShowMessageDialog("Warning", "Building without PCH will take a long time. Continue?", "Yes", null, "No") != UBBDialogResult.Primary) return;
-        if (Settings.bEnableEngineBuildConfirmationMessage && await _uiService.ShowMessageDialog("Build Binary Version", "This is a long process. Continue?", "Yes", null, "No") != UBBDialogResult.Primary) return;
+        if (Settings.WithHTML5 && Settings.ShowHTML5DeprecatedMessage && !SupportHTML5) { await _uiService.ShowMessageDialog("Deprecated", "HTML5 support was removed."); Settings.WithHTML5 = false; }
+        if (Settings.WithSwitch && Settings.ShowConsoleDeprecatedMessage && !SupportConsoles) { await _uiService.ShowMessageDialog("Deprecated", "Console support was removed."); Settings.WithSwitch = false; }
+        if (Settings.WithWin64NoPCH && await _uiService.ShowMessageDialog("Warning", "Building without PCH will take a long time. Continue?", "Yes", null, "No") != UBBDialogResult.Primary) return;
+        if (Settings.EnableEngineBuildConfirmationMessage && await _uiService.ShowMessageDialog("Build Binary Version", "This is a long process. Continue?", "Yes", null, "No") != UBBDialogResult.Primary) return;
         IsBuilding = true; _timerService.Restart(); LogText = string.Empty; _logFormatter.Reset(); 
         
         _orchestrationService.ClearState(); // Starting fresh build
@@ -283,7 +283,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task FinalizeEngineBuildAsync(bool compileSuccess, string? gitHash) {
         bool success = compileSuccess;
-        if (success && Settings.bZipEngineBuild && !string.IsNullOrEmpty(Settings.ZipEnginePath)) {
+        if (success && Settings.ZipEngineBuild && !string.IsNullOrEmpty(Settings.ZipEnginePath)) {
             CurrentStage = BuildStage.Zip;
             StatusText = "Zipping Engine Build...";
             // Note: IZipService implementation would be called here. 

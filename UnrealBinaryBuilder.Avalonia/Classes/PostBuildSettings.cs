@@ -49,9 +49,9 @@ public class PostBuildSettings
         _zipCancelToken = _zipCancelTokenSource.Token;
     }
 
-    public async Task SavePluginToZip(string sourcePath, string zipLocationToSave, bool bZipForMarketplace, bool bFastCompression, IProgress<ZipProgress>? progress = null)
+    public async Task SavePluginToZip(string sourcePath, string zipLocationToSave, bool zipForMarketplace, bool fastCompression, IProgress<ZipProgress>? progress = null)
     {
-        CompressionLevel cl = bFastCompression ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
+        CompressionLevel cl = fastCompression ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
         sourcePath = PathHelpers.NormalizePath(sourcePath);
         
         await Task.Run(() =>
@@ -65,7 +65,7 @@ public class PostBuildSettings
                 foreach (string file in files)
                 {
                     string currentFilePath = PathHelpers.ToUnixPath(Path.GetFullPath(file)).ToLower();
-                    if (bZipForMarketplace && (currentFilePath.Contains("/binaries/") || currentFilePath.Contains("/intermediate/")))
+                    if (zipForMarketplace && (currentFilePath.Contains("/binaries/") || currentFilePath.Contains("/intermediate/")))
                     {
                         continue;
                     }
@@ -98,7 +98,7 @@ public class PostBuildSettings
 
     public async Task SaveToZip(string inBuildDirectory, string zipLocationToSave, BuilderSettingsJson settings, IProgress<ZipProgress>? progress = null)
     {
-        CompressionLevel cl = settings.bZipEngineFastCompression ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
+        CompressionLevel cl = settings.ZipEngineFastCompression ? CompressionLevel.Fastest : CompressionLevel.SmallestSize;
 
         await Task.Run(() =>
         {
@@ -129,12 +129,12 @@ public class PostBuildSettings
                 string currentFilePath = PathHelpers.ToUnixPath(Path.GetFullPath(file)).ToLower();
                 string extension = Path.GetExtension(file).ToLower();
 
-                if (!settings.bZipEnginePDB && extension == ".pdb") bSkipFile = true;
-                if (!settings.bZipEngineDebug && extension == ".debug") bSkipFile = true;
-                if (!settings.bZipEngineDocumentation && !currentFilePath.Contains("/source/") && currentFilePath.Contains("/documentation/")) bSkipFile = true;
-                if (!settings.bZipEngineExtras && !currentFilePath.Contains("/extras/redist/") && currentFilePath.Contains("/extras/")) bSkipFile = true;
+                if (!settings.ZipEnginePDB && extension == ".pdb") bSkipFile = true;
+                if (!settings.ZipEngineDebug && extension == ".debug") bSkipFile = true;
+                if (!settings.ZipEngineDocumentation && !currentFilePath.Contains("/source/") && currentFilePath.Contains("/documentation/")) bSkipFile = true;
+                if (!settings.ZipEngineExtras && !currentFilePath.Contains("/extras/redist/") && currentFilePath.Contains("/extras/")) bSkipFile = true;
                 
-                if (!settings.bZipEngineSource)
+                if (!settings.ZipEngineSource)
                 {
                     if (currentFilePath.Contains("/source/developer/")) bSkipFile = true;
                     else if (currentFilePath.Contains("/source/editor/")) bSkipFile = true;
@@ -143,9 +143,9 @@ public class PostBuildSettings
                     else if (currentFilePath.Contains("/source/thirdparty/")) bSkipFile = true;
                 }
 
-                if (!settings.bZipEngineFeaturePacks && currentFilePath.Contains("/featurepacks/")) bSkipFile = true;
-                if (!settings.bZipEngineSamples && currentFilePath.Contains("/samples/")) bSkipFile = true;
-                if (!settings.bZipEngineTemplates && !currentFilePath.Contains("/source/") && !currentFilePath.Contains("/content/editor") && currentFilePath.Contains("/templates/")) bSkipFile = true;
+                if (!settings.ZipEngineFeaturePacks && currentFilePath.Contains("/featurepacks/")) bSkipFile = true;
+                if (!settings.ZipEngineSamples && currentFilePath.Contains("/samples/")) bSkipFile = true;
+                if (!settings.ZipEngineTemplates && !currentFilePath.Contains("/source/") && !currentFilePath.Contains("/content/editor") && currentFilePath.Contains("/templates/")) bSkipFile = true;
 
                 long fileSize = new FileInfo(file).Length;
                 totalSize += fileSize;

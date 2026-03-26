@@ -16,7 +16,7 @@ public class MockZipService : IZipService
 
     public void CancelTask() { }
 
-    public Task SavePluginToZip(string sourcePath, string zipLocationToSave, bool bZipForMarketplace, bool bFastCompression, IProgress<ZipProgress>? progress = null)
+    public Task SavePluginToZip(string sourcePath, string zipLocationToSave, bool zipForMarketplace, bool fastCompression, IProgress<ZipProgress>? progress = null)
     {
         return Task.CompletedTask;
     }
