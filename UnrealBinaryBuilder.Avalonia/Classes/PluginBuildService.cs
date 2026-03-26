@@ -9,6 +9,9 @@ using UnrealBinaryBuilder.Avalonia.ViewModels;
 
 namespace UnrealBinaryBuilder.Avalonia.Classes;
 
+/// <summary>
+/// Provides services for building Unreal Engine plugins.
+/// </summary>
 public class PluginBuildService : IPluginBuildService
 {
     private readonly IProcessExecutor _processExecutor;
@@ -16,6 +19,13 @@ public class PluginBuildService : IPluginBuildService
     private readonly IZipService _zipService;
     private readonly ITelemetryService _telemetry;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PluginBuildService"/> class.
+    /// </summary>
+    /// <param name="processExecutor">The process executor.</param>
+    /// <param name="logger">The logger instance.</param>
+    /// <param name="zipService">The zip service.</param>
+    /// <param name="telemetry">The telemetry service.</param>
     public PluginBuildService(IProcessExecutor processExecutor, IUBBLogger logger, IZipService zipService, ITelemetryService telemetry)
     {
         _processExecutor = processExecutor;
@@ -24,6 +34,11 @@ public class PluginBuildService : IPluginBuildService
         _telemetry = telemetry;
     }
 
+    /// <summary>
+    /// Asynchronously builds a queue of plugins.
+    /// </summary>
+    /// <param name="pluginQueue">A collection of view models representing the plugins to build.</param>
+    /// <returns>A task that represents the asynchronous build operation. The task result contains a boolean indicating whether all plugins were built successfully.</returns>
     public async Task<bool> BuildPluginsAsync(IEnumerable<PluginCardViewModel> pluginQueue)
     {
         var plugins = pluginQueue.ToList();
