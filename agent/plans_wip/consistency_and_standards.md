@@ -15,6 +15,6 @@ This plan focuses on aligning the codebase with modern C# standards and improvin
 - [x] **XML Documentation**:
     - Add `///` comments to all public interfaces in `Classes/Interfaces/`.
     - Document core methods in `EngineBuildService`, `PluginBuildService`, and `GitService`.
-- [ ] **Code Cleanup**:
+- [x] **Code Cleanup**:
     - Remove any remaining unused using statements or dead code.
     - Ensure consistent use of file-scoped namespaces.

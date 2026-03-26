@@ -1,7 +1,6 @@
 using System.IO;
 using System.Reflection;
 using System;
-using System.Text.RegularExpressions;
 
 namespace UnrealBinaryBuilder.Avalonia.Classes;
 

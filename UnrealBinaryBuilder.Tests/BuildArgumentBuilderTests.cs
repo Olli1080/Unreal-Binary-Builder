@@ -1,10 +1,6 @@
 using UnrealBinaryBuilder.Avalonia.Classes;
 using UnrealBinaryBuilder.Avalonia.Models;
 using UnrealBinaryBuilder.Avalonia.ViewModels;
-using Xunit;
-using System.Collections.Generic;
-using System.IO;
-using System;
 
 namespace UnrealBinaryBuilder.Tests;
 

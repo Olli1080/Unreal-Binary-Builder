@@ -6,7 +6,6 @@ using System;
 using global::Avalonia.Controls.Notifications;
 using UnrealBinaryBuilder.Avalonia.Classes;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
-using UnrealBinaryBuilder.Avalonia.Models;
 using AvaloniaEdit.Highlighting;
 using AvaloniaEdit.Highlighting.Xshd;
 using System.Xml;

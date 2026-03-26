@@ -1,4 +1,3 @@
-using System;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 
 namespace UnrealBinaryBuilder.Tests;

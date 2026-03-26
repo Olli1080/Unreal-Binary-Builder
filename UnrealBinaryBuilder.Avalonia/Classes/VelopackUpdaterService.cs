@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using Velopack;
 using Velopack.Sources;
-using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 using UnrealBinaryBuilder.Avalonia.Classes.Logging;
 
 namespace UnrealBinaryBuilder.Avalonia.Classes;

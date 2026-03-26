@@ -1,5 +1,4 @@
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
-using System.Collections.Generic;
 
 namespace UnrealBinaryBuilder.Tests;
 

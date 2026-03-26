@@ -4,7 +4,6 @@ using Sentry;
 using System.Threading.Tasks;
 using UnrealBinaryBuilder.Avalonia.Views.UserControls;
 using Avalonia.Controls.ApplicationLifetimes;
-using UnrealBinaryBuilder.Avalonia.Classes;
 using Velopack;
 
 namespace UnrealBinaryBuilder.Avalonia;

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 using UnrealBinaryBuilder.Avalonia.Models;
 

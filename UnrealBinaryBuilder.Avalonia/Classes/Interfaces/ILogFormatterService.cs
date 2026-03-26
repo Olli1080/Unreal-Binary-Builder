@@ -1,5 +1,3 @@
-using System;
-
 namespace UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 
 /// <summary>

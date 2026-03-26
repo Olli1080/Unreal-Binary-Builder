@@ -1,5 +1,4 @@
 using UnrealBinaryBuilder.Avalonia.Classes;
-using Xunit;
 
 namespace UnrealBinaryBuilder.Tests;
 

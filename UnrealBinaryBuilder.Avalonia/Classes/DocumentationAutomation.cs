@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
-using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using UnrealBinaryBuilder.Avalonia.Views;
 
