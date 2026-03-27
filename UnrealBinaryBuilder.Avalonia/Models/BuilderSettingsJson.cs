@@ -214,4 +214,6 @@ public class BuilderSettingsJson
     public string ZipEnginePath { get; set; } = "";
 
     public VisualStudio? VisualStudio { get; set; }
+
+    public List<BuildPreset> Presets { get; set; } = new();
 }

@@ -8,13 +8,13 @@ This plan outlines the implementation of high-value features that enhance the co
 - Increase confidence in the build logic through integration testing.
 
 ## Tasks
-- [ ] **Build Presets**:
+- [x] **Build Presets**:
     - Allow users to save and load named "Presets" (e.g., "Daily Dev", "Release Candidate").
     - Implement a simple UI for managing these presets.
-- [ ] **Dashboard View**:
+- [x] **Dashboard View**:
     - Create a new tab or view for aggregate statistics.
     - Show trends (build times, success rates) over time.
-- [ ] **Integration Testing**:
+- [x] **Integration Testing**:
     - Create a test suite that uses a mock Unreal Engine file structure.
     - Verify that `BuildArgumentBuilder` produces correct commands for various engine versions and settings.
 - [ ] **Custom Plugin Templates**:

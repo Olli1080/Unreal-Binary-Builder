@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:UnrealBinaryBuilder.Avalonia.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="UnrealBinaryBuilder.Avalonia.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Build Dashboard" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
+
+        <ScrollViewer Grid.Row="1">
+            <WrapPanel>
+                <!-- Total Builds Card -->
+                <Border Width="200" Height="120" Margin="10" CornerRadius="8" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="Total Builds" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding TotalBuilds}" FontSize="36" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Success Rate Card -->
+                <Border Width="200" Height="120" Margin="10" CornerRadius="8" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="Success Rate" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding SuccessRate}" FontSize="36" FontWeight="SemiBold" Foreground="Green" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Average Duration Card -->
+                <Border Width="200" Height="120" Margin="10" CornerRadius="8" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="Avg. Success Time" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding AverageDuration}" FontSize="32" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Estimated Time Saved Card -->
+                <Border Width="200" Height="120" Margin="10" CornerRadius="8" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="Est. Time Saved" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding TotalTimeSaved}" FontSize="36" FontWeight="SemiBold" Foreground="{DynamicResource SystemAccentColor}" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

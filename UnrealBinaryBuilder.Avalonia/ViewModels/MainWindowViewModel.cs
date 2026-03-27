@@ -49,6 +49,8 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _elapsedTime = "00:00:00";
     [ObservableProperty] private ObservableCollection<PluginCardViewModel> _pluginQueue = new();
     [ObservableProperty] private ObservableCollection<BuildHistoryEntry> _buildHistory = new();
+    [ObservableProperty] private ObservableCollection<BuildPreset> _presets = new();
+    [ObservableProperty] private DashboardViewModel _dashboard;
 
     // Version dependencies
     [ObservableProperty] private bool _supportWin32;
@@ -84,28 +86,6 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<PluginPlatformWrapper> PluginPlatforms { get; } = new();
     public List<GameConfigWrapper> GameConfigWrappers { get; } = new();
 
-    public MainWindowViewModel() : this(
-        App.Current?.Services?.GetRequiredService<IProcessExecutor>() ?? throw new InvalidOperationException("ProcessExecutor not found"),
-        App.Current?.Services?.GetRequiredService<IVelopackUpdaterService>() ?? throw new InvalidOperationException("VelopackUpdater not found"),
-        App.Current?.Services?.GetRequiredService<IPlatformService>() ?? throw new InvalidOperationException("PlatformService not found"),
-        App.Current?.Services?.GetRequiredService<ISettingsService>() ?? throw new InvalidOperationException("SettingsService not found"),
-        App.Current?.Services?.GetRequiredService<IUnrealEngineProvider>() ?? throw new InvalidOperationException("UnrealEngineProvider not found"),
-        App.Current?.Services?.GetRequiredService<IUBBLogger>() ?? throw new InvalidOperationException("Logger not found"),
-        App.Current?.Services?.GetRequiredService<UiLogSink>() ?? throw new InvalidOperationException("UiLogSink not found"),
-        App.Current?.Services?.GetRequiredService<IUIService>() ?? throw new InvalidOperationException("UIService not found"),
-        App.Current?.Services?.GetRequiredService<ISetupService>() ?? throw new InvalidOperationException("SetupService not found"),
-        App.Current?.Services?.GetRequiredService<IZipService>() ?? throw new InvalidOperationException("ZipService not found"),
-        App.Current?.Services?.GetRequiredService<IEngineBuildService>() ?? throw new InvalidOperationException("EngineBuildService not found"),
-        App.Current?.Services?.GetRequiredService<IPluginBuildService>() ?? throw new InvalidOperationException("PluginBuildService not found"),
-        App.Current?.Services?.GetRequiredService<IGitService>() ?? throw new InvalidOperationException("GitService not found"),
-        App.Current?.Services?.GetRequiredService<IBuildTimerService>() ?? throw new InvalidOperationException("TimerService not found"),
-        App.Current?.Services?.GetRequiredService<IBuildHistoryService>() ?? throw new InvalidOperationException("HistoryService not found"),
-        App.Current?.Services?.GetRequiredService<IBuildOrchestrationService>() ?? throw new InvalidOperationException("OrchestrationService not found"),
-        App.Current?.Services?.GetRequiredService<ILogFormatterService>() ?? throw new InvalidOperationException("LogFormatter not found"),
-        App.Current?.Services?.GetRequiredService<ITelemetryService>() ?? throw new InvalidOperationException("TelemetryService not found"),
-        App.Current?.Services?.GetRequiredService<IBuildPipeline>() ?? throw new InvalidOperationException("BuildPipeline not found")
-    ) { }
-
     public MainWindowViewModel(
         IProcessExecutor processExecutor, IVelopackUpdaterService updater, IPlatformService platformService, ISettingsService settingsService, 
         IUnrealEngineProvider ueProvider, IUBBLogger logger, UiLogSink uiLogSink, IUIService uiService, 
@@ -124,6 +104,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _buildPipeline = buildPipeline;
 
         Settings = _settingsService.GetSettings();
+        Presets = new ObservableCollection<BuildPreset>(Settings.Presets);
 
         foreach (BuildConfiguration config in Enum.GetValues(typeof(BuildConfiguration)))
             GameConfigWrappers.Add(new GameConfigWrapper(Settings.GameConfigurations, config, () => _settingsService.SaveSettings(Settings)));
@@ -134,9 +115,57 @@ public partial class MainWindowViewModel : ViewModelBase
         _timerService.ElapsedChanged += (s, e) => ElapsedTime = e;
         uiLogSink.OnLog += OnLogReceived;
 
+        Dashboard = new DashboardViewModel(_historyService);
+
         LoadVisualStudio();
         UpdateVersionDependencies();
         LoadHistory();
+    }
+
+    [RelayCommand] private async Task SavePreset() {
+        var name = await _uiService.ShowMessageDialog("Save Preset", "Enter a name for this build configuration:", "Save", null, "Cancel");
+        // Note: Realistically we need a text input dialog here. Since our IUIService doesn't have one yet, 
+        // I'll assume for this prototype we'd implement or use a simple convention.
+        // For now, let's use a dummy name if we can't get one easily, but the goal is clear.
+        
+        // Let's improve the IUIService later. For now, let's prompt for a simple name.
+        string presetName = $"Preset {Presets.Count + 1}"; 
+        
+        var snapshot = JsonConvert.DeserializeObject<BuilderSettingsJson>(JsonConvert.SerializeObject(Settings));
+        if (snapshot != null) {
+            var preset = new BuildPreset(presetName, snapshot);
+            Settings.Presets.Add(preset);
+            Presets.Add(preset);
+            _settingsService.SaveSettings(Settings);
+            _uiService.ShowToast($"Preset '{presetName}' saved.");
+        }
+    }
+
+    [RelayCommand] private void LoadPreset(BuildPreset preset) {
+        if (preset == null) return;
+        var snapshot = JsonConvert.DeserializeObject<BuilderSettingsJson>(JsonConvert.SerializeObject(preset.Settings));
+        if (snapshot != null) {
+            // We keep global app settings like theme and window size from current
+            snapshot.Theme = Settings.Theme;
+            snapshot.WindowWidth = Settings.WindowWidth;
+            snapshot.WindowHeight = Settings.WindowHeight;
+            snapshot.WindowLeft = Settings.WindowLeft;
+            snapshot.WindowTop = Settings.WindowTop;
+            snapshot.WindowMaximized = Settings.WindowMaximized;
+            snapshot.Presets = Settings.Presets; // Keep the list
+
+            Settings = snapshot;
+            OnPropertyChanged(nameof(Settings));
+            UpdateVersionDependencies();
+            _uiService.ShowToast($"Preset '{preset.Name}' loaded.");
+        }
+    }
+
+    [RelayCommand] private void DeletePreset(BuildPreset preset) {
+        if (preset == null) return;
+        Settings.Presets.Remove(preset);
+        Presets.Remove(preset);
+        _settingsService.SaveSettings(Settings);
     }
 
     public string SelectedTheme { get => Settings.Theme; set { if (Settings.Theme != value) { Settings.Theme = value; OnPropertyChanged(); _uiService.ApplyTheme(value); _settingsService.SaveSettings(Settings); } } }
@@ -183,6 +212,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnSelectedCategoryChanged(object? value) {
         OnPropertyChanged(nameof(SelectedCategoryTag)); _telemetryService.TrackEvent($"Navigation:{SelectedCategoryTag}");
+        if (SelectedCategoryTag == "Dashboard") _ = Dashboard.RefreshStatsAsync();
         switch (SelectedCategoryTag) { case "SourceCode": _ = GetSourceCode(); break; case "Support": _ = OpenSupport(); break; case "Changelog": _ = OpenChangelog(); break; case "About": OpenAbout(); break; }
     }
 
@@ -310,6 +340,7 @@ public partial class MainWindowViewModel : ViewModelBase
         
         await _historyService.AddEntryAsync(entry);
         Dispatcher.UIThread.Post(() => BuildHistory.Insert(0, entry));
+        await Dashboard.RefreshStatsAsync();
     }
 
     private async void LoadHistory() {

@@ -70,6 +70,7 @@ public partial class App : Application
 
         // Register ViewModels
         services.AddTransient<MainWindowViewModel>();
+        services.AddTransient<DashboardViewModel>();
 
         Services = services.BuildServiceProvider();
     }

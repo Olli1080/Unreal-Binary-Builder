@@ -6,6 +6,7 @@
         xmlns:ui="using:FluentAvalonia.UI.Controls"
         xmlns:ae="using:AvaloniaEdit"
         xmlns:uc="using:UnrealBinaryBuilder.Avalonia.Views.UserControls"
+        xmlns:v="using:UnrealBinaryBuilder.Avalonia.Views"
         xmlns:cls="using:UnrealBinaryBuilder.Avalonia.Classes"
         mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="800"
         x:Class="UnrealBinaryBuilder.Avalonia.Views.MainWindow"
@@ -22,6 +23,7 @@
                        IsSettingsVisible="True"
                        SelectedItem="{Binding SelectedCategory}">
         <ui:NavigationView.MenuItems>
+            <ui:NavigationViewItem Content="Dashboard" Tag="Dashboard" IconSource="Home" />
             <ui:NavigationViewItem Content="Engine Builder" Tag="Engine" IconSource="Build" IsSelected="True" />
             <ui:NavigationViewItem Content="Plugin Builder" Tag="Plugins" IconSource="Library" />
             <ui:NavigationViewItem Content="History" Tag="History" IconSource="History" />
@@ -37,6 +39,10 @@
 
         <ui:NavigationView.Content>
             <Grid Margin="12">
+                <!-- Dashboard View -->
+                <v:DashboardView IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectedCategoryTag, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Dashboard}" 
+                                 DataContext="{Binding Dashboard}" />
+
                 <!-- Engine Builder View -->
                 <Grid IsVisible="{Binding SelectedCategoryTag, Converter={StaticResource StringEqualsConverter}, ConverterParameter=Engine}" 
                       RowDefinitions="Auto, *">
