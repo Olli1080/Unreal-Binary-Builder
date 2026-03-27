@@ -15,5 +15,5 @@ This plan aims to further thin out the `MainWindowViewModel` and clarify the rol
     - Refactor `EngineBuildService` to focus strictly on the build.
     - Create `IBuildPipeline` to coordinate Setup -> Build -> Zip -> Post-Build actions.
     - Implement progress reporting that spans the entire pipeline.
-- [ ] **Settings Management**:
-    - Ensure `ISettingsService` is the single source of truth for all persistence.
+- [x] **Settings Management**:
+    - Ensure `ISettingsService` is the single source of truth for all persistence. (Note: Standard singleton pattern maintained; further MVVM decoupling deferred).

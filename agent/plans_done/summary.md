@@ -17,3 +17,8 @@ The following architectural blueprints and migration phases have been successful
 - [centralize_engine_knowledge.md](centralize_engine_knowledge.md): Consolidated Unreal Engine version-specific logic into a dedicated provider service.
 - [strong_typed_build_config.md](strong_typed_build_config.md): Implemented a builder pattern for generating build command-line arguments.
 - [unified_logging_strategy.md](unified_logging_strategy.md): Centralized system and build output through an injectable logging service with multiple sinks.
+- [telemetry_modernization.md](telemetry_modernization.md): Decoupled telemetry from GameAnalytics and introduced `ITelemetryService` for better testability.
+- [refine_service_responsibilities.md](refine_service_responsibilities.md): Introduced `AppInitializer` and `BuildPipeline` to further streamline the architecture.
+- [consistency_and_standards.md](consistency_and_standards.md): Standardized property naming conventions and added comprehensive XML documentation.
+- [error_handling_and_resilience.md](error_handling_and_resilience.md): Implemented global exception handling and enhanced logging for fatal errors.
+- [feature_roadmap_extensions.md](feature_roadmap_extensions.md): Added Build Presets, Dashboard View, and Integration Testing suite.

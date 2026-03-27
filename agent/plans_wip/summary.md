@@ -1,18 +1,18 @@
 # Plans WIP
 
-We are currently working on a series of modernization and refinement tasks to further improve the UBB codebase.
-
-## Current Plans
-
-- [x] [Telemetry & Analytics Modernization](telemetry_modernization.md)
-- [x] [Refine Service Responsibilities](refine_service_responsibilities.md)
-- [x] [Consistency & Standards](consistency_and_standards.md)
-- [x] [Error Handling & Resilience](error_handling_and_resilience.md)
-- [x] [Feature Roadmap Extensions](feature_roadmap_extensions.md)
+All currently planned modernization and refinement phases have been successfully completed.
 
 ## Recently Completed
-- [x] **Step 6: Velopack Migration**:
-  - Replaced NetSparkle with Velopack.
-  - Native GitHub update integration.
-  - Automated installer generation in CI/CD.
-  - **100% warning-free build**.
+- [x] **Step 10: Feature Extensions**: Added Build Presets, Dashboard, and Integration Tests.
+- [x] **Step 9: Error Handling**: Implemented global exception handling.
+- [x] **Step 8: Consistency**: Standardized naming and added XML docs.
+- [x] **Step 7: Service Refinement**: Introduced `BuildPipeline` and `AppInitializer`.
+
+## Future Roadmap (Uncharted)
+
+- **UI/UX Improvements**:
+  - Resizable "Terminal" view in the main window.
+  - Interactive "Graph" for build statistics on the Dashboard.
+- **Advanced Features**:
+  - Support for multiple concurrent build queues.
+  - Remote build triggering via Webhook.
