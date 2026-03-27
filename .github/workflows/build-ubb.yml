@@ -70,7 +70,10 @@ jobs:
       
     - name: Install Cairo (macOS)
       if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
-      run: brew install cairo pango gdk-pixbuf libffi
+      run: |
+        brew install cairo pango gdk-pixbuf libffi
+        echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/usr/local/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig" >> $GITHUB_ENV
         
     - name: Restore Dependencies
       run: dotnet restore ${{ env.PROJECT_PATH }}
