@@ -29,10 +29,6 @@ jobs:
             rid: linux-x64
             name: Linux-x64
             suffix: ""
-          - os: macos-13
-            rid: osx-x64
-            name: macOS-x64
-            suffix: ""
           - os: macos-latest
             rid: osx-arm64
             name: macOS-arm64
@@ -77,8 +73,11 @@ jobs:
       run: sudo apt-get update && sudo apt-get install -y libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
       
     - name: Install Cairo (macOS)
-      if: matrix.os == 'macos-latest' || matrix.os == 'macos-13'
-      run: brew install cairo pango gdk-pixbuf libffi
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install cairo pango gdk-pixbuf libffi
+        echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/usr/local/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig" >> $GITHUB_ENV
         
     - name: Restore Dependencies
       run: dotnet restore ${{ env.PROJECT_PATH }}
