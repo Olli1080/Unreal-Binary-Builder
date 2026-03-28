@@ -23,3 +23,4 @@ The following architectural blueprints and migration phases have been successful
 - [error_handling_and_resilience.md](error_handling_and_resilience.md): Implemented global exception handling and enhanced logging for fatal errors.
 - [feature_roadmap_extensions.md](feature_roadmap_extensions.md): Added Build Presets, Dashboard View, and Integration Testing suite.
 - [build_options_modernization.md](build_options_modernization.md): Expanded build configurations with new platforms, performance flags, and granular compiler arguments.
+- [i18n_implementation.md](i18n_implementation.md): Implemented multi-language support with runtime switching for English and German.
