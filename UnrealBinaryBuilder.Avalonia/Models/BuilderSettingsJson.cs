@@ -44,6 +44,7 @@ public class BuilderSettingsJson
 {
     // Application settings
     public string Theme { get; set; } = "Dark";
+    public string Language { get; set; } = "en-US";
 
     [JsonProperty("bCheckForUpdatesAtStartup")]
     public bool CheckForUpdatesAtStartup { get; set; } = true;

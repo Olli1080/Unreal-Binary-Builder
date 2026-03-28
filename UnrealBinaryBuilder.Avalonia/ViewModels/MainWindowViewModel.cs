@@ -36,6 +36,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IBuildOrchestrationService _orchestrationService;
     private readonly ITelemetryService _telemetryService;
     private readonly IBuildPipeline _buildPipeline;
+    private readonly ILocalizationService _localizationService;
     
     private UnrealEngineMetadata? _engineMetadata;
 
@@ -51,6 +52,17 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private ObservableCollection<BuildHistoryEntry> _buildHistory = new();
     [ObservableProperty] private ObservableCollection<BuildPreset> _presets = new();
     [ObservableProperty] private DashboardViewModel _dashboard;
+
+    [ObservableProperty] private ObservableCollection<LanguageInfo> _availableLanguages = new();
+    [ObservableProperty] private LanguageInfo? _selectedLanguage;
+
+    partial void OnSelectedLanguageChanged(LanguageInfo? value) {
+        if (value != null && !string.IsNullOrEmpty(value.Code) && (Settings == null || value.Code != Settings.Language)) {
+            if (Settings != null) Settings.Language = value.Code;
+            _localizationService.SetLanguage(value.Code);
+            if (Settings != null) _settingsService.SaveSettings(Settings);
+        }
+    }
 
     // Version dependencies
     [ObservableProperty] private bool _supportWin32;
@@ -88,13 +100,36 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<PluginPlatformWrapper> PluginPlatforms { get; } = new();
     public List<GameConfigWrapper> GameConfigWrappers { get; } = new();
 
+    public MainWindowViewModel() : this(
+        App.Current?.Services?.GetRequiredService<IProcessExecutor>() ?? throw new InvalidOperationException("ProcessExecutor not found"),
+        App.Current?.Services?.GetRequiredService<IVelopackUpdaterService>() ?? throw new InvalidOperationException("VelopackUpdater not found"),
+        App.Current?.Services?.GetRequiredService<IPlatformService>() ?? throw new InvalidOperationException("PlatformService not found"),
+        App.Current?.Services?.GetRequiredService<ISettingsService>() ?? throw new InvalidOperationException("SettingsService not found"),
+        App.Current?.Services?.GetRequiredService<IUnrealEngineProvider>() ?? throw new InvalidOperationException("UnrealEngineProvider not found"),
+        App.Current?.Services?.GetRequiredService<IUBBLogger>() ?? throw new InvalidOperationException("Logger not found"),
+        App.Current?.Services?.GetRequiredService<UiLogSink>() ?? throw new InvalidOperationException("UiLogSink not found"),
+        App.Current?.Services?.GetRequiredService<IUIService>() ?? throw new InvalidOperationException("UIService not found"),
+        App.Current?.Services?.GetRequiredService<ISetupService>() ?? throw new InvalidOperationException("SetupService not found"),
+        App.Current?.Services?.GetRequiredService<IZipService>() ?? throw new InvalidOperationException("ZipService not found"),
+        App.Current?.Services?.GetRequiredService<IEngineBuildService>() ?? throw new InvalidOperationException("EngineBuildService not found"),
+        App.Current?.Services?.GetRequiredService<IPluginBuildService>() ?? throw new InvalidOperationException("PluginBuildService not found"),
+        App.Current?.Services?.GetRequiredService<IGitService>() ?? throw new InvalidOperationException("GitService not found"),
+        App.Current?.Services?.GetRequiredService<IBuildTimerService>() ?? throw new InvalidOperationException("TimerService not found"),
+        App.Current?.Services?.GetRequiredService<IBuildHistoryService>() ?? throw new InvalidOperationException("HistoryService not found"),
+        App.Current?.Services?.GetRequiredService<IBuildOrchestrationService>() ?? throw new InvalidOperationException("OrchestrationService not found"),
+        App.Current?.Services?.GetRequiredService<ILogFormatterService>() ?? throw new InvalidOperationException("LogFormatter not found"),
+        App.Current?.Services?.GetRequiredService<ITelemetryService>() ?? throw new InvalidOperationException("TelemetryService not found"),
+        App.Current?.Services?.GetRequiredService<IBuildPipeline>() ?? throw new InvalidOperationException("BuildPipeline not found"),
+        App.Current?.Services?.GetRequiredService<ILocalizationService>() ?? throw new InvalidOperationException("LocalizationService not found")
+    ) { }
+
     public MainWindowViewModel(
         IProcessExecutor processExecutor, IVelopackUpdaterService updater, IPlatformService platformService, ISettingsService settingsService, 
         IUnrealEngineProvider ueProvider, IUBBLogger logger, UiLogSink uiLogSink, IUIService uiService, 
         ISetupService setupService, IZipService zipService, IEngineBuildService engineBuildService, 
         IPluginBuildService pluginBuildService, IGitService gitService, IBuildTimerService timerService, 
         IBuildHistoryService historyService, IBuildOrchestrationService orchestrationService, ILogFormatterService logFormatter,
-        ITelemetryService telemetryService, IBuildPipeline buildPipeline)
+        ITelemetryService telemetryService, IBuildPipeline buildPipeline, ILocalizationService localizationService)
     {
         _processExecutor = processExecutor; _updater = updater; _platformService = platformService;
         _settingsService = settingsService; _ueProvider = ueProvider; _logger = logger;
@@ -104,9 +139,15 @@ public partial class MainWindowViewModel : ViewModelBase
         _orchestrationService = orchestrationService; _logFormatter = logFormatter;
         _telemetryService = telemetryService;
         _buildPipeline = buildPipeline;
+        _localizationService = localizationService;
 
         Settings = _settingsService.GetSettings();
         Presets = new ObservableCollection<BuildPreset>(Settings.Presets);
+
+        foreach (var lang in _localizationService.GetAvailableLanguages()) {
+            AvailableLanguages.Add(lang);
+        }
+        SelectedLanguage = AvailableLanguages.FirstOrDefault(l => l.Code == Settings.Language);
 
         foreach (BuildConfiguration config in Enum.GetValues(typeof(BuildConfiguration)))
             GameConfigWrappers.Add(new GameConfigWrapper(Settings.GameConfigurations, config, () => _settingsService.SaveSettings(Settings)));
@@ -149,6 +190,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (snapshot != null) {
             // We keep global app settings like theme and window size from current
             snapshot.Theme = Settings.Theme;
+            snapshot.Language = Settings.Language;
             snapshot.WindowWidth = Settings.WindowWidth;
             snapshot.WindowHeight = Settings.WindowHeight;
             snapshot.WindowLeft = Settings.WindowLeft;
@@ -300,8 +342,8 @@ public partial class MainWindowViewModel : ViewModelBase
         bool success = await _buildPipeline.ExecuteEnginePipelineAsync(EnginePath, Settings, SelectedMsBuild, SelectedArchitecture, SelectedVsVersion, _engineMetadata, progress);
         
         IsBuilding = false; _timerService.Stop();
-        if (success) _uiService.ShowToast("Engine Build Pipeline Finished Successfully.", UBBNotificationType.Success); 
-        else _uiService.ShowToast("Engine Build Pipeline Failed.", UBBNotificationType.Error);
+        if (success) _uiService.ShowToast(_localizationService.GetString("EngineBuildPipelineFinished"), UBBNotificationType.Success); 
+        else _uiService.ShowToast(_localizationService.GetString("EngineBuildPipelineFailed"), UBBNotificationType.Error);
         
         await RecordHistoryAsync(success, StatusText, "Engine");
         if (success) _orchestrationService.ClearState();

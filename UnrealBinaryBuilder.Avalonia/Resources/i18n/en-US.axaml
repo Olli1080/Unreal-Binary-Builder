@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <!-- General -->
+    <system:String x:Key="AppTitle">Unreal Binary Builder</system:String>
+    <system:String x:Key="Dashboard">Dashboard</system:String>
+    <system:String x:Key="EngineBuilder">Engine Builder</system:String>
+    <system:String x:Key="PluginBuilder">Plugin Builder</system:String>
+    <system:String x:Key="History">History</system:String>
+    <system:String x:Key="Logs">Logs</system:String>
+    <system:String x:Key="Settings">Settings</system:String>
+    
+    <!-- Dashboard -->
+    <system:String x:Key="BuildDashboard">Build Dashboard</system:String>
+    <system:String x:Key="TotalBuilds">Total Builds</system:String>
+    <system:String x:Key="SuccessRate">Success Rate</system:String>
+    <system:String x:Key="AvgSuccessTime">Avg. Success Time</system:String>
+    <system:String x:Key="EstTimeSaved">Est. Time Saved</system:String>
+
+    <!-- Engine Builder -->
+    <system:String x:Key="Setup">Setup</system:String>
+    <system:String x:Key="ZipBuild">Zip Build</system:String>
+    <system:String x:Key="Compile">Compile</system:String>
+    <system:String x:Key="StartSetupProcess">Start Setup Process</system:String>
+    <system:String x:Key="BuildUnrealEngine">Build Unreal Engine</system:String>
+    <system:String x:Key="LanguageChanged">Language changed to English.</system:String>
+    <system:String x:Key="UnexpectedError">Unexpected Error</system:String>
+    <system:String x:Key="FatalError">Fatal error: {0}</system:String>
+    <system:String x:Key="EngineBuildPipelineFinished">Engine Build Pipeline Finished Successfully.</system:String>
+    <system:String x:Key="EngineBuildPipelineFailed">Engine Build Pipeline Failed.</system:String>
+    <system:String x:Key="PluginBuildsFinished">Plugin builds finished.</system:String>
+    <system:String x:Key="PluginBuildsFailed">Plugin builds failed.</system:String>
+</ResourceDictionary>

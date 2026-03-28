@@ -15,19 +15,22 @@ public class AppInitializer : IAppInitializer
     private readonly IVelopackUpdaterService _updater;
     private readonly IUIService _uiService;
     private readonly IUBBLogger _logger;
+    private readonly ILocalizationService _localization;
 
     public AppInitializer(
         ITelemetryService telemetryService,
         ISettingsService settingsService,
         IVelopackUpdaterService updater,
         IUIService uiService,
-        IUBBLogger logger)
+        IUBBLogger logger,
+        ILocalizationService localization)
     {
         _telemetryService = telemetryService;
         _settingsService = settingsService;
         _updater = updater;
         _uiService = uiService;
         _logger = logger;
+        _localization = localization;
     }
 
     public async Task InitializeAsync()
@@ -44,7 +47,13 @@ public class AppInitializer : IAppInitializer
         // 2. Load Settings
         var settings = _settingsService.GetSettings();
 
-        // 3. Apply Theme
+        // 3. Set Language
+        if (!string.IsNullOrEmpty(settings.Language))
+        {
+            _localization.SetLanguage(settings.Language);
+        }
+
+        // 4. Apply Theme
         _uiService.ApplyTheme(settings.Theme);
 
         // 4. Check for Updates if enabled

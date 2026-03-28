@@ -11,6 +11,11 @@
     </Application.DataTemplates>
   
     <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Resources/i18n/en-US.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
         <conv:StringEqualsConverter x:Key="StringEqualsConverter" />
         <conv:BuildStageToColorConverter x:Key="BuildStageToColorConverter" />
         <conv:BuildStageToIconConverter x:Key="BuildStageToIconConverter" />

@@ -32,6 +32,7 @@ public partial class App : Application
 
         // Register Infrastructure
         services.AddSingleton<ITelemetryService, GameAnalyticsTelemetryService>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton<IProcessExecutor, ProcessExecutor>();
 
         // Register Log Sinks
@@ -47,7 +48,8 @@ public partial class App : Application
             sp.GetRequiredService<ISettingsService>(),
             sp.GetRequiredService<IVelopackUpdaterService>(),
             sp.GetRequiredService<IUIService>(),
-            sp.GetRequiredService<IUBBLogger>()));
+            sp.GetRequiredService<IUBBLogger>(),
+            sp.GetRequiredService<ILocalizationService>()));
         
         if (OperatingSystem.IsWindows()) services.AddSingleton<IPlatformService, WindowsPlatformService>();
         else if (OperatingSystem.IsLinux()) services.AddSingleton<IPlatformService, LinuxPlatformService>();

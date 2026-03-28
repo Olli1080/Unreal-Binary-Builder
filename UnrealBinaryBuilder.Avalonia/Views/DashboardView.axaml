@@ -12,14 +12,14 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Build Dashboard" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
+        <TextBlock Text="{DynamicResource BuildDashboard}" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
 
         <ScrollViewer Grid.Row="1">
             <WrapPanel>
                 <!-- Total Builds Card -->
                 <Border Width="200" Height="120" Margin="10" CornerRadius="8" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="Total Builds" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
+                        <TextBlock Text="{DynamicResource TotalBuilds}" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
                         <TextBlock Text="{Binding TotalBuilds}" FontSize="36" FontWeight="SemiBold" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
@@ -27,7 +27,7 @@
                 <!-- Success Rate Card -->
                 <Border Width="200" Height="120" Margin="10" CornerRadius="8" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="Success Rate" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
+                        <TextBlock Text="{DynamicResource SuccessRate}" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
                         <TextBlock Text="{Binding SuccessRate}" FontSize="36" FontWeight="SemiBold" Foreground="Green" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
@@ -35,7 +35,7 @@
                 <!-- Average Duration Card -->
                 <Border Width="200" Height="120" Margin="10" CornerRadius="8" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="Avg. Success Time" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
+                        <TextBlock Text="{DynamicResource AvgSuccessTime}" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
                         <TextBlock Text="{Binding AverageDuration}" FontSize="32" FontWeight="SemiBold" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
@@ -43,7 +43,7 @@
                 <!-- Estimated Time Saved Card -->
                 <Border Width="200" Height="120" Margin="10" CornerRadius="8" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <TextBlock Text="Est. Time Saved" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
+                        <TextBlock Text="{DynamicResource EstTimeSaved}" FontSize="14" Opacity="0.7" HorizontalAlignment="Center" />
                         <TextBlock Text="{Binding TotalTimeSaved}" FontSize="36" FontWeight="SemiBold" Foreground="{DynamicResource SystemAccentColor}" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>

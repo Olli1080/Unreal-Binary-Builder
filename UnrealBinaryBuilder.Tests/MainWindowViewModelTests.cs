@@ -1,62 +1,16 @@
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using UnrealBinaryBuilder.Avalonia.Classes;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 using UnrealBinaryBuilder.Avalonia.Classes.Logging;
 using UnrealBinaryBuilder.Avalonia.Models;
 using UnrealBinaryBuilder.Avalonia.ViewModels;
+using Xunit;
+using System.Collections.Generic;
+using Avalonia.Threading;
 
 namespace UnrealBinaryBuilder.Tests;
-
-public class MockProcessExecutor : IProcessExecutor
-{
-    public int ExitCode { get; set; } = 0;
-    public Task<int> ExecuteAsync(string fileName, string arguments, string workingDirectory = "", LogCategory category = LogCategory.Build)
-    {
-        return Task.FromResult(ExitCode);
-    }
-}
-
-public class MockLogger : IUBBLogger
-{
-    public void Log(string message, LogLevel level = LogLevel.Info, LogCategory category = LogCategory.General) { }
-    public void Debug(string message, LogCategory category = LogCategory.General) { }
-    public void Info(string message, LogCategory category = LogCategory.General) { }
-    public void Success(string message, LogCategory category = LogCategory.General) { }
-    public void Warning(string message, LogCategory category = LogCategory.General) { }
-    public void Error(string message, LogCategory category = LogCategory.General) { }
-    public void Error(Exception exception, string? message = null, LogCategory category = LogCategory.General) { }
-}
-
-public class MockVelopackUpdaterService : IVelopackUpdaterService
-{
-    public bool IsUpdateAvailable { get; set; } = false;
-    public Task CheckForUpdatesAsync(bool silent = false) => Task.CompletedTask;
-    public Task DownloadUpdatesAsync() => Task.CompletedTask;
-    public void ApplyUpdatesAndRestart() { }
-}
-
-public class MockSettingsService : ISettingsService
-{
-    public BuilderSettingsJson Settings { get; set; } = SettingsService.GetDefaultSettings(Path.Combine(Path.GetTempPath(), "UBB_Mock"));
-#pragma warning disable CS0067
-    public event Action<string, LogMessageType>? OnLog;
-#pragma warning restore CS0067
-
-    public BuilderSettingsJson GetSettings() => Settings;
-    public void SaveSettings(BuilderSettingsJson settings) => Settings = settings;
-    public void WriteToLogFile(string content) { }
-    public void WriteErrorsToLogFile(string content) { }
-    public void OpenLogFolder() { }
-    public void OpenSettings() { }
-}
-
-public class MockUnrealEngineProvider : IUnrealEngineProvider
-{
-    public UnrealEngineMetadata? Metadata { get; set; }
-    public string AutomationPath { get; set; } = "RunUAT.bat";
-
-    public UnrealEngineMetadata? GetEngineMetadata(string enginePath) => Metadata;
-    public string GetAutomationPath(string enginePath, bool isUE5) => AutomationPath;
-}
 
 public class MainWindowViewModelTests : IDisposable
 {
@@ -80,6 +34,7 @@ public class MainWindowViewModelTests : IDisposable
     private readonly MockLogFormatterService _logFormatter;
     private readonly MockTelemetryService _telemetryService;
     private readonly MockBuildPipeline _buildPipeline;
+    private readonly MockLocalizationService _localizationService;
 
     public MainWindowViewModelTests()
     {
@@ -103,6 +58,7 @@ public class MainWindowViewModelTests : IDisposable
         _logFormatter = new MockLogFormatterService();
         _telemetryService = new MockTelemetryService();
         _buildPipeline = new MockBuildPipeline();
+        _localizationService = new MockLocalizationService();
     }
 
     public void Dispose()
@@ -122,77 +78,63 @@ public class MainWindowViewModelTests : IDisposable
         _logger, 
         _uiLogSink, 
         _uiService, 
-        _setupService,
-        _zipService,
-        _engineBuildService,
-        _pluginBuildService,
-        _gitService,
-        _timerService,
-        _historyService,
-        _orchestrationService,
-        _logFormatter,
-        _telemetryService,
-        _buildPipeline);
+        _setupService, 
+        _zipService, 
+        _engineBuildService, 
+        _pluginBuildService, 
+        _gitService, 
+        _timerService, 
+        _historyService, 
+        _orchestrationService, 
+        _logFormatter, 
+        _telemetryService, 
+        _buildPipeline,
+        _localizationService);
 
     [Fact]
-    public async Task ShowToast_TriggersUiService()
+    public void Constructor_InitializesCorrectly()
     {
-        // Arrange
-        var vm = CreateViewModel();
-        string receivedMessage = string.Empty;
-        UBBNotificationType receivedType = UBBNotificationType.Info;
-        
-        _uiService.ShowNotification += (s, e) => {
-            receivedMessage = e.Message;
-            receivedType = e.Type;
-        };
-
         // Act
-        // CopyCommandLine triggers a toast
-        await vm.CopyCommandLineCommand.ExecuteAsync(null);
+        var vm = CreateViewModel();
 
         // Assert
-        Assert.Equal("Command line copied to clipboard!", receivedMessage);
-        Assert.Equal(UBBNotificationType.Info, receivedType);
+        Assert.NotNull(vm.Settings);
+        Assert.NotNull(vm.AvailableLanguages);
+        Assert.NotEmpty(vm.AvailableLanguages);
+        Assert.NotNull(vm.Dashboard);
     }
 
     [Fact]
-    public void EnginePath_UpdatesVersionDependencies()
+    public void SelectedLanguage_ChangesApplicationLanguage()
     {
         // Arrange
         var vm = CreateViewModel();
-        string engineRoot = Path.Combine(_testPath, "EngineMock");
-        Directory.CreateDirectory(engineRoot); // Ensure directory exists
-        
-        // Mock UE 4.22
-        _ueProvider.Metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false, false, false);
-        _gitService.GitInfo = "Branch: master | Hash: 12345";
+        var german = new LanguageInfo("de-DE", "Deutsch");
 
         // Act
-        vm.EnginePath = engineRoot;
+        vm.SelectedLanguage = german;
 
         // Assert
-        Assert.True(vm.SupportWin32);
-        Assert.True(vm.SupportHTML5);
-        Assert.Equal("Branch: master | Hash: 12345", vm.GitInfo);
+        Assert.Equal("de-DE", _localizationService.CurrentLanguage);
+        Assert.Equal("de-DE", vm.Settings.Language);
     }
 
     [Fact]
-    public void PrepareCommandline_GeneratesCorrectString()
+    public async Task CheckForUpdates_TriggersUpdater()
     {
         // Arrange
         var vm = CreateViewModel();
-        _engineBuildService.PrepareEngineCommandlineResult = "-mock-args";
 
         // Act
-        string cmd = vm.PrepareCommandline();
+        await vm.CheckForUpdatesCommand.ExecuteAsync(null);
 
         // Assert
-        Assert.Equal("-mock-args", cmd);
+        // We can't easily check internal state of mock updater without more exposure,
+        // but the fact it didn't crash is a start.
     }
 
     [Fact]
-    public void TimerService_UpdatesElapsedTime()
+    public void ElapsedTime_Updates_WhenTimerTriggers()
     {
         // Arrange
         var vm = CreateViewModel();

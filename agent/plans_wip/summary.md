@@ -4,9 +4,10 @@ We are currently working on expanding the build configurations and modernizing t
 
 ## Current Plans
 
-- [ ] [Build Options Modernization](build_options_modernization.md)
+(All currently planned modernization phases completed.)
 
 ## Recently Completed
+- [x] **Step 11: Build Options**: Expanded build configurations based on modern UE metadata.
 - [x] **Step 10: Feature Extensions**: Added Build Presets, Dashboard, and Integration Tests.
 - [x] **Step 9: Error Handling**: Implemented global exception handling.
 - [x] **Step 8: Consistency**: Standardized naming and added XML docs.

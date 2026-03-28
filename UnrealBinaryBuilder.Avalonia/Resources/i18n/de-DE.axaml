@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <!-- General -->
+    <system:String x:Key="AppTitle">Unreal Binary Builder</system:String>
+    <system:String x:Key="Dashboard">Dashboard</system:String>
+    <system:String x:Key="EngineBuilder">Engine Builder</system:String>
+    <system:String x:Key="PluginBuilder">Plugin-Builder</system:String>
+    <system:String x:Key="History">Verlauf</system:String>
+    <system:String x:Key="Logs">Protokolle</system:String>
+    <system:String x:Key="Settings">Einstellungen</system:String>
+    
+    <!-- Dashboard -->
+    <system:String x:Key="BuildDashboard">Build-Dashboard</system:String>
+    <system:String x:Key="TotalBuilds">Builds Gesamt</system:String>
+    <system:String x:Key="SuccessRate">Erfolgsquote</system:String>
+    <system:String x:Key="AvgSuccessTime">Durchschn. Zeit</system:String>
+    <system:String x:Key="EstTimeSaved">Zeitersparnis (geschätzt)</system:String>
+
+    <!-- Engine Builder -->
+    <system:String x:Key="Setup">Einrichtung</system:String>
+    <system:String x:Key="ZipBuild">Zippen</system:String>
+    <system:String x:Key="Compile">Kompilieren</system:String>
+    <system:String x:Key="StartSetupProcess">Einrichtung starten</system:String>
+    <system:String x:Key="BuildUnrealEngine">Unreal Engine bauen</system:String>
+    <system:String x:Key="LanguageChanged">Sprache auf Deutsch umgestellt.</system:String>
+    <system:String x:Key="UnexpectedError">Unerwarteter Fehler</system:String>
+    <system:String x:Key="FatalError">Fataler Fehler: {0}</system:String>
+    <system:String x:Key="EngineBuildPipelineFinished">Engine-Build-Pipeline erfolgreich abgeschlossen.</system:String>
+    <system:String x:Key="EngineBuildPipelineFailed">Engine-Build-Pipeline fehlgeschlagen.</system:String>
+    <system:String x:Key="PluginBuildsFinished">Plugin-Builds abgeschlossen.</system:String>
+    <system:String x:Key="PluginBuildsFailed">Plugin-Builds fehlgeschlagen.</system:String>
+</ResourceDictionary>
