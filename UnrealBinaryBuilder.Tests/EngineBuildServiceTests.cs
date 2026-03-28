@@ -47,7 +47,7 @@ public class EngineBuildServiceTests : IDisposable
     {
         // Arrange
         var settings = new BuilderSettingsJson();
-        var metadata = new UnrealEngineMetadata(5, 0, 0, "5.0", "5.0.0", true, false, true, true, true, false, false, false);
+        var metadata = new UnrealEngineMetadata(5, 0, 0, "5.0", "5.0.0", true, false, true, true, true, false, false, false, false, false);
         
         _ueProvider.Metadata = metadata;
         _ueProvider.AutomationPath = "RunUAT.bat";

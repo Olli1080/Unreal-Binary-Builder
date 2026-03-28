@@ -39,6 +39,8 @@ public class UnrealEngineProvider : IUnrealEngineProvider
                 SupportServerClientTargets: major >= 5 || minor >= 21,
                 SupportLinuxAArch64: isUE4 && minor >= 24,
                 SupportLinuxArm64: isUE5,
+                SupportWinArm64: major > 5 || (major == 5 && minor >= 3),
+                SupportVisionOS: major > 5 || (major == 5 && minor >= 4),
                 IsUE5: isUE5
             );
         } catch { return null; }

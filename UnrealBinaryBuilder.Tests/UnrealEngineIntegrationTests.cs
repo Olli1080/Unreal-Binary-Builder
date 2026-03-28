@@ -116,6 +116,48 @@ public class UnrealEngineIntegrationTests : IDisposable
     }
 
     [Fact]
+    public void Provider_DetectsUE5_4_Correctly()
+    {
+        // Arrange
+        CreateMockVersionFile(5, 4, 0);
+
+        // Act
+        var metadata = _provider.GetEngineMetadata(_mockEnginePath);
+
+        // Assert
+        Assert.NotNull(metadata);
+        Assert.True(metadata.SupportWinArm64);
+        Assert.True(metadata.SupportVisionOS);
+    }
+
+    [Fact]
+    public void BuildArgumentBuilder_ModernUE_GeneratesNewFlags()
+    {
+        // Arrange
+        CreateMockVersionFile(5, 7, 0);
+        var metadata = _provider.GetEngineMetadata(_mockEnginePath);
+        var settings = new BuilderSettingsJson
+        {
+            WithWinArm64 = true,
+            WithVisionOS = true,
+            AllowParallelExecutor = true,
+            IncludeDocs = true,
+            BuildIdOverride = "TEST_BUILD_123"
+        };
+
+        // Act
+        var args = BuildArgumentBuilder.BuildEngineArguments(settings, metadata, null);
+        string cmd = args.ToString();
+
+        // Assert
+        Assert.Contains("-set:WithWinArm64=true", cmd);
+        Assert.Contains("-set:WithVisionOS=true", cmd);
+        Assert.Contains("-set:AllowParallelExecutor=true", cmd);
+        Assert.Contains("-set:IncludeDocs=true", cmd);
+        Assert.Contains("-set:BuildIdOverride=TEST_BUILD_123", cmd);
+    }
+
+    [Fact]
     public void Provider_GetAutomationPath_UE4()
     {
         // Act

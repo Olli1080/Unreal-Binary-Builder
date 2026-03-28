@@ -1,6 +1,10 @@
 # Plans WIP
 
-All currently planned modernization and refinement phases have been successfully completed.
+We are currently working on expanding the build configurations and modernizing the core options.
+
+## Current Plans
+
+- [ ] [Build Options Modernization](build_options_modernization.md)
 
 ## Recently Completed
 - [x] **Step 10: Feature Extensions**: Added Build Presets, Dashboard, and Integration Tests.

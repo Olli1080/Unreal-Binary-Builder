@@ -74,6 +74,10 @@ public class BuilderSettingsJson
     public HashSet<BuildConfiguration> GameConfigurations { get; set; } = [BuildConfiguration.Development, BuildConfiguration.Shipping];
     public string? CustomOptions { get; set; }
     public string? AnalyticsOverride { get; set; }
+    public string? BuildIdOverride { get; set; }
+    public string? ExtraCompileArgs { get; set; }
+    public string? ExtraCompileArgsMac { get; set; }
+    public string? ExtraDDCArgs { get; set; }
 
     public bool GitDependencyAll { get; set; } = true;
     public List<GitPlatform> GitDependencyPlatforms { get; set; } = new();
@@ -91,8 +95,17 @@ public class BuilderSettingsJson
     [JsonProperty("bHostPlatformEditorOnly")]
     public bool HostPlatformEditorOnly { get; set; }
 
+    [JsonProperty("bAllPlatforms")]
+    public bool AllPlatforms { get; set; }
+
     [JsonProperty("bWithWin64")]
     public bool WithWin64 { get; set; } = true;
+
+    [JsonProperty("bWithWinArm64")]
+    public bool WithWinArm64 { get; set; }
+
+    [JsonProperty("bWithWinArm64ec")]
+    public bool WithWinArm64ec { get; set; }
 
     [JsonProperty("bWithWin32")]
     public bool WithWin32 { get; set; } = true;
@@ -118,6 +131,9 @@ public class BuilderSettingsJson
     [JsonProperty("bWithTVOS")]
     public bool WithTVOS { get; set; }
 
+    [JsonProperty("bWithVisionOS")]
+    public bool WithVisionOS { get; set; }
+
     [JsonProperty("bWithSwitch")]
     public bool WithSwitch { get; set; }
 
@@ -141,6 +157,15 @@ public class BuilderSettingsJson
 
     [JsonProperty("bSignExecutables")]
     public bool SignExecutables { get; set; }
+
+    [JsonProperty("bSignWindowsExecutablesInParallel")]
+    public bool SignWindowsExecutablesInParallel { get; set; }
+
+    [JsonProperty("bAllowParallelExecutor")]
+    public bool AllowParallelExecutor { get; set; }
+
+    [JsonProperty("bIncludeDocs")]
+    public bool IncludeDocs { get; set; }
 
     [JsonProperty("bEnableSymStore")]
     public bool EnableSymStore { get; set; }

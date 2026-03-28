@@ -212,6 +212,8 @@
                                                 <WrapPanel>
                                                     <CheckBox Content="Host Only" IsChecked="{Binding Settings.HostPlatformOnly}" Margin="5" ToolTip.Tip="Build for the host platform only." />
                                                     <CheckBox Content="Win64" IsChecked="{Binding Settings.WithWin64}" Margin="5"/>
+                                                    <CheckBox Content="WinArm64" IsChecked="{Binding Settings.WithWinArm64}" IsEnabled="{Binding SupportWinArm64}" Margin="5"/>
+                                                    <CheckBox Content="WinArm64ec" IsChecked="{Binding Settings.WithWinArm64ec}" IsEnabled="{Binding SupportWinArm64}" Margin="5"/>
                                                     <CheckBox Content="Win32" IsChecked="{Binding Settings.WithWin32}" IsEnabled="{Binding SupportWin32}" Margin="5"/>
                                                     <CheckBox Content="Mac" IsChecked="{Binding Settings.WithMac}" Margin="5"/>
                                                     <CheckBox Content="Linux" IsChecked="{Binding Settings.WithLinux}" Margin="5"/>
@@ -220,6 +222,7 @@
                                                     <CheckBox Content="Android" IsChecked="{Binding Settings.WithAndroid}" Margin="5"/>
                                                     <CheckBox Content="iOS" IsChecked="{Binding Settings.WithIOS}" Margin="5"/>
                                                     <CheckBox Content="TVOS" IsChecked="{Binding Settings.WithTVOS}" Margin="5"/>
+                                                    <CheckBox Content="VisionOS" IsChecked="{Binding Settings.WithVisionOS}" IsEnabled="{Binding SupportVisionOS}" Margin="5"/>
                                                     <CheckBox Content="HTML5" IsChecked="{Binding Settings.WithHTML5}" IsEnabled="{Binding SupportHTML5}" Margin="5"/>
                                                     <CheckBox Content="Switch" IsChecked="{Binding Settings.WithSwitch}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
                                                     <CheckBox Content="PS4" IsChecked="{Binding Settings.WithPS4}" IsEnabled="{Binding SupportConsoles}" Margin="5"/>
@@ -262,7 +265,28 @@
                                         <HeaderedContentControl Header="Advanced Options">
                                             <StackPanel Spacing="10">
                                                 <TextBox Text="{Binding Settings.AnalyticsOverride}" Watermark="Analytics Override" ToolTip.Tip="Identifier for analytic events to send." />
+                                                <TextBox Text="{Binding Settings.BuildIdOverride}" Watermark="Build ID Override" ToolTip.Tip="Override unique identifier for this build." />
                                                 <TextBox Text="{Binding Settings.CustomOptions}" Watermark="Additional Command-line Options" ToolTip.Tip="Pass custom command line options." />
+                                                
+                                                <Expander Header="Extra Arguments (Expert)" Margin="0,5">
+                                                    <StackPanel Spacing="10">
+                                                        <HeaderedContentControl Header="Extra Compile Args">
+                                                            <TextBox Text="{Binding Settings.ExtraCompileArgs}" Watermark="-Args" ToolTip.Tip="Extra arguments to pass to compiles run on non Mac based platforms." />
+                                                        </HeaderedContentControl>
+                                                        <HeaderedContentControl Header="Extra Compile Args (Mac)">
+                                                            <TextBox Text="{Binding Settings.ExtraCompileArgsMac}" Watermark="-ArgsMac" ToolTip.Tip="Extra arguments to pass to compiles run on Mac platforms." />
+                                                        </HeaderedContentControl>
+                                                        <HeaderedContentControl Header="Extra DDC Args">
+                                                            <TextBox Text="{Binding Settings.ExtraDDCArgs}" Watermark="-DDCArgs" ToolTip.Tip="Extra arguments to pass to DDC Generation." />
+                                                        </HeaderedContentControl>
+                                                        
+                                                        <Separator Margin="0,5" />
+                                                        <CheckBox Content="Allow Parallel Executor" IsChecked="{Binding Settings.AllowParallelExecutor}" ToolTip.Tip="Allow the use of UAT's ParallelExecutor when compiling." />
+                                                        <CheckBox Content="Sign Windows Executables in Parallel" IsChecked="{Binding Settings.SignWindowsExecutablesInParallel}" ToolTip.Tip="Sign the executables in parallel (Windows only)." />
+                                                        <CheckBox Content="Include Source Code Docs" IsChecked="{Binding Settings.IncludeDocs}" ToolTip.Tip="Include the source code docs in the resulting installed engine build." />
+                                                        <CheckBox Content="Force All Platforms" IsChecked="{Binding Settings.AllPlatforms}" ToolTip.Tip="Include all target platforms by default." />
+                                                    </StackPanel>
+                                                </Expander>
                                             </StackPanel>
                                         </HeaderedContentControl>
 

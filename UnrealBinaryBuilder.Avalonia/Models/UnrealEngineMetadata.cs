@@ -13,5 +13,7 @@ public record UnrealEngineMetadata(
     bool IsEngineSelection425OrAbove,
     bool SupportLinuxAArch64,
     bool SupportLinuxArm64,
+    bool SupportWinArm64,
+    bool SupportVisionOS,
     bool IsUE5
 );

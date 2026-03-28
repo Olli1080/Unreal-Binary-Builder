@@ -165,7 +165,7 @@ public class MainWindowViewModelTests : IDisposable
         Directory.CreateDirectory(engineRoot); // Ensure directory exists
         
         // Mock UE 4.22
-        _ueProvider.Metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false);
+        _ueProvider.Metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false, false, false);
         _gitService.GitInfo = "Branch: master | Hash: 12345";
 
         // Act

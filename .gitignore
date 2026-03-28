@@ -443,3 +443,4 @@ Output/
 UnrealBinaryBuilder.Avalonia/Assets/*.ico
 !UnrealBinaryBuilder.Avalonia/Assets/avalonia-logo.ico
 UnrealBinaryBuilder.Avalonia/Assets/app_icon_*.png
+TestCrawlUnrealEngineBuilds

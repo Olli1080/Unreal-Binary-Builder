@@ -18,7 +18,7 @@ public class BuildArgumentBuilderTests
             WithDDC = true,
             CustomBuildFile = customBuildFile
         };
-        var metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false);
+        var metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false, false, false);
         
         // Act
         var args = BuildArgumentBuilder.BuildEngineArguments(settings, metadata, null);
@@ -41,7 +41,7 @@ public class BuildArgumentBuilderTests
             HostPlatformOnly = true,
             WithWin32 = true // Should be ignored
         };
-        var metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false);
+        var metadata = new UnrealEngineMetadata(4, 22, 0, "4.22", "4.22.0", true, true, true, true, false, false, false, false, false, false);
 
         // Act
         var args = BuildArgumentBuilder.BuildEngineArguments(settings, metadata, null);
@@ -60,7 +60,7 @@ public class BuildArgumentBuilderTests
         {
             WithWin32 = true
         };
-        var metadata = new UnrealEngineMetadata(5, 0, 0, "5.0", "5.0.0", false, false, false, true, true, false, true, true);
+        var metadata = new UnrealEngineMetadata(5, 0, 0, "5.0", "5.0.0", false, false, false, true, true, false, true, false, false, true);
 
         // Act
         var args = BuildArgumentBuilder.BuildEngineArguments(settings, metadata, null);
@@ -75,7 +75,7 @@ public class BuildArgumentBuilderTests
     {
         // Arrange
         var settings = new BuilderSettingsJson();
-        var metadata = new UnrealEngineMetadata(5, 0, 0, "5.0", "5.0.0", false, false, false, true, true, false, true, true);
+        var metadata = new UnrealEngineMetadata(5, 0, 0, "5.0", "5.0.0", false, false, false, true, true, false, true, false, false, true);
         
         string testDir = Path.Combine(Path.GetTempPath(), "BuildArgumentBuilderTests_" + Guid.NewGuid().ToString());
         string vsPath = Path.Combine(testDir, "2022");

@@ -3,3 +3,5 @@ archive/
 
 # Ignore Visual Studio temporary files
 .vs/
+
+!TestCrawlUnrealEngineBuilds

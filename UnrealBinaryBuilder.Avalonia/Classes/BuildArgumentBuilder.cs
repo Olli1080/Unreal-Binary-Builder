@@ -24,6 +24,30 @@ public static class BuildArgumentBuilder
         args.SetFlags["WithFullDebugInfo"] = GetBoolStr(settings.WithFullDebugInfo);
         args.SetFlags["HostPlatformOnly"] = GetBoolStr(settings.HostPlatformOnly);
         args.SetFlags["HostPlatformEditorOnly"] = GetBoolStr(settings.HostPlatformEditorOnly);
+        args.SetFlags["AllowParallelExecutor"] = GetBoolStr(settings.AllowParallelExecutor);
+        args.SetFlags["SignWindowsExecutablesInParallel"] = GetBoolStr(settings.SignWindowsExecutablesInParallel);
+        args.SetFlags["IncludeDocs"] = GetBoolStr(settings.IncludeDocs);
+        args.SetFlags["AllPlatforms"] = GetBoolStr(settings.AllPlatforms);
+
+        if (!string.IsNullOrEmpty(settings.BuildIdOverride))
+        {
+            args.SetFlags["BuildIdOverride"] = settings.BuildIdOverride;
+        }
+
+        if (!string.IsNullOrEmpty(settings.ExtraCompileArgs))
+        {
+            args.SetFlags["ExtraCompileArgs"] = settings.ExtraCompileArgs;
+        }
+
+        if (!string.IsNullOrEmpty(settings.ExtraCompileArgsMac))
+        {
+            args.SetFlags["ExtraCompileArgsMac"] = settings.ExtraCompileArgsMac;
+        }
+
+        if (!string.IsNullOrEmpty(settings.ExtraDDCArgs))
+        {
+            args.SetFlags["ExtraDDCArgs"] = settings.ExtraDDCArgs;
+        }
 
         if (settings.WithDDC && settings.HostPlatformDDCOnly)
         {
@@ -48,6 +72,17 @@ public static class BuildArgumentBuilder
             args.SetFlags["WithTVOS"] = GetBoolStr(settings.WithTVOS);
             args.SetFlags["WithLinux"] = GetBoolStr(settings.WithLinux);
             args.SetFlags["WithLumin"] = GetBoolStr(settings.WithLumin);
+
+            if (metadata?.SupportWinArm64 == true)
+            {
+                args.SetFlags["WithWinArm64"] = GetBoolStr(settings.WithWinArm64);
+                args.SetFlags["WithWinArm64ec"] = GetBoolStr(settings.WithWinArm64ec);
+            }
+
+            if (metadata?.SupportVisionOS == true)
+            {
+                args.SetFlags["WithVisionOS"] = GetBoolStr(settings.WithVisionOS);
+            }
 
             if (metadata?.SupportHTML5 == true)
             {

@@ -60,6 +60,8 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private bool _isEngineSelection425OrAbove;
     [ObservableProperty] private bool _supportLinuxAArch64;
     [ObservableProperty] private bool _supportLinuxArm64;
+    [ObservableProperty] private bool _supportWinArm64;
+    [ObservableProperty] private bool _supportVisionOS;
 
     // Visual Studio
     [ObservableProperty] private List<VisualStudioVersion> _vsVersions = new();
@@ -182,6 +184,7 @@ public partial class MainWindowViewModel : ViewModelBase
             SupportWin32 = _engineMetadata.SupportWin32; SupportHTML5 = _engineMetadata.SupportHTML5; SupportConsoles = _engineMetadata.SupportConsoles;
             IsEngineSelection425OrAbove = _engineMetadata.IsEngineSelection425OrAbove; SupportServerClientTargets = _engineMetadata.SupportServerClientTargets;
             SupportLinuxAArch64 = _engineMetadata.SupportLinuxAArch64; SupportLinuxArm64 = _engineMetadata.SupportLinuxArm64;
+            SupportWinArm64 = _engineMetadata.SupportWinArm64; SupportVisionOS = _engineMetadata.SupportVisionOS;
         }
         GitInfo = _gitService.GetGitInfo(EnginePath);
     }
