@@ -16,13 +16,13 @@ Unreal Binary Builder has been completely rewritten using **Avalonia UI** and **
 ### 🛠️ Developer Setup & Build
 Unreal Binary Builder now supports **CMake** for build system generation, alongside standard `.sln` and `.csproj` workflows.
 
-#### Build with CMake (Recommended)
+#### Build with CMake (Recommended for Visual Studio)
 1.  Ensure you have **CMake 3.10+** and the **.NET 10.0 SDK** installed.
-2.  Configure the build:
+2.  Configure the build specifying a Visual Studio generator (required for C# support):
     ```bash
-    cmake -B build
+    cmake -G "Visual Studio 17 2022" -A x64 -B build
     ```
-3.  Build the application:
+3.  Open the generated `UnrealBinaryBuilder.sln` in `build/` or build from CLI:
     ```bash
     cmake --build build --config Release
     ```
