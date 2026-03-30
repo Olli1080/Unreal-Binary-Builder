@@ -1,18 +1,24 @@
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using UnrealBinaryBuilder.Avalonia.Classes.Interfaces;
 
 namespace UnrealBinaryBuilder.Avalonia.Classes.Logging;
 
 public class TelemetryLogSink : ILogSink
 {
-    private readonly ITelemetryService _telemetry;
+    private readonly IServiceProvider _serviceProvider;
+    private ITelemetryService? _telemetry;
 
-    public TelemetryLogSink(ITelemetryService telemetry)
+    public TelemetryLogSink(IServiceProvider serviceProvider)
     {
-        _telemetry = telemetry;
+        _serviceProvider = serviceProvider;
     }
 
     public void Log(LogEvent logEvent)
     {
+        _telemetry ??= _serviceProvider.GetService<ITelemetryService>();
+        if (_telemetry == null) return;
+
         if (logEvent.Level == LogLevel.Error)
         {
             _telemetry.TrackError(logEvent.Message, TelemetrySeverity.Error);

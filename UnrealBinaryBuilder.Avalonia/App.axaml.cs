@@ -39,7 +39,7 @@ public partial class App : Application
         services.AddSingleton<UiLogSink>();
         services.AddSingleton<ILogSink>(sp => sp.GetRequiredService<UiLogSink>());
         services.AddSingleton<ILogSink, FileLogSink>();
-        services.AddSingleton<ILogSink>(sp => new TelemetryLogSink(sp.GetRequiredService<ITelemetryService>()));
+        services.AddSingleton<ILogSink, TelemetryLogSink>();
         services.AddSingleton<IUBBLogger, AggregateLogger>();
 
         services.AddSingleton<IVelopackUpdaterService, VelopackUpdaterService>();
