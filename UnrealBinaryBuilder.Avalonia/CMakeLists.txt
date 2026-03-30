@@ -1,16 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
 
-# Project name and version
-project(UnrealBinaryBuilder.Avalonia LANGUAGES CSharp)
+project(UnrealBinaryBuilder.Avalonia LANGUAGES NONE)
 
-# Locate all source files
+# Sources for tracking
 file(GLOB_RECURSE SOURCES
     "*.cs"
     "*.axaml"
     "*.axaml.cs"
 )
-
-# Application manifest
 list(APPEND SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/app.manifest")
 
 # Icon generation
@@ -30,53 +27,35 @@ if(PYTHONINTERP_FOUND)
         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Assets/app_icon.svg" "${CMAKE_SOURCE_DIR}/Scripts/generate_ico.py"
         COMMENT "Generating application icon from SVG..."
     )
-    
-    # Add the icon to the SOURCES to ensure it's generated
     list(APPEND SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Assets/app_icon.ico")
 endif()
 
-# Define the C# executable
-add_executable(UnrealBinaryBuilder.Avalonia
-    ${SOURCES}
-)
-
-# Set common properties for C# executable
-set_property(TARGET UnrealBinaryBuilder.Avalonia PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION "v10.0")
-set_property(TARGET UnrealBinaryBuilder.Avalonia PROPERTY VS_DOTNET_REFERENCES
-    "System"
-    "System.Core"
-    "System.Data"
-    "System.Runtime"
-    "System.Xml"
-    "System.Xml.Linq"
-)
-
-# Set output directory
-set_target_properties(UnrealBinaryBuilder.Avalonia PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-)
-
-# Install targets
-install(TARGETS UnrealBinaryBuilder.Avalonia
-    DESTINATION bin
-)
-
-# Install assets and resources
-install(DIRECTORY Assets/ DESTINATION bin/Assets)
-install(DIRECTORY Resources/ DESTINATION bin/Resources)
-
-# Since this is an Avalonia project, it's highly recommended to keep the .csproj 
-# for Avalonia's specialized build tasks. We can configure CMake to wrap the 
-# existing .csproj to ensure proper resource compilation and NuGet support.
-
-# Add a custom command to build the existing project using dotnet
-find_program(DOTNET_EXE NAMES dotnet)
-if(DOTNET_EXE)
-    add_custom_target(Build_UnrealBinaryBuilder ALL
-        COMMAND ${DOTNET_EXE} build ${CMAKE_CURRENT_SOURCE_DIR}/UnrealBinaryBuilder.Avalonia.csproj
+if(USE_NATIVE_CSHARP)
+    # This generates a native .csproj inside the CMake solution (.sln)
+    enable_language(CSharp)
+    add_executable(UnrealBinaryBuilder.Avalonia ${SOURCES})
+    
+    set_property(TARGET UnrealBinaryBuilder.Avalonia PROPERTY VS_DOTNET_TARGET_FRAMEWORK_VERSION "v10.0")
+    set_property(TARGET UnrealBinaryBuilder.Avalonia PROPERTY VS_DOTNET_REFERENCES
+        "System" "System.Core" "System.Data" "System.Runtime" "System.Xml" "System.Xml.Linq"
+    )
+    
+    set_target_properties(UnrealBinaryBuilder.Avalonia PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+    
+    add_dependencies(UnrealBinaryBuilder.Avalonia Restore)
+else()
+    # On Linux/macOS or non-VS generators, we use a custom target to build via dotnet
+    set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
+    add_custom_target(UnrealBinaryBuilder.Avalonia ALL
+        COMMAND ${DOTNET_EXE} build ${CMAKE_CURRENT_SOURCE_DIR}/UnrealBinaryBuilder.Avalonia.csproj -c $<CONFIG> -o ${OUTPUT_DIR} --no-restore
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         SOURCES ${SOURCES}
+        COMMENT "Building UnrealBinaryBuilder.Avalonia using dotnet CLI..."
     )
+    add_dependencies(UnrealBinaryBuilder.Avalonia Restore)
 endif()
+
+# Install targets
+install(DIRECTORY "${CMAKE_BINARY_DIR}/bin/" DESTINATION bin)

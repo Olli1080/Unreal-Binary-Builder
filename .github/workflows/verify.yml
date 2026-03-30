@@ -56,7 +56,12 @@ jobs:
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/usr/local/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
         echo "PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig" >> $GITHUB_ENV
         
-    - name: Configure CMake
+    - name: Configure CMake (Windows)
+      if: matrix.os == 'windows-latest'
+      run: cmake -G "Visual Studio 17 2022" -A x64 -B build -DCMAKE_BUILD_TYPE=Release
+      
+    - name: Configure CMake (Linux/macOS)
+      if: matrix.os != 'windows-latest'
       run: cmake -B build -DCMAKE_BUILD_TYPE=Release
       
     - name: Build with CMake
