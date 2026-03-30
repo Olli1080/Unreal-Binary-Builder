@@ -11,21 +11,18 @@ file(GLOB_RECURSE SOURCES
 list(APPEND SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/app.manifest")
 
 # Icon generation
-find_package(PythonInterp)
-if(PYTHONINTERP_FOUND)
-    set(VENV_DIR "${CMAKE_SOURCE_DIR}/.venv")
-    if(WIN32)
-        set(PYTHON_EXE "${VENV_DIR}/Scripts/python.exe")
-    else()
-        set(PYTHON_EXE "${VENV_DIR}/bin/python")
-    endif()
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_Interpreter_FOUND)
+    # Ensure the Assets directory exists for the output
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/Assets")
 
     add_custom_command(
         OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/Assets/app_icon.ico"
-        COMMAND ${PYTHON_EXECUTABLE} -m venv ${VENV_DIR}
-        COMMAND ${PYTHON_EXE} ${CMAKE_SOURCE_DIR}/Scripts/generate_ico.py
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/Scripts/generate_ico.py"
         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Assets/app_icon.svg" "${CMAKE_SOURCE_DIR}/Scripts/generate_ico.py"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         COMMENT "Generating application icon from SVG..."
+        VERBATIM
     )
     list(APPEND SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/Assets/app_icon.ico")
 endif()
