@@ -79,11 +79,14 @@ jobs:
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/usr/local/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
         echo "PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig" >> $GITHUB_ENV
         
-    - name: Restore Dependencies
-      run: dotnet restore ${{ env.PROJECT_PATH }}
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      
+    - name: Build with CMake
+      run: cmake --build build --config Release
       
     - name: Publish
-      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o publish_output/${{ matrix.rid }}
+      run: dotnet publish ${{ env.PROJECT_PATH }} -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o publish_output/${{ matrix.rid }} --no-restore
 
     - name: Setup Velopack
       run: dotnet tool install -g vpk

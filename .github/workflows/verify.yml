@@ -56,11 +56,11 @@ jobs:
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/usr/local/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
         echo "PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig" >> $GITHUB_ENV
         
-    - name: Restore Dependencies
-      run: dotnet restore
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
       
-    - name: Build Solution
-      run: dotnet build --configuration Release --no-restore
+    - name: Build with CMake
+      run: cmake --build build --config Release
       
-    - name: Run Tests
-      run: dotnet test --configuration Release --no-build --no-restore
+    - name: Run Tests with CMake
+      run: cmake --build build --config Release --target Test_UnrealBinaryBuilder

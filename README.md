@@ -13,6 +13,25 @@ This is a cross-platform desktop application designed to create binary builds (I
 ### 🚀 v4.0 Avalonia Port Update
 Unreal Binary Builder has been completely rewritten using **Avalonia UI** and **.NET 10.0**. This massive architectural upgrade brings the application natively to **Windows, Linux, and macOS** with a modern Fluent UI, improved asynchronous build orchestration (no more UI freezing during long compilations!), and integrated cross-platform updates.
 
+### 🛠️ Developer Setup & Build
+Unreal Binary Builder now supports **CMake** for build system generation, alongside standard `.sln` and `.csproj` workflows.
+
+#### Build with CMake (Recommended)
+1.  Ensure you have **CMake 3.10+** and the **.NET 10.0 SDK** installed.
+2.  Configure the build:
+    ```bash
+    cmake -B build
+    ```
+3.  Build the application:
+    ```bash
+    cmake --build build --config Release
+    ```
+
+#### Build with dotnet CLI
+```bash
+dotnet build --configuration Release
+```
+
 # Features
 
 * **Cross-Platform**: Run on Windows, Linux, or macOS.
